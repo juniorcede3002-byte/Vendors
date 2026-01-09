@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendors - Panel de Administración</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <h1>Vendors</h1>
+        <div class="nav-links">
+            <a href="#">Inventario</a>
+            <a href="#" class="active">Subir Producto</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="upload-section">
+            <h2>Subir Nuevo Producto</h2>
+            <form id="product-form">
+                <div class="form-group">
+                    <label for="image">Imagen del Producto</label>
+                    <input type="file" id="image" accept="image/*" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="name">Nombre del Producto</label>
+                    <input type="text" id="name" placeholder="Ej: Laptop Gamer" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Descripción</label>
+                    <textarea id="description" rows="4" placeholder="Detalles del producto..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="price">Precio ($)</label>
+                    <input type="number" id="price" step="0.01" placeholder="0.00" required>
+                </div>
+
+                <button type="submit" class="btn-submit">Publicar Producto</button>
+            </form>
+        </section>
+
+        <section class="preview-section">
+            <h2>Vista Previa</h2>
+            <div id="preview-card" class="card">
+                <p>Completa el formulario para ver la vista previa.</p>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
