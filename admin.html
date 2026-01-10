@@ -3,40 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendors - Admin</title>
+    <title>Vendors - Gestión de Suministros</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <nav class="navbar">
-        <h1>VENDORS | Panel Administrativo</h1>
+        <div class="nav-content">
+            <h1>Vendors</h1>
+            <button id="open-modal" class="btn-primary">Subir Producto</button>
+        </div>
     </nav>
 
-    <div class="container">
-        <section class="form-container">
-            <h2>Subir Nuevo Producto</h2>
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Agregar Suministro</h2>
             <form id="product-form">
-                <label>Imagen del Producto</label>
-                <input type="file" id="product-image" accept="image/*" required>
-                
-                <label>Nombre</label>
-                <input type="text" id="product-name" placeholder="Ej: Laptop Dell" required>
-                
-                <label>Descripción</label>
-                <textarea id="product-desc" placeholder="Detalles del suministro..." required></textarea>
-                
-                <label>Precio ($)</label>
-                <input type="number" id="product-price" placeholder="0.00" required>
-                
-                <button type="submit" id="btn-save">Guardar en Inventario</button>
-            </form>
-        </section>
-
-        <section class="preview-container">
-            <h2>Stock Actual (Firebase)</h2>
-            <div id="product-list" class="grid">
+                <div class="input-group">
+                    <label>Archivo (Imagen o Video)</label>
+                    <input type="file" id="media-file" accept="image/*,video/*" required>
                 </div>
-        </section>
+                
+                <div class="input-group">
+                    <label>Descripción del Producto</label>
+                    <textarea id="product-desc" rows="4" placeholder="Ej: Laptop HP 15', 8GB RAM..." required></textarea>
+                </div>
+                
+                <button type="submit" id="btn-save">Publicar en Inventario</button>
+            </form>
+        </div>
     </div>
+
+    <main class="container">
+        <div id="feed" class="product-grid">
+            </div>
+    </main>
 
     <script type="module" src="script.js"></script>
 </body>
