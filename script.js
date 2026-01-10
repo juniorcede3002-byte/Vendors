@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, getDoc, setDoc, updateDoc, deleteDoc, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
@@ -12,198 +13,182 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
 const CLOUD_NAME = "df79cjklp";
 const UPLOAD_PRESET = "vendors_preset";
 
-let allProducts = [];
+let currentUser = null;
 let cart = [];
-let currentRole = '';
-let currentFilter = 'todos';
-let searchQuery = '';
 
-// --- SISTEMA DE ROLES ---
-window.selectRole = (role) => {
-    currentRole = role;
-    document.body.className = `${role}-mode`;
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('app-screen').style.display = 'block';
-    initRealtime();
+// --- NAVEGACIÓN ---
+window.showView = (id) => {
+    document.querySelectorAll('.view-section').forEach(v => v.style.display = 'none');
+    document.getElementById(id).style.display = id === 'auth-screen' ? 'flex' : 'block';
 };
 
-window.logout = () => location.reload();
+// --- AUTH Y ROLES ---
+document.getElementById('login-google').onclick = () => signInWithPopup(auth, provider);
+window.logout = () => signOut(auth).then(() => location.reload());
 
-// --- INICIALIZACIÓN DE DATOS ---
-function initRealtime() {
-    onSnapshot(query(collection(db, "productos"), orderBy("fecha", "desc")), (snap) => {
-        allProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderStock();
-    });
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        currentUser = user;
+        const userRef = doc(db, "usuarios", user.uid);
+        const snap = await getDoc(userRef);
+        let uData;
 
-    onSnapshot(query(collection(db, "pedidos"), orderBy("fecha", "desc")), (snap) => {
-        renderOrdersList(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
-}
+        if (!snap.exists()) {
+            uData = { nombre: user.displayName, email: user.email, rol: 'user', direccion: '' };
+            await setDoc(userRef, uData);
+        } else {
+            uData = snap.data();
+        }
 
-// --- RENDERIZADO DE STOCK ---
-function renderStock() {
-    const grid = document.getElementById('product-grid');
-    grid.innerHTML = '';
-
-    const filtered = allProducts.filter(p => {
-        const matchesCat = currentFilter === 'todos' || p.categoria === currentFilter;
-        const matchesSearch = p.nombre.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesCat && matchesSearch;
-    });
-
-    filtered.forEach(p => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-            <div class="card-media">${p.tipo === 'video' ? `<video src="${p.mediaUrl}"></video>` : `<img src="${p.mediaUrl}">`}</div>
-            <div class="card-body">
-                <h3>${p.nombre}</h3>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px">
-                    <span class="price-hero" style="font-size:1.1rem">$${p.precio}</span>
-                    <button class="admin-only btn-primary" style="background:var(--danger)" onclick="event.stopPropagation(); deleteProduct('${p.id}')">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-        card.onclick = () => openProductDetail(p);
-        grid.appendChild(card);
-    });
-}
-
-// --- BUSQUEDA Y FILTROS ---
-document.getElementById('main-search').oninput = (e) => {
-    searchQuery = e.target.value;
-    renderStock();
-};
-
-document.querySelectorAll('.chip').forEach(btn => {
-    btn.onclick = () => {
-        document.querySelector('.chip.active').classList.remove('active');
-        btn.classList.add('active');
-        currentFilter = btn.dataset.cat;
-        renderStock();
-    };
+        document.body.className = `${uData.rol}-mode`;
+        document.getElementById('user-avatar').src = user.photoURL;
+        document.getElementById('user-name-display').innerText = uData.nombre;
+        document.getElementById('prof-name-input').value = uData.nombre;
+        document.getElementById('prof-addr-input').value = uData.direccion || '';
+        
+        showView('app-screen');
+        initRealtimeData();
+    } else {
+        showView('landing-page');
+    }
 });
 
-// --- DETALLES Y CARRITO ---
-function openProductDetail(p) {
-    const mediaContainer = document.getElementById('detail-media-container');
-    mediaContainer.innerHTML = p.tipo === 'video' ? `<video src="${p.mediaUrl}" controls autoplay></video>` : `<img src="${p.mediaUrl}">`;
-    document.getElementById('det-title').innerText = p.nombre;
-    document.getElementById('det-desc').innerText = p.descripcion;
-    document.getElementById('det-price').innerText = `$${p.precio}`;
-    document.getElementById('det-cat').innerText = p.categoria;
-
-    document.getElementById('add-to-cart-btn').onclick = () => {
-        cart.push(p);
-        document.getElementById('cart-badge').innerText = cart.length;
-        closeModal('modal-detail');
-    };
-    showModal('modal-detail');
-}
-
-window.openCheckout = () => {
-    if(cart.length === 0) return alert("Bolsa vacía");
-    closeModal('modal-cart');
-    showModal('modal-checkout');
-};
-
-document.getElementById('checkout-form').onsubmit = async (e) => {
-    e.preventDefault();
-    await addDoc(collection(db, "pedidos"), {
-        items: cart,
-        total: cart.reduce((acc, item) => acc + item.precio, 0),
-        ubicacion: document.getElementById('ship-address').value,
-        estado: 'pendiente',
-        fecha: new Date()
+// --- CARGA DE DATOS REALTIME ---
+function initRealtimeData() {
+    // 1. Productos
+    onSnapshot(query(collection(db, "productos"), orderBy("fecha", "desc")), (snap) => {
+        const grid = document.getElementById('product-grid');
+        grid.innerHTML = '';
+        snap.forEach(d => {
+            const p = d.data();
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="card-img-container">
+                    ${p.tipo === 'video' ? `<video src="${p.mediaUrl}" muted loop onmouseover="this.play()" onmouseout="this.pause()"></video>` : `<img src="${p.mediaUrl}">`}
+                </div>
+                <div style="padding:15px">
+                    <small style="color:var(--pri); font-weight:bold">${p.categoria.toUpperCase()}</small>
+                    <h4 style="margin:5px 0">${p.nombre}</h4>
+                    <p style="font-weight:800; font-size:1.2rem">$${p.precio}</p>
+                    <button class="user-only btn-save" onclick="addToCart('${d.id}', '${p.nombre}', ${p.precio})">Agregar a Bolsa</button>
+                    <button class="admin-only btn-save" style="background:#ef4444" onclick="deleteProd('${d.id}')">Eliminar</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
     });
-    alert("Solicitud enviada con éxito.");
-    cart = []; document.getElementById('cart-badge').innerText = "0";
-    closeModal('modal-checkout');
-};
 
-// --- GESTIÓN DE PEDIDOS ---
-function renderOrdersList(pedidos) {
-    const container = document.getElementById('orders-list');
-    container.innerHTML = '';
-    pedidos.forEach(o => {
-        const item = document.createElement('div');
-        item.className = 'card-body';
-        item.style = "background:#f8fafc; margin-bottom:15px; border-radius:15px; border:1px solid #e2e8f0";
-        item.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center">
-                <strong>Items: ${o.items.map(i => i.nombre).join(', ')}</strong>
-                <span style="padding:5px 10px; border-radius:20px; font-size:0.7rem; font-weight:800; background:${o.estado === 'aprobado' ? '#dcfce7' : '#fef3c7'}">
-                    ${o.estado.toUpperCase()}
-                </span>
-            </div>
-            <p style="font-size:0.8rem; color:gray; margin:5px 0">Ubicación: ${o.ubicacion} | Total: $${o.total}</p>
-            <div class="admin-only" style="margin-top:10px">
-                <button class="btn-primary" style="padding:5px 12px; font-size:0.7rem; background:var(--success)" onclick="updateStatus('${o.id}', 'aprobado')">Aprobar</button>
-                <button class="btn-primary" style="padding:5px 12px; font-size:0.7rem; background:var(--danger)" onclick="updateStatus('${o.id}', 'rechazado')">Rechazar</button>
-            </div>
-        `;
-        container.appendChild(item);
+    // 2. Pedidos (Historial Usuario y Admin)
+    onSnapshot(query(collection(db, "pedidos"), orderBy("fecha", "desc")), (snap) => {
+        const adminList = document.getElementById('admin-orders-list');
+        const userList = document.getElementById('user-history-list');
+        adminList.innerHTML = ''; userList.innerHTML = '';
+
+        snap.forEach(d => {
+            const o = d.data();
+            const itemHTML = `
+                <div class="history-item">
+                    <div style="display:flex; justify-content:space-between">
+                        <strong>${o.items.map(i => i.nombre).join(', ')}</strong>
+                        <span style="color:var(--pri)">$${o.total}</span>
+                    </div>
+                    <p style="font-size:0.8rem; margin:5px 0">Estado: <b>${o.estado.toUpperCase()}</b> | Solicita: ${o.userName}</p>
+                    ${o.estado === 'pendiente' ? `
+                        <div class="admin-only" style="display:flex; gap:10px; margin-top:10px">
+                            <button class="btn-save" style="background:#10b981" onclick="updateStatus('${d.id}', 'aprobado')">Aprobar</button>
+                            <button class="btn-save" style="background:#ef4444" onclick="updateStatus('${d.id}', 'rechazado')">Rechazar</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            if (o.userId === currentUser.uid) userList.innerHTML += itemHTML;
+            adminList.innerHTML += itemHTML;
+        });
     });
 }
 
-window.updateStatus = async (id, nuevoEstado) => {
-    await updateDoc(doc(db, "pedidos", id), { estado: nuevoEstado });
-};
-
-// --- SUBIDA (ADMIN) ---
-document.getElementById('add-product-form').onsubmit = async (e) => {
+// --- FUNCIONES DE PRODUCTOS (ADMIN) ---
+document.getElementById('add-item-form').onsubmit = async (e) => {
     e.preventDefault();
-    const btn = document.getElementById('btn-publish');
+    const btn = document.getElementById('btn-upload');
     btn.disabled = true; btn.innerText = "Subiendo...";
 
     try {
-        const file = document.getElementById('p-file').files[0];
+        const file = document.getElementById('item-file').files[0];
         const fData = new FormData();
         fData.append('file', file);
         fData.append('upload_preset', UPLOAD_PRESET);
 
         const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, { method: 'POST', body: fData });
-        const cloud = await res.json();
+        const data = await res.json();
 
         await addDoc(collection(db, "productos"), {
-            nombre: document.getElementById('p-name').value,
-            categoria: document.getElementById('p-cat').value,
-            descripcion: document.getElementById('p-desc').value,
-            precio: parseFloat(document.getElementById('p-price').value),
-            mediaUrl: cloud.secure_url,
-            tipo: cloud.resource_type,
+            nombre: document.getElementById('item-name').value,
+            categoria: document.getElementById('item-cat').value,
+            precio: parseFloat(document.getElementById('item-price').value),
+            mediaUrl: data.secure_url,
+            tipo: data.resource_type,
             fecha: new Date()
         });
-        closeModal('modal-add');
-        document.getElementById('add-product-form').reset();
-    } catch (e) { alert("Error al subir"); }
-    finally { btn.disabled = false; btn.innerText = "Publicar"; }
+        closeModal('modal-add-product');
+        e.target.reset();
+    } catch (err) { alert("Error al subir"); }
+    finally { btn.disabled = false; btn.innerText = "Publicar Suministro"; }
 };
 
-window.deleteProduct = async (id) => { if(confirm("¿Eliminar suministro?")) await deleteDoc(doc(db, "productos", id)); };
+window.deleteProd = async (id) => { if(confirm("¿Eliminar suministro?")) await deleteDoc(doc(db, "productos", id)); };
+
+// --- CARRITO Y PEDIDOS (USER) ---
+window.addToCart = (id, nombre, precio) => {
+    cart.push({ id, nombre, precio });
+    document.getElementById('cart-count').innerText = cart.length;
+    alert(`${nombre} añadido`);
+};
+
+window.processOrder = async () => {
+    if(!cart.length) return;
+    await addDoc(collection(db, "pedidos"), {
+        userId: currentUser.uid,
+        userName: currentUser.displayName,
+        items: cart,
+        total: cart.reduce((a, b) => a + b.precio, 0),
+        estado: 'pendiente',
+        fecha: new Date()
+    });
+    alert("Pedido enviado para aprobación.");
+    cart = []; document.getElementById('cart-count').innerText = "0";
+    closeModal('modal-cart');
+};
+
+window.updateStatus = async (id, status) => { await updateDoc(doc(db, "pedidos", id), { estado: status }); };
+
+// --- PERFIL ---
+document.getElementById('profile-edit-form').onsubmit = async (e) => {
+    e.preventDefault();
+    await setDoc(doc(db, "usuarios", currentUser.uid), {
+        nombre: document.getElementById('prof-name-input').value,
+        direccion: document.getElementById('prof-addr-input').value
+    }, { merge: true });
+    alert("Perfil actualizado.");
+};
 
 // --- HELPERS UI ---
-window.showModal = (id) => document.getElementById(id).style.display = 'flex';
+window.showModal = (id) => {
+    if(id === 'modal-cart') {
+        const list = document.getElementById('cart-items-list');
+        list.innerHTML = cart.map(i => `<div style="padding:10px; border-bottom:1px solid #eee">${i.nombre} - $${i.precio}</div>`).join('');
+        document.getElementById('cart-total-sum').innerText = `$${cart.reduce((a,b)=>a+b.precio,0)}`;
+    }
+    document.getElementById(id).style.display = 'flex';
+};
 window.closeModal = (id) => document.getElementById(id).style.display = 'none';
 
-document.getElementById('cart-btn').onclick = () => {
-    const list = document.getElementById('cart-list');
-    let total = 0;
-    list.innerHTML = cart.length ? '' : '<p>No hay productos seleccionados.</p>';
-    cart.forEach(i => { total += i.precio; list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee">${i.nombre} - $${i.precio}</div>`; });
-    document.getElementById('cart-sum').innerText = `$${total.toFixed(2)}`;
-    showModal('modal-cart');
-};
-
-document.getElementById('admin-orders-btn').onclick = () => showModal('modal-orders');
-document.getElementById('view-my-orders').onclick = () => {
-    document.getElementById('orders-title-text').innerText = "Mis Solicitudes";
-    showModal('modal-orders');
-};
-document.getElementById('open-add-modal').onclick = () => showModal('modal-add');
+document.getElementById('btn-cart').onclick = () => showModal('modal-cart');
+document.getElementById('btn-admin-panel').onclick = () => showModal('modal-admin-orders');
+document.getElementById('btn-add-stock').onclick = () => showModal('modal-add-product');
