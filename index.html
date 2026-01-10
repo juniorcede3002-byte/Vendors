@@ -1,292 +1,63 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Vendors | Shop</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-* { box-sizing: border-box; font-family: Arial, sans-serif }
-body { margin: 0; background: #0f172a; color: #fff }
-
-.view { display: none; min-height: 100vh; padding: 40px; text-align: center }
-button {
-  padding: 10px 18px;
-  border: none;
-  background: #3b82f6;
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
-}
-button:disabled { opacity: .6 }
-input, select {
-  width: 100%;
-  padding: 10px;
-  margin: 10px 0;
-  border-radius: 6px;
-  border: none;
-}
-.card {
-  background: #1e293b;
-  padding: 15px;
-  border-radius: 10px;
-}
-.grid {
-  display: grid;
-  gap: 15px;
-  grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
-}
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-</style>
+  <meta charset="UTF-8">
+  <title>Vendors</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
 
 <!-- LANDING -->
-<section id="landing" class="view">
-  <h1>VENDORS</h1>
-  <p>Plataforma moderna de compras y gestión</p>
-  <button id="btn-start">Comenzar</button>
+<section id="landing">
+  <div class="card center">
+    <h1>Vendors</h1>
+    <p>Plataforma de compras con validación administrativa.</p>
+    <button id="goAuth">Entrar</button>
+  </div>
 </section>
 
 <!-- AUTH -->
-<section id="auth" class="view">
-  <h2 id="auth-title">Iniciar sesión</h2>
-  <form id="auth-form">
-    <input id="email" type="email" placeholder="Correo" required>
-    <input id="password" type="password" placeholder="Contraseña" required>
-    <button id="auth-btn">Entrar</button>
-  </form>
-  <button id="toggle-auth">Crear cuenta</button>
+<section id="auth" class="hidden">
+  <div class="card center">
+    <h2>Acceso</h2>
+    <input id="email" placeholder="Correo">
+    <input id="password" type="password" placeholder="Contraseña">
+    <button id="login">Login</button>
+    <button id="register">Registro</button>
+  </div>
 </section>
 
-<!-- SHOP -->
-<section id="shop" class="view">
-  <header>
-    <span id="user-name"></span>
-    <button id="logout-btn">Salir</button>
-  </header>
-
-  <h2>Tienda</h2>
-  <div class="grid" id="products"></div>
-
-  <h3>Mis pedidos</h3>
-  <div class="grid" id="orders"></div>
+<!-- STORE -->
+<section id="store" class="hidden">
+  <div class="container">
+    <h2>Productos</h2>
+    <div id="products" class="grid"></div>
+    <button id="logout">Cerrar sesión</button>
+  </div>
 </section>
 
 <!-- ADMIN -->
-<section id="admin" class="view">
-  <header>
+<section id="admin" class="hidden">
+  <div class="container">
     <h2>Panel Admin</h2>
-    <button id="admin-logout">Salir</button>
-  </header>
 
-  <h3>Publicar producto</h3>
-  <form id="product-form">
-    <input id="product-name" placeholder="Nombre" required>
-    <input id="product-price" type="number" placeholder="Precio" required>
-    <input id="product-image" type="file" accept="image/*" required>
-    <button>Publicar</button>
-  </form>
+    <div class="card">
+      <h3>Nuevo producto</h3>
+      <input id="pName" placeholder="Nombre">
+      <input id="pPrice" type="number" placeholder="Precio">
+      <input id="pImg" type="file">
+      <button id="addProduct">Agregar</button>
+    </div>
 
-  <h3>Pedidos</h3>
-  <div class="grid" id="admin-orders"></div>
+    <h3>Compras</h3>
+    <div id="orders"></div>
+
+    <button id="logoutAdmin">Cerrar sesión</button>
+  </div>
 </section>
 
-<script type="module">
-/* ================== IMPORTS ================== */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getFirestore, collection, addDoc, onSnapshot,
-  query, orderBy, updateDoc, doc
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import {
-  getAuth, signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  onAuthStateChanged, signOut
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-/* ================== CONFIG ================== */
-const firebaseConfig = {
-  apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
-  authDomain: "proyectovendor.firebaseapp.com",
-  projectId: "proyectovendor"
-};
-
-const CLOUD_NAME = "df79cjklp";
-const UPLOAD_PRESET = "vendors_preset";
-
-/* ================== INIT ================== */
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-let currentUser = null;
-let loginMode = true;
-let unsubProducts = null;
-let unsubOrders = null;
-
-/* ================== DOM ================== */
-const views = document.querySelectorAll(".view");
-const landing = document.getElementById("landing");
-const authView = document.getElementById("auth");
-const shop = document.getElementById("shop");
-const admin = document.getElementById("admin");
-
-/* ================== UI ================== */
-function showView(view) {
-  views.forEach(v => v.style.display = "none");
-  view.style.display = "block";
-}
-
-showView(landing);
-
-/* ================== EVENTS ================== */
-document.getElementById("btn-start").onclick = () => showView(authView);
-
-document.getElementById("toggle-auth").onclick = () => {
-  loginMode = !loginMode;
-  document.getElementById("auth-title").innerText =
-    loginMode ? "Iniciar sesión" : "Crear cuenta";
-};
-
-document.getElementById("auth-form").onsubmit = async e => {
-  e.preventDefault();
-  const email = email.value;
-  const pass = password.value;
-
-  try {
-    loginMode
-      ? await signInWithEmailAndPassword(auth, email, pass)
-      : await createUserWithEmailAndPassword(auth, email, pass);
-  } catch (err) {
-    alert(err.message);
-  }
-};
-
-document.getElementById("logout-btn").onclick =
-document.getElementById("admin-logout").onclick = () => signOut(auth);
-
-/* ================== AUTH ================== */
-onAuthStateChanged(auth, user => {
-  cleanup();
-  if (!user) return showView(landing);
-
-  currentUser = user;
-  document.getElementById("user-name").innerText = user.email;
-
-  if (user.email === "admin@vendors.com") {
-    showView(admin);
-    loadAdminOrders();
-  } else {
-    showView(shop);
-    loadProducts();
-    loadOrders();
-  }
-});
-
-/* ================== PRODUCTS ================== */
-function loadProducts() {
-  unsubProducts = onSnapshot(
-    query(collection(db, "productos"), orderBy("fecha", "desc")),
-    snap => {
-      products.innerHTML = "";
-      snap.forEach(d => {
-        const p = d.data();
-        products.innerHTML += `
-          <div class="card">
-            <img src="${p.imagen}" width="100%">
-            <h4>${p.nombre}</h4>
-            <p>$${p.precio}</p>
-            <button data-name="${p.nombre}" data-price="${p.precio}">Comprar</button>
-          </div>`;
-      });
-
-      products.querySelectorAll("button").forEach(btn =>
-        btn.onclick = () => buy(btn.dataset.name, btn.dataset.price)
-      );
-    }
-  );
-}
-
-async function buy(name, price) {
-  if (!currentUser) return;
-  await addDoc(collection(db, "orders"), {
-    user: currentUser.email,
-    product: name,
-    price,
-    status: "Pendiente",
-    fecha: Date.now()
-  });
-}
-
-/* ================== ORDERS ================== */
-function loadOrders() {
-  unsubOrders = onSnapshot(collection(db, "orders"), snap => {
-    orders.innerHTML = "";
-    snap.forEach(d => {
-      const o = d.data();
-      if (o.user === currentUser.email) {
-        orders.innerHTML += `<div class="card">${o.product} - ${o.status}</div>`;
-      }
-    });
-  });
-}
-
-/* ================== ADMIN ================== */
-document.getElementById("product-form").onsubmit = async e => {
-  e.preventDefault();
-  const file = productImage.files[0];
-  if (!file || file.size > 2_000_000) return alert("Imagen inválida");
-
-  const fd = new FormData();
-  fd.append("file", file);
-  fd.append("upload_preset", UPLOAD_PRESET);
-
-  const res = await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-    { method: "POST", body: fd }
-  );
-
-  const img = await res.json();
-
-  await addDoc(collection(db, "productos"), {
-    nombre: productName.value,
-    precio: Number(productPrice.value),
-    imagen: img.secure_url,
-    fecha: Date.now()
-  });
-
-  e.target.reset();
-};
-
-function loadAdminOrders() {
-  unsubOrders = onSnapshot(collection(db, "orders"), snap => {
-    adminOrders.innerHTML = "";
-    snap.forEach(d => {
-      const o = d.data();
-      adminOrders.innerHTML += `
-        <div class="card">
-          ${o.user} - ${o.product} (${o.status})<br>
-          <button onclick="approve('${d.id}')">Aprobar</button>
-          <button onclick="reject('${d.id}')">Rechazar</button>
-        </div>`;
-    });
-  });
-}
-
-window.approve = id => updateDoc(doc(db, "orders", id), { status: "Aprobado" });
-window.reject = id => updateDoc(doc(db, "orders", id), { status: "Rechazado" });
-
-/* ================== CLEANUP ================== */
-function cleanup() {
-  if (unsubProducts) unsubProducts();
-  if (unsubOrders) unsubOrders();
-}
-</script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
