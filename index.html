@@ -61,23 +61,30 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
-            authDomain: "proyectovendor.firebaseapp.com",
-            projectId: "proyectovendor"
-        };
-
+        // Global variables provided by environment
+        const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = "vendors-pro-system-v2";
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'vendors-pro-system-v2';
 
         let currentUser = null;
         let isRegisterMode = false;
         let activeListeners = [];
+
+        // --- AUTH INITIALIZATION ---
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                // For development fallback, but usually handled by system
+                console.log("No custom token found.");
+            }
+        };
+        initAuth();
 
         // --- NAVEGACIÓN ---
         window.navigateTo = (viewId) => {
@@ -104,7 +111,8 @@
                 if (isRegisterMode) {
                     const res = await createUserWithEmailAndPassword(auth, email, pass);
                     const role = email.includes('admin') ? 'admin' : 'applicant';
-                    await setDoc(doc(db, 'artifacts', appId, 'users', res.user.uid, 'settings', 'profile'), {
+                    // Rule 1: Correct Path
+                    await setDoc(doc(db, 'artifacts', appId, 'users', res.user.uid, 'profile'), {
                         uid: res.user.uid, name: name || email.split('@')[0], email, role, created: Date.now()
                     });
                 } else {
@@ -117,8 +125,9 @@
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const snap = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'));
-                currentUser = snap.exists() ? snap.data() : { role: 'applicant', name: user.email };
+                // Rule 1: Correct Path
+                const snap = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile'));
+                currentUser = snap.exists() ? snap.data() : { role: 'applicant', name: user.email, uid: user.uid };
                 setupUI();
                 navigateTo('app');
             } else {
@@ -155,6 +164,7 @@
 
         // --- FUNCIONES DE VISTA ---
         function renderStock(c) {
+            if (!auth.currentUser) return;
             c.innerHTML = `
                 <div class="card">
                     <h3 class="font-bold mb-4">Agregar Producto</h3>
@@ -170,11 +180,12 @@
                         <button onclick="deleteProd('${d.id}')" class="text-red-500 text-xs">Eliminar</button>
                     </div>
                 `).join('');
-            });
+            }, (err) => console.error(err));
             activeListeners.push(unsub);
         }
 
         function renderShop(c) {
+            if (!auth.currentUser) return;
             c.innerHTML = `<div id="list" class="grid grid-cols-2 gap-4"></div>`;
             const unsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'inventory'), s => {
                 document.getElementById('list').innerHTML = s.docs.map(d => {
@@ -187,15 +198,19 @@
                         </div>
                     `;
                 }).join('');
-            });
+            }, (err) => console.error(err));
             activeListeners.push(unsub);
         }
 
         function renderAdminOrders(c) {
+            if (!auth.currentUser) return;
             c.innerHTML = `<div id="list"></div>`;
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), where('status', '==', 'pending'));
+            // Note: Simplistic query as per Rule 2
+            const q = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
             activeListeners.push(onSnapshot(q, s => {
-                document.getElementById('list').innerHTML = s.docs.map(d => {
+                // Client-side filtering as per Rule 2
+                const pendingOrders = s.docs.filter(d => d.data().status === 'pending');
+                document.getElementById('list').innerHTML = pendingOrders.map(d => {
                     const o = d.data();
                     return `
                         <div class="card">
@@ -207,56 +222,67 @@
                             </div>
                         </div>
                     `;
-                }).join('');
-            }));
+                }).join('') || '<p class="text-center text-slate-500">No hay pedidos pendientes</p>';
+            }, (err) => console.error(err)));
         }
 
         function renderUserOrders(c) {
+            if (!auth.currentUser) return;
             c.innerHTML = `<div id="list"></div>`;
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), where('uid', '==', currentUser.uid));
+            const q = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
             activeListeners.push(onSnapshot(q, s => {
-                document.getElementById('list').innerHTML = s.docs.map(d => `
+                const myOrders = s.docs.filter(d => d.data().uid === auth.currentUser.uid);
+                document.getElementById('list').innerHTML = myOrders.map(d => `
                     <div class="card flex justify-between">
                         <span>${d.data().product} (x${d.data().qty})</span>
                         <span class="text-xs font-bold uppercase">${d.data().status}</span>
                     </div>
-                `).join('');
-            }));
+                `).join('') || '<p class="text-center text-slate-500">No has realizado pedidos</p>';
+            }, (err) => console.error(err)));
         }
 
         function renderHistory(c) {
+            if (!auth.currentUser) return;
             c.innerHTML = `<div id="list"></div>`;
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), orderBy('date', 'desc'));
+            const q = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
             activeListeners.push(onSnapshot(q, s => {
-                document.getElementById('list').innerHTML = s.docs.map(d => `
+                // Client side sort for rule 2 compliance
+                const sorted = [...s.docs].sort((a,b) => b.data().date - a.data().date);
+                document.getElementById('list').innerHTML = sorted.map(d => `
                     <div class="card text-xs">
                         <p><b>${d.data().product}</b> - ${d.data().status}</p>
                         <p>${d.data().userName} - ${new Date(d.data().date).toLocaleDateString()}</p>
                     </div>
                 `).join('');
-            }));
+            }, (err) => console.error(err)));
         }
 
         // --- LÓGICA DE DATOS ---
         window.addStock = async () => {
+            if (!auth.currentUser) return;
             const name = document.getElementById('p-name').value;
             const qty = parseInt(document.getElementById('p-qty').value);
             if(name && qty) await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'inventory'), { name, qty });
         };
 
-        window.deleteProd = (id) => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id));
+        window.deleteProd = (id) => {
+            if (!auth.currentUser) return;
+            deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id));
+        };
 
         window.orderItem = async (pid, name, stock) => {
+            if (!auth.currentUser) return;
             const q = prompt(`¿Cuántos ${name} necesitas? (Max: ${stock})`, "1");
             const qty = parseInt(q);
             if(!qty || qty > stock) return alert("Cantidad inválida");
             await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), {
-                pid, product: name, qty, uid: currentUser.uid, userName: currentUser.name, status: 'pending', date: Date.now()
+                pid, product: name, qty, uid: auth.currentUser.uid, userName: currentUser.name, status: 'pending', date: Date.now()
             });
             alert("Solicitud enviada");
         };
 
         window.handleOrder = async (oid, status, pid, qty) => {
+            if (!auth.currentUser) return;
             if (status === 'approved') {
                 const ref = doc(db, 'artifacts', appId, 'public', 'data', 'inventory', pid);
                 const s = await getDoc(ref);
