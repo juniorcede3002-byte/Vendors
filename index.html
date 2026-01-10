@@ -1,31 +1,191 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Subir Productos</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>Vendors Básico</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #eee;
+      text-align: center;
+      margin: 0;
+    }
+    section {
+      display: none;
+      min-height: 100vh;
+      padding: 40px;
+    }
+    section.active {
+      display: block;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      width: 240px;
+    }
+    button {
+      cursor: pointer;
+    }
+  </style>
 </head>
-<body class="bg-slate-900 text-white p-6">
+<body>
 
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl font-bold mb-8 text-center text-indigo-400">Panel de Productos</h1>
+<!-- LANDING -->
+<section id="landing" class="active">
+  <h1>VENDORS</h1>
+  <p>Sistema básico</p>
+  <button onclick="show('auth')">Entrar</button>
+</section>
 
-        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-12 shadow-xl">
-            <h2 class="text-lg font-semibold mb-4 text-slate-300 uppercase tracking-wider">Añadir Nuevo Producto</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input id="p-name" type="text" placeholder="Nombre del producto" class="bg-slate-900 border-slate-700 text-white p-3 rounded-lg outline-none focus:border-indigo-500 border">
-                <input id="p-price" type="number" placeholder="Precio ($)" class="bg-slate-900 border-slate-700 text-white p-3 rounded-lg outline-none focus:border-indigo-500 border">
-                <input id="p-file" type="file" accept="image/*" class="md:col-span-2 text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer">
-                <button id="btn-save" class="md:col-span-2 bg-indigo-600 hover:bg-indigo-500 p-3 rounded-lg font-bold transition-all">PUBLICAR PRODUCTO</button>
-            </div>
-        </div>
+<!-- AUTH -->
+<section id="auth">
+  <h2>Login / Registro</h2>
+  <input id="email" type="email" placeholder="Correo"><br>
+  <input id="password" type="password" placeholder="Contraseña"><br>
+  <input id="name" type="text" placeholder="Nombre (solo registro)"><br>
+  <button onclick="login()">Login</button>
+  <button onclick="register()">Register</button>
+</section>
 
-        <h2 class="text-xl font-bold mb-6 border-b border-slate-700 pb-2">Productos en Tienda</h2>
-        <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            </div>
-    </div>
+<!-- USER -->
+<section id="user">
+  <h2>Usuario</h2>
+  <p>Subir imagen a Cloudinary</p>
+  <input type="file" id="file">
+  <button onclick="uploadImage()">Subir</button>
+  <p id="imgResult"></p>
+  <br>
+  <button onclick="logout()">Salir</button>
+</section>
 
-    <script type="module" src="app.js"></script>
+<!-- ADMIN -->
+<section id="admin">
+  <h2>Admin</h2>
+  <p>Vista administrador</p>
+  <button onclick="logout()">Salir</button>
+</section>
+
+<!-- FIREBASE + APP -->
+<script type="module">
+/* =======================
+   FIREBASE IMPORTS
+======================= */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut
+} from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+/* =======================
+   🔥 PEGA AQUÍ TU FIREBASE CONFIG
+======================= */
+const firebaseConfig = {
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_AUTH_DOMAIN",
+  projectId: "TU_PROJECT_ID"
+};
+
+/* =======================
+   INIT
+======================= */
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+/* =======================
+   UI HELPERS
+======================= */
+window.show = (id) => {
+  document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+};
+
+/* =======================
+   AUTH
+======================= */
+window.login = async () => {
+  await signInWithEmailAndPassword(
+    auth,
+    email.value,
+    password.value
+  );
+};
+
+window.register = async () => {
+  const cred = await createUserWithEmailAndPassword(
+    auth,
+    email.value,
+    password.value
+  );
+
+  await setDoc(doc(db, "users", cred.user.uid), {
+    email: email.value,
+    name: name.value,
+    role: "user"
+  });
+};
+
+window.logout = async () => {
+  await signOut(auth);
+};
+
+/* =======================
+   AUTH STATE
+======================= */
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    show("landing");
+    return;
+  }
+
+  const ref = doc(db, "users", user.uid);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    show("user");
+    return;
+  }
+
+  const role = snap.data().role;
+  show(role === "admin" ? "admin" : "user");
+});
+
+/* =======================
+   CLOUDINARY UPLOAD
+======================= */
+window.uploadImage = async () => {
+  const file = document.getElementById("file").files[0];
+  if (!file) return alert("Selecciona una imagen");
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  /* 🔴 PEGA AQUÍ TUS DATOS CLOUDINARY */
+  formData.append("upload_preset", "TU_UPLOAD_PRESET");
+
+  const res = await fetch(
+    "https://api.cloudinary.com/v1_1/TU_CLOUD_NAME/image/upload",
+    {
+      method: "POST",
+      body: formData
+    }
+  );
+
+  const data = await res.json();
+  imgResult.innerHTML = `<img src="${data.secure_url}" width="200">`;
+};
+</script>
+
 </body>
 </html>
