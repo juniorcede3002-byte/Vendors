@@ -1,53 +1,59 @@
 :root {
-    --primary: #2563eb;
-    --danger: #ef4444;
-    --success: #22c55e;
-    --warning: #f59e0b;
-    --bg: #f1f5f9;
-    --white: #ffffff;
+    --primary: #2563eb; --success: #22c55e; --danger: #ef4444; --warning: #f59e0b;
+    --dark: #1e293b; --light: #f1f5f9; --white: #ffffff;
 }
 
-* { box-sizing: border-box; }
-body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; }
+* { box-sizing: border-box; transition: 0.2s ease; }
+body { font-family: 'Inter', sans-serif; background: var(--light); margin: 0; color: var(--dark); }
 
-.navbar { background: var(--white); padding: 1rem; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #e2e8f0; }
+/* Navbar */
+.navbar { background: var(--white); padding: 1rem; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid #ddd; }
 .nav-content { max-width: 1200px; margin: auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-.nav-actions { display: flex; align-items: center; gap: 15px; }
+.nav-actions { display: flex; gap: 10px; align-items: center; }
 
-/* Botón Carrito */
-.btn-cart { background: none; border: 1px solid #ddd; padding: 10px; border-radius: 8px; position: relative; cursor: pointer; font-size: 1.2rem; }
-#cart-count { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 50%; }
+/* Grid */
+.container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
 
-/* Grid y Cards */
-.container { max-width: 1200px; margin: 1.5rem auto; padding: 0 1rem; }
-.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; }
-.product-card { background: var(--white); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-
-.media-container { height: 180px; background: #eee; }
-.media-container img, .media-container video { width: 100%; height: 100%; object-fit: cover; }
-
-.card-body { padding: 1rem; }
-.btn-add-cart { width: 100%; background: var(--primary); color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; margin-top: 10px; }
+/* Cards */
+.product-card { background: var(--white); border-radius: 15px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); cursor: pointer; }
+.product-card:hover { transform: translateY(-5px); }
+.media-box { height: 200px; background: #eee; position: relative; }
+.media-box img, .media-box video { width: 100%; height: 100%; object-fit: cover; }
+.card-info { padding: 1.2rem; }
+.price-tag { color: var(--primary); font-weight: 800; font-size: 1.2rem; display: block; }
 
 /* Modales */
-.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; padding: 20px; overflow-y: auto; }
-.modal-content { background: var(--white); margin: 5% auto; padding: 2rem; border-radius: 15px; width: 100%; max-width: 500px; position: relative; }
-.close-modal { position: absolute; right: 20px; top: 10px; font-size: 25px; cursor: pointer; }
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; padding: 15px; overflow-y: auto; align-items: center; justify-content: center; }
+.modal-content { background: var(--white); padding: 2rem; border-radius: 20px; width: 100%; max-width: 500px; position: relative; margin: auto; }
+.modal-content.wide { max-width: 800px; }
+.close-modal { position: absolute; right: 20px; top: 15px; font-size: 28px; cursor: pointer; color: #999; }
 
-/* Carrito Items */
-.cart-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
-.btn-remove { color: var(--danger); border: none; background: none; cursor: pointer; }
+/* Detail Layout */
+.detail-layout { display: flex; flex-direction: column; gap: 20px; max-width: 900px; }
+#detail-media-box img, #detail-media-box video { width: 100%; border-radius: 12px; max-height: 450px; object-fit: contain; background: #000; }
+.price-big { font-size: 2.5rem; font-weight: 800; color: var(--primary); display: block; margin: 15px 0; }
 
-/* Estados de Pedido */
-.status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; }
-.status-pendiente { background: #fef3c7; color: #92400e; }
-.status-aprobado { background: #dcfce7; color: #166534; }
-.status-rechazado { background: #fee2e2; color: #991b1b; }
+/* Carrito y Pedidos */
+.cart-item, .order-card { background: #f8fafc; padding: 1rem; border-radius: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; }
+.status-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+.status-pendiente { background: var(--warning); color: white; }
+.status-aprobado { background: var(--success); color: white; }
+.status-rechazado { background: var(--danger); color: white; }
 
-.order-card { background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+/* Botones */
+button { border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+.btn-primary { background: var(--primary); color: white; padding: 10px 15px; }
+.btn-secondary { background: #e2e8f0; color: var(--dark); padding: 10px 15px; }
+.btn-submit { background: var(--primary); color: white; width: 100%; padding: 12px; margin-top: 10px; }
+.btn-buy { background: var(--success); color: white; width: 100%; padding: 15px; font-size: 1.1rem; }
+.btn-danger-sm { background: var(--danger); color: white; padding: 5px 10px; font-size: 0.8rem; }
+.btn-approve { background: var(--success); color: white; padding: 8px; margin-right: 5px; }
+.btn-reject { background: var(--danger); color: white; padding: 8px; }
 
-/* Responsivo */
-@media (max-width: 600px) {
-    .nav-content { justify-content: center; }
-    .modal-content { margin: 10% auto; padding: 1rem; }
+/* Mobile */
+@media (min-width: 768px) {
+    .detail-layout { flex-direction: row; }
+    #detail-media-box { flex: 1.5; }
+    .detail-text { flex: 1; }
 }
