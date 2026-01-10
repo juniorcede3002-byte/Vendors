@@ -2,106 +2,28 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>V-Shop | Selector de Roles</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subir Productos</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="custom-scroll">
+<body class="bg-slate-900 text-white p-6">
 
-    <section id="view-auth" class="view-section active flex items-center justify-center p-4">
-        <div class="glass p-8 w-full max-w-md rounded-3xl text-center">
-            <h1 class="text-3xl font-black mb-8 tracking-tighter text-white">V-SHOP</h1>
-            <p class="text-slate-400 mb-6 text-sm">Selecciona un perfil para ingresar:</p>
-            <div class="grid grid-cols-2 gap-4">
-                <button onclick="enterAs('admin')" class="flex flex-col items-center gap-3 p-6 rounded-2xl bg-orange-500/10 border border-orange-500/30 hover:bg-orange-500/20 transition-all">
-                    <i data-lucide="shield-check" class="text-orange-500 w-10 h-10"></i>
-                    <span class="font-bold text-orange-500">ADMIN</span>
-                </button>
-                <button onclick="enterAs('user')" class="flex flex-col items-center gap-3 p-6 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500/20 transition-all">
-                    <i data-lucide="user" class="text-indigo-500 w-10 h-10"></i>
-                    <span class="font-bold text-indigo-500">USUARIO</span>
-                </button>
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8 text-center text-indigo-400">Panel de Productos</h1>
+
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-12 shadow-xl">
+            <h2 class="text-lg font-semibold mb-4 text-slate-300 uppercase tracking-wider">Añadir Nuevo Producto</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input id="p-name" type="text" placeholder="Nombre del producto" class="bg-slate-900 border-slate-700 text-white p-3 rounded-lg outline-none focus:border-indigo-500 border">
+                <input id="p-price" type="number" placeholder="Precio ($)" class="bg-slate-900 border-slate-700 text-white p-3 rounded-lg outline-none focus:border-indigo-500 border">
+                <input id="p-file" type="file" accept="image/*" class="md:col-span-2 text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer">
+                <button id="btn-save" class="md:col-span-2 bg-indigo-600 hover:bg-indigo-500 p-3 rounded-lg font-bold transition-all">PUBLICAR PRODUCTO</button>
             </div>
         </div>
-    </section>
 
-    <section id="view-app" class="view-section">
-        <header class="glass sticky top-0 z-50 px-6 py-4 flex justify-between items-center border-b border-white/5">
-            <div class="flex items-center gap-8">
-                <h2 class="text-2xl font-black text-white tracking-tighter">V-SHOP</h2>
-                <nav id="nav-links" class="flex gap-6 text-[10px] font-black uppercase tracking-widest">
-                    <button id="btn-nav-shop" onclick="showSection('shop')" class="text-slate-400 hover:text-white">Tienda</button>
-                    <button id="btn-nav-orders" onclick="showSection('orders')" class="text-slate-400 hover:text-white">Mis Compras</button>
-                    <button id="nav-admin" class="hidden text-orange-500 font-black" onclick="showSection('admin')">Panel Control</button>
-                </nav>
+        <h2 class="text-xl font-bold mb-6 border-b border-slate-700 pb-2">Productos en Tienda</h2>
+        <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             </div>
-            <div class="flex items-center gap-4">
-                <div class="text-right">
-                    <p id="display-name" class="text-sm font-bold text-white uppercase">Invitado</p>
-                    <span id="display-role" class="text-[9px] font-black uppercase tracking-widest opacity-60">Rol</span>
-                </div>
-                <button onclick="location.reload()" class="bg-slate-800 p-2 rounded-xl text-red-400 hover:bg-red-500 hover:text-white transition-all">
-                    <i data-lucide="log-out" class="w-4 h-4"></i>
-                </button>
-            </div>
-        </header>
-
-        <main class="max-w-7xl mx-auto p-6">
-            <div id="section-shop" class="space-y-6">
-                <h3 class="text-3xl font-black text-white">Catálogo de Artículos</h3>
-                <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
-            </div>
-
-            <div id="section-orders" class="hidden space-y-6">
-                <h3 class="text-2xl font-bold">Estado de mis Pedidos</h3>
-                <div id="my-orders-list" class="grid gap-3"></div>
-            </div>
-
-            <div id="section-admin" class="hidden space-y-8">
-                <div class="grid lg:grid-cols-3 gap-8">
-                    <div class="glass p-6 rounded-2xl border-t-4 border-orange-500">
-                        <h4 class="text-orange-500 font-black text-xs uppercase mb-4 tracking-tighter">Subir Nuevo Artículo</h4>
-                        <div class="space-y-4">
-                            <input id="p-name" placeholder="Nombre del artículo">
-                            <input id="p-price" type="number" placeholder="Precio ($)">
-                            <div class="relative">
-                                <label class="text-[10px] text-slate-500 uppercase font-bold mb-1 block">Imagen del Producto</label>
-                                <input id="p-file" type="file" accept="image/*" class="text-xs bg-black/20">
-                            </div>
-                            <button id="btn-save-product" class="w-full bg-orange-600 hover:bg-orange-500 py-3 rounded-xl font-bold transition-all shadow-lg shadow-orange-900/20">
-                                PUBLICAR EN TIENDA
-                            </button>
-                        </div>
-                    </div>
-                    <div class="lg:col-span-2 glass p-6 rounded-2xl border-t-4 border-indigo-500">
-                        <h4 class="text-indigo-400 font-black text-xs uppercase mb-4 tracking-tighter">Solicitudes de Compra Pendientes</h4>
-                        <div id="admin-orders-list" class="space-y-4"></div>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </section>
-
-    <div id="modal-pay" class="fixed inset-0 bg-black/90 hidden z-[100] items-center justify-center p-4">
-        <div class="glass p-8 w-full max-w-md rounded-3xl border border-white/10">
-            <h3 class="text-xl font-bold mb-1 text-white">Procesar Compra</h3>
-            <p id="pay-info" class="text-indigo-400 text-sm font-bold mb-6"></p>
-            <div class="space-y-4">
-                <select id="pay-method">
-                    <option value="pago_movil">Pago Móvil</option>
-                    <option value="transferencia">Transferencia Bancaria</option>
-                    <option value="zelle">Zelle / PayPal</option>
-                </select>
-                <div>
-                    <label class="text-[10px] text-slate-500 uppercase font-bold mb-1 block">Foto del Comprobante de Pago</label>
-                    <input id="pay-file" type="file" accept="image/*">
-                </div>
-                <button id="btn-submit-order" class="w-full bg-indigo-600 py-3 rounded-xl font-bold">ENVIAR PAGO</button>
-                <button onclick="closeModal()" class="w-full text-slate-500 text-xs py-2">Cancelar</button>
-            </div>
-        </div>
     </div>
 
     <script type="module" src="app.js"></script>
