@@ -2,59 +2,102 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Vendor Shop</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vendor Shop | Emanuel Cedeño</title>
   <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
 <section id="landing" class="view">
-  <h1>Vendor Shop</h1>
-  <p>Plataforma moderna para compras inteligentes</p>
-  <button onclick="showView('auth')">Comenzar</button>
+  <div class="hero">
+    <h1>V<span>ENDOR</span> SHOP</h1>
+    <p>Plataforma moderna para compras inteligentes y gestión de suministros.</p>
+    <button class="btn-main" onclick="showView('auth')">Comenzar ahora <i class="fas fa-arrow-right"></i></button>
+  </div>
 </section>
 
 <section id="auth" class="view">
-  <h2 id="auth-title">Iniciar Sesión</h2>
-  <form id="auth-form">
-    <input id="email" type="email" placeholder="Correo" required>
-    <input id="password" type="password" placeholder="Contraseña" required>
-    <button type="submit">Entrar</button>
-  </form>
-  <button class="link" onclick="toggleAuth()">Crear cuenta</button>
+  <div class="auth-card">
+    <h2 id="auth-title">Iniciar Sesión</h2>
+    <form id="auth-form">
+      <div class="input-group">
+        <label>Correo Electrónico</label>
+        <input id="email" type="email" placeholder="ejemplo@correo.com" required>
+      </div>
+      <div class="input-group">
+        <label>Contraseña</label>
+        <input id="password" type="password" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn-primary">Entrar</button>
+    </form>
+    <button class="link" onclick="toggleAuth()">¿No tienes cuenta? Crear una</button>
+  </div>
 </section>
 
 <section id="shop" class="view">
-  <header>
-    <span>Usuario: <b id="user-name"></b></span>
-    <button onclick="logout()">Salir</button>
+  <header class="app-header">
+    <div class="user-pill">
+      <i class="fas fa-user-circle"></i> <span id="user-name"></span>
+    </div>
+    <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Salir</button>
   </header>
 
-  <h2>Tienda</h2>
+  <div class="container">
+    <h2>Catálogo de Productos</h2>
+    
+    <div class="filters">
+      <select id="filter-cat">
+        <option value="all">Todas las categorías</option>
+        <option value="tech">Tecnología</option>
+        <option value="ropa">Ropa</option>
+        <option value="oficina">Oficina</option>
+      </select>
 
-  <div class="filters">
-    <select id="filter-cat">
-      <option value="all">Todas</option>
-      <option value="tech">Tecnología</option>
-      <option value="ropa">Ropa</option>
-    </select>
+      <select id="filter-price">
+        <option value="all">Todos los precios</option>
+        <option value="low">Menos de $50</option>
+        <option value="high">Más de $50</option>
+      </select>
+    </div>
 
-    <select id="filter-price">
-      <option value="all">Todos</option>
-      <option value="low">Menos $50</option>
-      <option value="high">Más $50</option>
-    </select>
+    <div id="products" class="grid"></div>
+
+    <h2 class="section-title">Mis Pedidos</h2>
+    <div id="orders" class="orders-container"></div>
   </div>
-
-  <div id="products"></div>
-
-  <h3>Mis pedidos</h3>
-  <div id="orders"></div>
 </section>
 
 <section id="admin" class="view">
-  <h2>Panel Administrativo</h2>
-  <button onclick="logout()">Cerrar sesión</button>
-  <div id="admin-orders"></div>
+  <header class="app-header">
+    <div class="user-pill">
+      <i class="fas fa-user-shield"></i> <span>Administrador</span>
+    </div>
+    <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Salir</button>
+  </header>
+
+  <div class="container">
+    <h2>Panel Administrativo</h2>
+    
+    <div class="admin-card">
+      <h3>Subir Nuevo Producto</h3>
+      <form id="product-form">
+        <input type="file" id="product-image" accept="image/*" required>
+        <input type="text" id="product-name" placeholder="Nombre del producto" required>
+        <input type="number" id="product-price" placeholder="Precio ($)" step="0.01" required>
+        <select id="product-cat">
+          <option value="tech">Tecnología</option>
+          <option value="ropa">Ropa</option>
+          <option value="oficina">Oficina</option>
+        </select>
+        <button type="submit" id="btn-upload">Publicar Producto</button>
+      </form>
+    </div>
+
+    <h3 class="section-title">Gestión de Pedidos</h3>
+    <div id="admin-orders" class="grid"></div>
+  </div>
 </section>
 
 <script type="module" src="main.js"></script>
