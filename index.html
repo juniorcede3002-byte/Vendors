@@ -2,176 +2,53 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Vendors Pro | Esencial</title>
+    <title>Vendors Pro | Sistema de Suministros</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background-color: #0f172a; color: white; font-family: system-ui, sans-serif; }
-        .view-section { display: none; padding: 20px; min-height: 100vh; }
-        .view-section.active { display: block; }
-        .card { background: #1e293b; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #334155; }
-        input { background: #0f172a; border: 1px solid #334155; padding: 10px; border-radius: 6px; color: white; width: 100%; margin-bottom: 10px; outline: none; }
-        button { padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-blue { background: #38bdf8; color: #0f172a; }
-        .btn-red { background: #ef4444; color: white; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- AUTH -->
-    <section id="view-auth" class="view-section active flex flex-col items-center justify-center">
-        <div class="card w-full max-w-sm">
-            <h1 class="text-xl font-bold mb-4 text-center text-sky-400">Acceso Vendors</h1>
+    <section id="view-auth" class="view-section active">
+        <div class="auth-card">
+            <h1>Vendors System</h1>
+            <p>Inicia sesión para gestionar suministros</p>
+            
             <input id="auth-email" type="email" placeholder="Correo electrónico">
             <input id="auth-pass" type="password" placeholder="Contraseña">
+            
             <div id="reg-fields" class="hidden">
                 <input id="auth-name" type="text" placeholder="Nombre completo">
             </div>
-            <button onclick="handleAuth()" id="btn-action" class="btn-blue w-full">Entrar</button>
-            <p onclick="toggleAuth()" id="toggle-text" class="text-[10px] text-center text-sky-400 mt-4 cursor-pointer">¿Nuevo usuario? Regístrate aquí</p>
+
+            <button id="btn-auth-action" class="btn-primary">Entrar</button>
+            <p id="toggle-auth" class="link-text">¿No tienes cuenta? Regístrate</p>
         </div>
     </section>
 
-    <!-- APP -->
     <section id="view-app" class="view-section">
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h2 id="u-name" class="font-bold text-lg">...</h2>
-                <span id="u-role" class="text-[9px] uppercase bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded font-black tracking-widest">...</span>
+        <header>
+            <div class="user-info">
+                <h2 id="display-name">Usuario</h2>
+                <span id="display-role" class="badge">Rol</span>
             </div>
-            <button onclick="logout()" class="btn-red text-[10px] px-3">SALIR</button>
-        </div>
+            <button id="btn-logout" class="btn-danger">Cerrar Sesión</button>
+        </header>
 
-        <div id="admin-panel" class="hidden mb-6">
-            <div class="card border-sky-500/30">
-                <h3 class="text-xs font-bold mb-3 uppercase text-sky-400">Añadir Suministro</h3>
-                <div class="grid grid-cols-2 gap-2">
-                    <input id="p-name" placeholder="Producto">
-                    <input id="p-stock" type="number" placeholder="Stock">
-                </div>
-                <input id="p-file" type="file" class="text-[10px]">
-                <button onclick="saveProduct()" id="btn-save" class="btn-blue w-full text-xs mt-1">GUARDAR EN INVENTARIO</button>
+        <div id="admin-panel" class="hidden">
+            <div class="card">
+                <h3>Añadir Producto</h3>
+                <input id="p-name" type="text" placeholder="Nombre del producto">
+                <input id="p-stock" type="number" placeholder="Cantidad inicial">
+                <input id="p-file" type="file">
+                <button id="btn-save-product" class="btn-success">Guardar Producto</button>
             </div>
         </div>
 
-        <div id="content-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+        <h3>Inventario / Catálogo</h3>
+        <div id="product-list" class="grid-container">
+            </div>
     </section>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
-
-        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/demo/image/upload";
-        const CLOUDINARY_PRESET = "ml_default";
-        
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'vendors-essential';
-
-        let isReg = false;
-        let uData = null;
-
-        // AUTH LOGIC
-        window.toggleAuth = () => {
-            isReg = !isReg;
-            document.getElementById('reg-fields').classList.toggle('hidden', !isReg);
-            document.getElementById('btn-action').innerText = isReg ? 'Registrarse' : 'Entrar';
-        };
-
-        window.handleAuth = async () => {
-            const email = document.getElementById('auth-email').value;
-            const pass = document.getElementById('auth-pass').value;
-            if(!email || !pass) return alert("Faltan datos");
-
-            try {
-                if(isReg) {
-                    const res = await createUserWithEmailAndPassword(auth, email, pass);
-                    const role = email.includes('admin') ? 'admin' : 'user';
-                    uData = { uid: res.user.uid, name: document.getElementById('auth-name').value || email, role };
-                    await setDoc(doc(db, 'artifacts', appId, 'users', res.user.uid, 'profile', 'data'), uData);
-                } else {
-                    await signInWithEmailAndPassword(auth, email, pass);
-                }
-            } catch (e) { alert(e.message); }
-        };
-
-        window.logout = () => signOut(auth);
-
-        onAuthStateChanged(auth, async (user) => {
-            if(user) {
-                const s = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'data'));
-                uData = s.exists() ? s.data() : { name: user.email, role: 'user' };
-                document.getElementById('view-auth').classList.remove('active');
-                document.getElementById('view-app').classList.add('active');
-                document.getElementById('u-name').innerText = uData.name;
-                document.getElementById('u-role').innerText = uData.role;
-                if(uData.role === 'admin') document.getElementById('admin-panel').classList.remove('hidden');
-                initList();
-            } else {
-                document.getElementById('view-app').classList.remove('active');
-                document.getElementById('view-auth').classList.add('active');
-            }
-        });
-
-        // DATA LOGIC
-        async function upImg(f) {
-            if(!f) return "";
-            const fd = new FormData();
-            fd.append('file', f); fd.append('upload_preset', CLOUDINARY_PRESET);
-            const r = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
-            const d = await r.json();
-            return d.secure_url;
-        }
-
-        window.saveProduct = async () => {
-            const n = document.getElementById('p-name').value;
-            const s = parseInt(document.getElementById('p-stock').value);
-            const f = document.getElementById('p-file').files[0];
-            const b = document.getElementById('btn-save');
-
-            if(!n || isNaN(s)) return;
-            b.disabled = true; b.innerText = "PROCESANDO...";
-            const img = await upImg(f);
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'products'), { name: n, stock: s, img });
-            b.disabled = false; b.innerText = "GUARDAR EN INVENTARIO";
-            document.getElementById('p-name').value = ""; document.getElementById('p-stock').value = "";
-        };
-
-        function initList() {
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'products'), (sn) => {
-                document.getElementById('content-list').innerHTML = sn.docs.map(d => {
-                    const p = d.data();
-                    return `
-                        <div class="card flex items-center gap-3 py-2">
-                            <img src="${p.img || 'https://via.placeholder.com/40'}" class="w-10 h-10 object-cover rounded bg-slate-700">
-                            <div class="flex-grow">
-                                <p class="text-sm font-bold">${p.name}</p>
-                                <p class="text-[10px] text-slate-400">STOCK: ${p.stock}</p>
-                            </div>
-                            ${uData.role === 'admin' 
-                                ? `<button onclick="del('${d.id}')" class="text-red-400 text-[10px] font-bold">X</button>` 
-                                : `<button onclick="req('${d.id}','${p.name}',${p.stock})" class="btn-blue text-[10px] py-1">PEDIR</button>`}
-                        </div>
-                    `;
-                }).join('');
-            });
-        }
-
-        window.del = (id) => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', id));
-        
-        window.req = async (id, n, s) => {
-            const q = prompt(`¿Cantidad de ${n}?`, "1");
-            if(q && parseInt(q) <= s) {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), {
-                    name: n, qty: parseInt(q), uId: auth.currentUser.uid, uName: uData.name, status: 'pending'
-                });
-                alert("Enviado");
-            } else alert("Stock insuficiente o inválido");
-        };
-
-    </script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
