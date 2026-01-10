@@ -1,81 +1,77 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendors | Emanuel Cedeño</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VENDORS</title>
 
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
-<section id="landing-page" class="view-section">
-    <nav class="landing-nav">
+<!-- 1️⃣ LANDING PAGE -->
+<section id="landing" class="view">
+    <nav class="nav">
         <h1 class="logo">V<span>ENDORS</span></h1>
-        <button class="btn-login-small" onclick="showView('auth-screen')">Entrar</button>
+        <button onclick="showView('auth')">Ingresar</button>
     </nav>
 
     <header class="hero">
-        <div class="hero-text">
-            <h1>Tu tienda de <span>confianza</span></h1>
-            <p>Compra y gestiona suministros corporativos.</p>
-            <button class="btn-primary-full" onclick="showView('auth-screen')">
-                Ir a Comprar <i class="fas fa-shopping-cart"></i>
-            </button>
-        </div>
-        <div class="hero-visual">
-            <img src="https://images.unsplash.com/photo-1556740734-79386822538b?q=80&w=1000&auto=format&fit=crop">
+        <div>
+            <h2>Plataforma de Compras Inteligente</h2>
+            <p>
+                Vendors es una plataforma moderna para gestionar y comprar
+                suministros corporativos, electrónicos y de oficina de forma
+                rápida y segura.
+            </p>
+            <button class="btn" onclick="showView('auth')">Comenzar</button>
         </div>
     </header>
 </section>
 
-<section id="auth-screen" class="view-section auth-overlay" style="display:none;">
-    <div class="auth-card">
-        <h2 id="auth-title">Ingresar</h2>
+<!-- 2️⃣ AUTH -->
+<section id="auth" class="view auth" style="display:none">
+    <div class="auth-box">
+        <h2 id="auth-title">Iniciar Sesión</h2>
+
         <form id="auth-form">
-            <input type="email" id="auth-email" placeholder="Correo" required>
-            <input type="password" id="auth-pass" placeholder="Contraseña" required>
-            <button class="btn-primary-full">Continuar</button>
+            <input type="email" id="email" placeholder="Correo" required>
+            <input type="password" id="password" placeholder="Contraseña" required>
+            <button class="btn">Continuar</button>
         </form>
-        <p class="auth-toggle">
-            ¿No tienes cuenta? <a href="#" onclick="toggleAuthMode()">Regístrate aquí</a>
+
+        <p>
+            <a href="#" onclick="toggleAuth()">Cambiar a Registro</a>
         </p>
     </div>
 </section>
 
-<section id="app-screen" class="view-section" style="display:none;">
-    <nav class="app-nav-container">
+<!-- 3️⃣ TIENDA -->
+<section id="shop" class="view" style="display:none">
+    <nav class="nav">
         <h1 class="logo">V<span>ENDORS</span></h1>
-        <div class="app-actions">
-            <span class="user-pill"><i class="fas fa-user"></i> <span id="display-name"></span></span>
-            <button class="admin-only" onclick="showModal('modal-add')">+ Producto</button>
-            <button onclick="logout()"><i class="fas fa-power-off"></i></button>
-        </div>
+        <span id="user-name"></span>
+        <button onclick="logout()">Salir</button>
     </nav>
 
-    <main>
-        <div id="product-grid" class="product-grid"></div>
-    </main>
-</section>
+    <!-- OPCIONES -->
+    <div class="filters">
+        <select id="filter-cat">
+            <option value="all">Todas</option>
+            <option value="electronica">Electrónica</option>
+            <option value="oficina">Oficina</option>
+        </select>
 
-<div id="modal-add" class="modal-overlay">
-    <div class="modal-card">
-        <span class="close" onclick="closeModal('modal-add')">&times;</span>
-        <h2>Nuevo Producto</h2>
-        <form id="add-product-form">
-            <input type="file" id="item-file" required>
-            <input type="text" id="item-name" placeholder="Nombre" required>
-            <input type="number" id="item-price" placeholder="Precio" required>
-            <select id="item-cat">
-                <option value="electronica">Electrónica</option>
-                <option value="oficina">Oficina</option>
-            </select>
-            <button id="btn-upload-item" class="btn-primary-full">Publicar</button>
-        </form>
+        <select id="filter-price">
+            <option value="all">Precio</option>
+            <option value="low">Menor a $50</option>
+            <option value="high">Mayor a $50</option>
+        </select>
     </div>
-</div>
+
+    <div id="products" class="grid"></div>
+</section>
 
 <script type="module" src="main.js"></script>
 </body>
