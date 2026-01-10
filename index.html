@@ -3,25 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendors Pro | Gestión de Suministros</title>
+    <title>Vendors Pro | Sistema de Gestión</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
+<body class="auth-active">
 
-    <div id="auth-screen" class="full-screen">
+    <div id="auth-screen" class="auth-overlay">
         <div class="auth-card">
             <h1 class="logo-big">V<span>ENDORS</span></h1>
-            <p>Bienvenido. Selecciona tu perfil para continuar:</p>
+            <p>Selecciona tu perfil para ingresar:</p>
             <div class="auth-options">
                 <button class="auth-btn admin-type" onclick="selectRole('admin')">
-                    <i class="fas fa-user-shield"></i>
-                    <span>Administrador</span>
+                    <i class="fas fa-user-shield"></i> <span>Administrador</span>
                 </button>
                 <button class="auth-btn user-type" onclick="selectRole('user')">
-                    <i class="fas fa-user-tag"></i>
-                    <span>Solicitante</span>
+                    <i class="fas fa-user-tag"></i> <span>Solicitante</span>
                 </button>
             </div>
         </div>
@@ -31,115 +29,105 @@
         <nav class="glass-nav">
             <div class="nav-container">
                 <h1 class="logo">V<span>ENDORS</span></h1>
-                
                 <div class="search-wrapper">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="main-search" placeholder="Buscar suministros...">
+                    <input type="text" id="main-search" placeholder="Buscar en el inventario...">
                 </div>
-
                 <div class="nav-actions">
-                    <button id="view-my-orders" class="user-only icon-text-btn">
-                        <i class="fas fa-clipboard-check"></i> <span>Mis Pedidos</span>
+                    <button id="view-my-orders" class="user-only btn-icon" title="Mis Solicitudes">
+                        <i class="fas fa-box"></i>
                     </button>
-                    <button id="cart-btn" class="user-only cart-trigger">
+                    <button id="cart-btn" class="user-only btn-icon cart-rel">
                         <i class="fas fa-shopping-bag"></i>
                         <span id="cart-badge">0</span>
                     </button>
-
-                    <button id="admin-orders-btn" class="admin-only btn-secondary">
-                        <i class="fas fa-tasks"></i> <span>Gestión</span>
-                    </button>
-                    <button id="open-add-modal" class="admin-only btn-primary">
-                        <i class="fas fa-plus"></i> <span>Añadir</span>
-                    </button>
-
+                    <button id="admin-orders-btn" class="admin-only btn-primary">Gestión de Pedidos</button>
+                    <button id="open-add-modal" class="admin-only btn-primary"><i class="fas fa-plus"></i></button>
                     <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
             </div>
         </nav>
 
-        <header class="filter-bar">
+        <div class="filter-bar">
             <div class="filter-container">
                 <button class="chip active" data-cat="todos">Todos</button>
                 <button class="chip" data-cat="electronica">Electrónica</button>
                 <button class="chip" data-cat="oficina">Oficina</button>
                 <button class="chip" data-cat="muebles">Muebles</button>
             </div>
-        </header>
+        </div>
 
-        <main class="content-body">
+        <main class="content-wrapper">
             <div id="product-grid" class="modern-grid"></div>
         </main>
     </div>
 
-    <div id="modal-detail" class="modal">
-        <div class="modal-card detail-view">
-            <span class="close" onclick="closeModal('modal-detail')">&times;</span>
-            <div class="detail-container">
-                <div id="detail-media-container"></div>
-                <div class="detail-content">
-                    <span id="det-cat" class="cat-label">Categoría</span>
-                    <h2 id="det-title">Título del producto</h2>
-                    <p id="det-desc">Descripción larga...</p>
-                    <div class="det-footer">
+    <div id="modal-detail" class="modal-overlay">
+        <div class="modal-card detail-card">
+            <span class="close-btn" onclick="closeModal('modal-detail')">&times;</span>
+            <div class="detail-layout">
+                <div id="detail-media-container" class="media-preview"></div>
+                <div class="detail-info">
+                    <span id="det-cat" class="badge">Categoría</span>
+                    <h2 id="det-title">Cargando...</h2>
+                    <p id="det-desc">Descripción...</p>
+                    <div class="price-row">
                         <span id="det-price" class="price-hero">$0.00</span>
-                        <button id="add-to-cart-btn" class="btn-primary user-only">Añadir a la bolsa</button>
+                        <button id="add-to-cart-btn" class="btn-primary user-only">Añadir al Carrito</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="modal-cart" class="modal">
-        <div class="modal-card side-drawer">
-            <span class="close" onclick="closeModal('modal-cart')">&times;</span>
+    <div id="modal-cart" class="modal-overlay">
+        <div class="modal-card sidebar-modal">
+            <span class="close-btn" onclick="closeModal('modal-cart')">&times;</span>
             <h2>Tu Bolsa</h2>
-            <div id="cart-list" class="scroll-list"></div>
-            <div class="cart-total-box">
+            <div id="cart-list" class="scroll-area"></div>
+            <div class="cart-footer">
                 <div class="total-row"><span>Total:</span> <span id="cart-sum">$0.00</span></div>
                 <button onclick="openCheckout()" class="btn-primary w-100">Confirmar Pedido</button>
             </div>
         </div>
     </div>
 
-    <div id="modal-checkout" class="modal">
-        <div class="modal-card">
-            <h2>Datos de Entrega</h2>
-            <form id="checkout-form">
-                <label>Ubicación Detallada</label>
-                <textarea id="ship-address" placeholder="Ej: Oficina 302, Edificio Central..." required></textarea>
-                <button type="submit" class="btn-primary w-100">Finalizar Compra</button>
-            </form>
-            <button class="btn-ghost w-100" onclick="closeModal('modal-checkout')">Cancelar</button>
-        </div>
-    </div>
-
-    <div id="modal-orders" class="modal">
+    <div id="modal-orders" class="modal-overlay">
         <div class="modal-card wide">
-            <span class="close" onclick="closeModal('modal-orders')">&times;</span>
-            <h2 id="orders-title-text">Registros de Pedidos</h2>
-            <div id="orders-list" class="scroll-list"></div>
+            <span class="close-btn" onclick="closeModal('modal-orders')">&times;</span>
+            <h2 id="orders-title-text">Gestión de Solicitudes</h2>
+            <div id="orders-list" class="scroll-area"></div>
         </div>
     </div>
 
-    <div id="modal-add" class="modal">
+    <div id="modal-checkout" class="modal-overlay">
         <div class="modal-card">
-            <span class="close" onclick="closeModal('modal-add')">&times;</span>
+            <h2>Finalizar Pedido</h2>
+            <form id="checkout-form">
+                <label>Ubicación de entrega:</label>
+                <textarea id="ship-address" placeholder="Ej: Oficina 204, Planta Alta" required></textarea>
+                <button type="submit" class="btn-primary w-100">Enviar Solicitud</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-add" class="modal-overlay">
+        <div class="modal-card">
+            <span class="close-btn" onclick="closeModal('modal-add')">&times;</span>
             <h2>Nuevo Suministro</h2>
             <form id="add-product-form">
-                <div class="file-input-wrapper">
+                <div class="input-group">
+                    <label>Imagen o Video</label>
                     <input type="file" id="p-file" accept="image/*,video/*" required>
-                    <div class="file-dummy"><i class="fas fa-cloud-upload-alt"></i> Subir Multimedia</div>
                 </div>
-                <input type="text" id="p-name" placeholder="Nombre del producto" required>
+                <input type="text" id="p-name" placeholder="Nombre del artículo" required>
                 <select id="p-cat">
                     <option value="electronica">Electrónica</option>
                     <option value="oficina">Oficina</option>
                     <option value="muebles">Muebles</option>
-                    <option value="otros">Otros</option>
                 </select>
-                <textarea id="p-desc" placeholder="Descripción técnica..."></textarea>
-                <input type="number" id="p-price" step="0.01" placeholder="Precio ($)" required>
+                <textarea id="p-desc" placeholder="Descripción detallada"></textarea>
+                <input type="number" id="p-price" step="0.01" placeholder="Precio Unitario" required>
                 <button type="submit" id="btn-publish" class="btn-primary w-100">Publicar en Stock</button>
             </form>
         </div>
