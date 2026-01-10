@@ -2,221 +2,216 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Vendors Pro</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vendor System</title>
 
-<!-- Tailwind -->
-<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
-<!-- jsPDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
+<style>
+body { font-family: Arial; background:#f4f4f4; margin:0; }
+.hidden { display:none }
+.container { padding:20px }
+.card { background:#fff; padding:15px; margin:10px 0; border-radius:8px }
+button { padding:8px 12px; cursor:pointer }
+input, select { width:100%; padding:8px; margin:5px 0 }
+nav { background:#111; color:#fff; padding:10px }
+</style>
 </head>
-<body class="bg-slate-950 text-white p-6">
+
+<body>
+
+<nav>
+  <span id="userEmail"></span>
+  <button onclick="logout()">Salir</button>
+</nav>
 
 <!-- LOGIN -->
-<section id="login">
-  <h1 class="text-3xl font-bold mb-4">Login</h1>
-  <input id="email" class="p-2 text-black" placeholder="Email"><br><br>
-  <input id="password" type="password" class="p-2 text-black" placeholder="Password"><br><br>
-  <button onclick="login()" class="bg-sky-500 px-4 py-2">Entrar</button>
-</section>
-
-<!-- APP -->
-<section id="app" class="hidden">
-
-<h1 class="text-3xl font-bold mb-4">Vendors Pro</h1>
-
-<p id="roleTag" class="mb-4 text-sky-400"></p>
-
-<!-- ADMIN PANEL -->
-<div id="adminPanel" class="hidden border p-4 mb-6">
-  <h2 class="text-xl font-bold mb-2">Admin - Subir Producto</h2>
-  <input id="pname" placeholder="Nombre" class="p-2 text-black"><br><br>
-  <input id="pprice" placeholder="Precio" type="number" class="p-2 text-black"><br><br>
-  <input id="pstock" placeholder="Stock" type="number" class="p-2 text-black"><br><br>
-  <input type="file" id="pimg"><br><br>
-  <button onclick="addProduct()" class="bg-green-500 px-4 py-2">Guardar</button>
+<div id="auth" class="container">
+  <h2>Login / Registro</h2>
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Contraseña">
+  <button onclick="login()">Login</button>
+  <button onclick="register()">Registrar</button>
 </div>
 
-<!-- DASHBOARD -->
-<div id="dashboard" class="border p-4 mb-6">
-  <h2 class="text-xl font-bold">Dashboard</h2>
-  <p>Total Ventas: <span id="totalSales">$0</span></p>
+<!-- ADMIN -->
+<div id="admin" class="container hidden">
+  <h2>Panel Admin</h2>
+
+  <div class="card">
+    <h3>Agregar producto</h3>
+    <input id="pname" placeholder="Nombre">
+    <input id="pprice" type="number" placeholder="Precio">
+    <input type="file" id="pimage">
+    <button onclick="addProduct()">Subir</button>
+  </div>
+
+  <h3>Productos</h3>
+  <div id="adminProducts"></div>
 </div>
 
-<!-- PRODUCTOS -->
-<h2 class="text-xl font-bold mb-2">Productos</h2>
-<div id="products" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+<!-- USER -->
+<div id="user" class="container hidden">
+  <h2>Tienda</h2>
+  <div id="products"></div>
 
-<!-- CARRITO -->
-<h2 class="text-xl font-bold mt-6">Carrito</h2>
-<div id="cart"></div>
+  <h3>Carrito</h3>
+  <div id="cart"></div>
 
-<select id="paymentMethod" class="text-black mt-2">
-  <option value="yappy">Yappy</option>
-  <option value="ach">ACH</option>
-  <option value="efectivo">Efectivo</option>
-</select><br><br>
+  <select id="payment">
+    <option value="yappy">Yappy</option>
+    <option value="ach">ACH</option>
+    <option value="cash">Efectivo</option>
+  </select>
 
-<button onclick="checkout()" class="bg-yellow-500 px-4 py-2">Enviar Pedido</button>
+  <button onclick="checkout()">Finalizar compra</button>
+</div>
 
-</section>
-
-<script type="module">
-/* ================= FIREBASE ================= */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
-
-/* CONFIG */
-const firebaseConfig = {
+<script>
+// 🔥 FIREBASE
+firebase.initializeApp({
   apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
   authDomain: "proyectovendor.firebaseapp.com",
-  projectId: "proyectovendor",
-  storageBucket: "proyectovendor.firebasestorage.app",
-  messagingSenderId: "1038115164902",
-  appId: "1:1038115164902:web:3d72bd44f3e5da487c2127"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-/* ================= CLOUDINARY ================= */
-async function uploadImage(file){
-  const data=new FormData();
-  data.append("file",file);
-  data.append("upload_preset","vendors_preset");
-
-  const res=await fetch("https://api.cloudinary.com/v1_1/ml_default/image/upload",{
-    method:"POST",
-    body:data
-  });
-  return (await res.json()).secure_url;
-}
-
-/* ================= AUTH ================= */
-let currentUser=null;
-let cart=[];
-
-window.login=async()=>{
-  await signInWithEmailAndPassword(auth,email.value,password.value);
-};
-
-onAuthStateChanged(auth, async user=>{
-  if(!user) return;
-  currentUser=user;
-  login.classList.add("hidden");
-  app.classList.remove("hidden");
-
-  const uref=doc(db,"users",user.uid);
-  const usnap=await getDoc(uref);
-
-  let role="user";
-  if(usnap.exists()) role=usnap.data().role;
-
-  roleTag.innerText="Rol: "+role;
-
-  if(role==="admin") adminPanel.classList.remove("hidden");
-
-  loadProducts();
-  loadDashboard();
+  projectId: "proyectovendor"
 });
 
-/* ================= PRODUCTS ================= */
-async function loadProducts(){
-  onSnapshot(collection(db,"products"), snap=>{
-    products.innerHTML="";
-    snap.forEach(d=>{
-      const p=d.data();
-      products.innerHTML+=`
-      <div class="border p-4">
-        <img src="${p.image}" class="h-32 w-full object-cover">
-        <h3>${p.name}</h3>
-        <p>$${p.price}</p>
-        <button onclick='addToCart("${d.id}","${p.name}",${p.price})'
-        class="bg-sky-500 px-2 py-1">🛒</button>
-      </div>`;
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let currentUser = null;
+let cart = [];
+
+// AUTH
+function login(){
+  auth.signInWithEmailAndPassword(
+    email.value, password.value
+  );
+}
+
+function register(){
+  auth.createUserWithEmailAndPassword(
+    email.value, password.value
+  ).then(cred=>{
+    db.collection("users").doc(cred.user.uid).set({
+      email: cred.user.email,
+      role: "user",
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
   });
 }
 
-window.addToCart=(id,name,price)=>{
-  const f=cart.find(i=>i.id===id);
-  if(f) f.qty++;
-  else cart.push({id,name,price,qty:1});
+function logout(){ auth.signOut(); }
+
+// STATE
+auth.onAuthStateChanged(async user=>{
+  if(!user){
+    authDiv(true); return;
+  }
+
+  currentUser = user;
+  userEmail.innerText = user.email;
+
+  const doc = await db.collection("users").doc(user.uid).get();
+  const role = doc.data().role;
+
+  authDiv(false);
+
+  role === "admin" ? showAdmin() : showUser();
+});
+
+function authDiv(show){
+  auth.classList.toggle("hidden", !show);
+  admin.classList.add("hidden");
+  user.classList.add("hidden");
+}
+
+function showAdmin(){
+  admin.classList.remove("hidden");
+  loadAdminProducts();
+}
+
+function showUser(){
+  user.classList.remove("hidden");
+  loadProducts();
+}
+
+// ADMIN
+async function addProduct(){
+  const file = pimage.files[0];
+  const form = new FormData();
+  form.append("file", file);
+  form.append("upload_preset", "vendors_preset");
+
+  const res = await fetch(
+    "https://api.cloudinary.com/v1_1/demo/image/upload",
+    { method:"POST", body:form }
+  );
+  const data = await res.json();
+
+  await db.collection("products").add({
+    name: pname.value,
+    price: Number(pprice.value),
+    image: data.secure_url,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+async function loadAdminProducts(){
+  const snap = await db.collection("products").get();
+  adminProducts.innerHTML = "";
+  snap.forEach(d=>{
+    adminProducts.innerHTML += `
+      <div class="card">${d.data().name} - $${d.data().price}</div>
+    `;
+  });
+}
+
+// USER
+async function loadProducts(){
+  const snap = await db.collection("products").get();
+  products.innerHTML = "";
+  snap.forEach(d=>{
+    const p = d.data();
+    products.innerHTML += `
+      <div class="card">
+        <img src="${p.image}" width="100"><br>
+        ${p.name} - $${p.price}
+        <button onclick="addCart('${d.id}',${p.price})">Agregar</button>
+      </div>
+    `;
+  });
+}
+
+function addCart(id, price){
+  cart.push({id, price});
   renderCart();
-};
+}
 
 function renderCart(){
-  cart.innerHTML="";
-  document.getElementById("cart").innerHTML=cart.map(p=>
-    `${p.name} x${p.qty} = $${p.qty*p.price}<br>`
-  ).join("");
+  cartDiv = document.getElementById("cart");
+  cartDiv.innerHTML = cart.map(c=>`$${c.price}`).join("<br>");
 }
 
-/* ================= ADMIN ================= */
-window.addProduct=async()=>{
-  const img=await uploadImage(pimg.files[0]);
-  await addDoc(collection(db,"products"),{
-    name:pname.value,
-    price:+pprice.value,
-    stock:+pstock.value,
-    image:img,
-    createdAt:Date.now()
-  });
-  alert("Producto agregado");
-};
+async function checkout(){
+  if(cart.length === 0) return alert("Carrito vacío");
 
-/* ================= CHECKOUT ================= */
-window.checkout=async()=>{
-  const total=cart.reduce((s,p)=>s+p.price*p.qty,0);
-  const method=paymentMethod.value;
+  const total = cart.reduce((a,b)=>a+b.price,0);
 
-  const order=await addDoc(collection(db,"orders"),{
-    userId:currentUser.uid,
-    items:cart,
+  await db.collection("orders").add({
+    userId: currentUser.uid,
+    items: cart,
     total,
-    paymentMethod:method,
-    yappyPhone:"63892022",
-    yappyName:"Emanuel Cedeño",
-    status:"pending_payment",
-    createdAt:Date.now()
+    payment: payment.value,
+    status: "pending",
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 
-  generateInvoice({items:cart,total});
-  cart=[];
+  alert("Pedido creado. Pagar por Yappy: 6389-2022 (Emanuel Cedeño)");
+  cart = [];
   renderCart();
-  alert("Pedido enviado");
-};
-
-/* ================= PDF ================= */
-function generateInvoice(order){
-  const {jsPDF}=window.jspdf;
-  const pdf=new jsPDF();
-  pdf.text("FACTURA - Vendors Pro",20,20);
-  let y=40;
-  order.items.forEach(p=>{
-    pdf.text(`${p.name} x${p.qty} - $${p.price*p.qty}`,20,y);
-    y+=10;
-  });
-  pdf.text("TOTAL: $"+order.total,20,y+10);
-  pdf.save("factura.pdf");
 }
-
-/* ================= DASHBOARD ================= */
-function loadDashboard(){
-  onSnapshot(collection(db,"orders"), snap=>{
-    let total=0;
-    snap.forEach(d=>{
-      const o=d.data();
-      if(o.status==="paid") total+=o.total;
-    });
-    totalSales.innerText="$"+total;
-  });
-}
-
 </script>
+
 </body>
 </html>
