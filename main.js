@@ -9,20 +9,25 @@ import {
   onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-/* 🔥 FIREBASE CONFIG */
-const app = initializeApp({
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_AUTH_DOMAIN",
-  projectId: "TU_PROJECT_ID"
-});
+/* 🔥 FIREBASE */
+const firebaseConfig = {
+  apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
+  authDomain: "proyectovendor.firebaseapp.com",
+  projectId: "proyectovendor"
+};
 
+const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+
+/* ☁️ CLOUDINARY */
+const CLOUD_NAME = "df79cjklp";
+const UPLOAD_PRESET = "vendors_preset";
 
 let loginMode = true;
 let currentUser = null;
 
-/* 👁️ VIEWS */
+/* 👁️ VISTAS */
 window.showView = (id) => {
   document.querySelectorAll(".view").forEach(v => v.style.display = "none");
   document.getElementById(id).style.display = "block";
@@ -39,8 +44,8 @@ window.toggleAuth = () => {
 
 document.getElementById("auth-form").onsubmit = async (e) => {
   e.preventDefault();
-  const email = document.getElementById("email").value;
-  const pass = document.getElementById("password").value;
+  const email = emailInput.value;
+  const pass = passwordInput.value;
 
   try {
     if (loginMode) {
@@ -54,10 +59,7 @@ document.getElementById("auth-form").onsubmit = async (e) => {
 };
 
 onAuthStateChanged(auth, user => {
-  if (!user) {
-    showView("landing");
-    return;
-  }
+  if (!user) return showView("landing");
 
   currentUser = user;
   document.getElementById("user-name").innerText = user.email;
@@ -74,16 +76,58 @@ onAuthStateChanged(auth, user => {
 
 window.logout = () => signOut(auth);
 
-/* 🛍️ PRODUCTS */
-function loadProducts() {
-  const ref = query(collection(db, "productos"), orderBy("precio"));
+/* 🧑‍💼 ADMIN – SUBIR PRODUCTO */
+const productForm = document.getElementById("product-form");
+if (productForm) {
+  productForm.onsubmit = async (e) => {
+    e.preventDefault();
 
+    const file = document.getElementById("product-image").files[0];
+    const name = document.getElementById("product-name").value;
+    const price = parseFloat(document.getElementById("product-price").value);
+
+    if (!file) return alert("Selecciona una imagen");
+
+    try {
+      /* ☁️ SUBIR A CLOUDINARY */
+      const data = new FormData();
+      data.append("file", file);
+      data.append("upload_preset", UPLOAD_PRESET);
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        { method: "POST", body: data }
+      );
+
+      const img = await res.json();
+
+      /* 🔥 GUARDAR EN FIRESTORE */
+      await addDoc(collection(db, "productos"), {
+        nombre: name,
+        precio: price,
+        imagen: img.secure_url,
+        fecha: Date.now()
+      });
+
+      alert("Producto publicado");
+      productForm.reset();
+
+    } catch {
+      alert("Error subiendo imagen");
+    }
+  };
+}
+
+/* 🛍️ PRODUCTOS */
+function loadProducts() {
+  const ref = query(collection(db, "productos"), orderBy("fecha", "desc"));
   onSnapshot(ref, snap => {
-    document.getElementById("products").innerHTML = "";
+    products.innerHTML = "";
     snap.forEach(d => {
       const p = d.data();
-      document.getElementById("products").innerHTML += `
+      products.innerHTML += `
         <div class="card">
+          <img src="${p.imagen}">
           <h4>${p.nombre}</h4>
           <p>$${p.precio}</p>
           <button onclick="buy('${p.nombre}', ${p.precio})">Comprar</button>
@@ -99,22 +143,19 @@ window.buy = async (product, price) => {
     product,
     price,
     status: "Pendiente",
-    date: Date.now()
+    fecha: Date.now()
   });
 };
 
-/* 📦 USER ORDERS */
+/* 📦 PEDIDOS */
 function loadOrders() {
   onSnapshot(collection(db, "orders"), snap => {
-    document.getElementById("orders").innerHTML = "";
+    orders.innerHTML = "";
     snap.forEach(d => {
       const o = d.data();
       if (o.user === currentUser.email) {
-        document.getElementById("orders").innerHTML += `
-          <div class="card">
-            ${o.product}<br>
-            Estado: <b>${o.status}</b>
-          </div>
+        orders.innerHTML += `
+          <div class="card">${o.product} - ${o.status}</div>
         `;
       }
     });
@@ -124,14 +165,12 @@ function loadOrders() {
 /* 👑 ADMIN */
 function loadAdminOrders() {
   onSnapshot(collection(db, "orders"), snap => {
-    document.getElementById("admin-orders").innerHTML = "";
+    adminOrders.innerHTML = "";
     snap.forEach(d => {
       const o = d.data();
-      document.getElementById("admin-orders").innerHTML += `
+      adminOrders.innerHTML += `
         <div class="card">
-          <b>${o.user}</b><br>
-          ${o.product} - $${o.price}<br>
-          Estado: ${o.status}<br><br>
+          ${o.user} – ${o.product}<br>
           <button onclick="updateStatus('${d.id}','Aprobado')">Aprobar</button>
           <button onclick="updateStatus('${d.id}','Rechazado')">Rechazar</button>
         </div>
@@ -140,6 +179,5 @@ function loadAdminOrders() {
   });
 }
 
-window.updateStatus = async (id, status) => {
-  await updateDoc(doc(db, "orders", id), { status });
-};
+window.updateStatus = async (id, status) =>
+  updateDoc(doc(db, "orders", id), { status });
