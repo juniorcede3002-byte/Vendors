@@ -12,13 +12,14 @@
         .hidden { display: none !important; }
         .card { background: #1e293b; border: 1px solid #334155; padding: 20px; border-radius: 12px; margin-bottom: 16px; }
         .grid-products { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; outline: none; }
-        input:focus { border-color: #38bdf8; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; outline: none; }
+        input:focus, select:focus { border-color: #38bdf8; }
         button { padding: 10px 20px; border-radius: 8px; border: none; background: #38bdf8; color: #000; font-weight: bold; cursor: pointer; transition: all 0.2s; }
         button:hover { background: #7dd3fc; transform: translateY(-1px); }
         button:active { transform: translateY(0); }
         button.secondary { background: #475569; color: white; }
         button.danger { background: #ef4444; color: white; }
+        button.success { background: #22c55e; color: white; }
         
         /* Sidebar Admin */
         .sidebar { width: 260px; background: #1e293b; border-right: 1px solid #334155; height: 100vh; position: fixed; left: 0; top: 0; padding: 20px; }
@@ -29,8 +30,12 @@
 
         /* Status colors */
         .status-pendiente { color: #fbbf24; }
-        .status-aprobado { color: #34d399; }
+        .status-pago_confirmado { color: #38bdf8; font-weight: bold; }
+        .status-recibido { color: #22c55e; font-weight: bold; }
         .status-rechazado { color: #f87171; }
+
+        /* Modal simple */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
     </style>
 </head>
 <body>
@@ -67,6 +72,10 @@
                 <p id="user-welcome" class="text-slate-400"></p>
             </div>
             <div class="flex gap-4">
+                <button onclick="toggleCart()" class="secondary relative">
+                    <i class="fas fa-shopping-cart"></i> Carrito
+                    <span id="cart-count" class="absolute -top-2 -right-2 bg-sky-500 text-xs px-2 rounded-full">0</span>
+                </button>
                 <button onclick="showMyOrders()" class="secondary">Mis Pedidos</button>
                 <button id="logout" class="danger">Salir</button>
             </div>
@@ -74,6 +83,35 @@
         <div id="products-list" class="grid-products"></div>
     </div>
 </section>
+
+<!-- MODAL CARRITO / PAGO -->
+<div id="cart-modal" class="modal-overlay hidden">
+    <div class="card w-full max-w-lg overflow-y-auto max-h-[90vh]">
+        <h2 class="text-2xl font-bold mb-4">Tu Pedido</h2>
+        <div id="cart-items" class="space-y-3 mb-6"></div>
+        
+        <div class="border-t border-slate-700 pt-4 mt-4">
+            <h3 class="font-bold mb-2">Información de Pago</h3>
+            <select id="payment-method" onchange="updatePaymentInfo()">
+                <option value="efectivo">Efectivo</option>
+                <option value="yappy">Yappy (+507 6389-2022)</option>
+                <option value="transferencia">Transferencia Bancaria</option>
+            </select>
+            <div id="payment-details" class="text-sm bg-slate-900 p-3 rounded mt-2 text-sky-300">
+                Selecciona un método para ver los detalles.
+            </div>
+            <textarea id="order-notes" placeholder="Notas adicionales (ej: dirección de entrega, quién recibe)..." class="mt-4 h-24"></textarea>
+            
+            <div class="flex justify-between items-center mt-6">
+                <span class="text-xl font-bold">Total: $<span id="cart-total">0</span></span>
+                <div class="flex gap-2">
+                    <button onclick="toggleCart()" class="secondary">Cerrar</button>
+                    <button id="confirm-order-btn" class="success">Confirmar y Pagar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- ADMIN (VISTA PANEL DESGLOSADO) -->
 <section id="admin" class="hidden">
@@ -92,9 +130,6 @@
             <div class="nav-item" onclick="switchAdminTab('users', this)">
                 <i class="fas fa-users"></i> Usuarios
             </div>
-            <div class="nav-item" onclick="switchAdminTab('history', this)">
-                <i class="fas fa-history"></i> Historial
-            </div>
         </nav>
         <div class="absolute bottom-10 left-0 w-full px-6">
             <button id="logoutAdmin" class="danger w-full">Cerrar Sesión</button>
@@ -105,9 +140,7 @@
         <!-- Tab Dashboard -->
         <div id="tab-dashboard" class="admin-tab">
             <h2 class="text-3xl font-bold mb-8">Resumen General</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="stats-container">
-                <!-- Estadísticas dinámicas -->
-            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="stats-container"></div>
         </div>
 
         <!-- Tab Inventario -->
@@ -116,44 +149,25 @@
                 <h2 class="text-3xl font-bold">Gestión de Inventario</h2>
                 <button onclick="document.getElementById('form-add-p').classList.toggle('hidden')">+ Nuevo Item</button>
             </div>
-            
             <div id="form-add-p" class="card hidden mb-8">
-                <h3 class="text-xl font-bold mb-4 text-sky-400">Agregar Suministro</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input id="pName" placeholder="Nombre del suministro">
-                    <input id="pPrice" type="number" placeholder="Precio ($)">
-                    <input id="pImg" type="file" accept="image/*" class="text-sm">
-                </div>
-                <button id="addProduct" class="mt-4">Guardar en Base de Datos</button>
+                <input id="pName" placeholder="Nombre del suministro">
+                <input id="pPrice" type="number" placeholder="Precio ($)">
+                <input id="pImg" type="file" accept="image/*">
+                <button id="addProduct" class="mt-4 w-full">Guardar Suministro</button>
             </div>
-
-            <div id="admin-inventory-list" class="space-y-2">
-                <!-- Lista de productos en formato simple -->
-            </div>
+            <div id="admin-inventory-list" class="space-y-2"></div>
         </div>
 
         <!-- Tab Solicitudes -->
         <div id="tab-orders" class="admin-tab hidden">
-            <h2 class="text-3xl font-bold mb-8">Pedidos Pendientes</h2>
-            <div id="admin-orders-list" class="space-y-4">
-                <!-- Lista de órdenes pendientes -->
-            </div>
+            <h2 class="text-3xl font-bold mb-8">Gestión de Pedidos</h2>
+            <div id="admin-orders-list" class="space-y-4"></div>
         </div>
 
         <!-- Tab Usuarios -->
         <div id="tab-users" class="admin-tab hidden">
-            <h2 class="text-3xl font-bold mb-8">Usuarios Registrados</h2>
-            <div id="admin-users-list" class="bg-slate-800 rounded-xl overflow-hidden">
-                <!-- Tabla de usuarios -->
-            </div>
-        </div>
-
-        <!-- Tab Historial -->
-        <div id="tab-history" class="admin-tab hidden">
-            <h2 class="text-3xl font-bold mb-8">Historial de Operaciones</h2>
-            <div id="admin-history-list" class="space-y-2 text-sm">
-                <!-- Historial de ventas terminadas -->
-            </div>
+            <h2 class="text-3xl font-bold mb-8">Usuarios</h2>
+            <div id="admin-users-list" class="bg-slate-800 rounded-xl overflow-hidden"></div>
         </div>
     </div>
 </section>
@@ -177,6 +191,7 @@
     const UPLOAD_PRESET = "vendors_preset";
 
     const $ = id => document.getElementById(id);
+    let cart = [];
 
     // NAVEGACIÓN
     const show = id => {
@@ -206,203 +221,193 @@
     $("logout").onclick = () => signOut(auth);
     $("logoutAdmin").onclick = () => signOut(auth);
 
+    // CARRITO Y PAGO
+    window.toggleCart = () => $("cart-modal").classList.toggle("hidden");
+
+    window.updatePaymentInfo = () => {
+        const method = $("payment-method").value;
+        const info = $("payment-details");
+        if(method === 'yappy') info.innerText = "Yappy: +507 6389-2022 (A nombre de Vendors Pro)";
+        else if(method === 'transferencia') info.innerText = "Banco General: Cuenta Corriente 00-00-00-00 (Próximamente)";
+        else info.innerText = "Pago contra entrega.";
+    };
+
+    window.addToCart = (p) => {
+        cart.push(p);
+        updateCartUI();
+    };
+
+    function updateCartUI() {
+        $("cart-count").innerText = cart.length;
+        const itemsDiv = $("cart-items");
+        itemsDiv.innerHTML = "";
+        let total = 0;
+        cart.forEach((item, index) => {
+            total += item.price;
+            const div = document.createElement("div");
+            div.className = "flex justify-between items-center bg-slate-800 p-2 rounded";
+            div.innerHTML = `<span>${item.name}</span> <span>$${item.price} <button onclick="removeFromCart(${index})" class="text-red-400 ml-2">x</button></span>`;
+            itemsDiv.appendChild(div);
+        });
+        $("cart-total").innerText = total;
+    }
+
+    window.removeFromCart = (index) => {
+        cart.splice(index, 1);
+        updateCartUI();
+    };
+
+    $("confirm-order-btn").onclick = async () => {
+        if(cart.length === 0) return alert("Tu carrito está vacío.");
+        const method = $("payment-method").value;
+        const notes = $("order-notes").value;
+        
+        try {
+            await addDoc(collection(db, "orders"), {
+                user: auth.currentUser.email,
+                uid: auth.currentUser.uid,
+                products: cart,
+                total: $("cart-total").innerText,
+                paymentMethod: method,
+                notes: notes,
+                status: "pendiente", // pendiente -> pago_confirmado -> recibido
+                date: Date.now()
+            });
+            alert("Pedido confirmado. Por favor procede con el pago si elegiste Yappy o Transferencia.");
+            cart = [];
+            updateCartUI();
+            toggleCart();
+        } catch(e) { alert(e.message); }
+    };
+
     // CLIENTE: CARGAR PRODUCTOS
     async function loadStoreProducts() {
-        const list = $("products-list");
-        list.innerHTML = `<p class="col-span-full text-center">Cargando suministros...</p>`;
-        
         onSnapshot(collection(db, "products"), snap => {
+            const list = $("products-list");
             list.innerHTML = "";
             snap.forEach(d => {
                 const p = d.data();
                 const div = document.createElement("div");
                 div.className = "card flex flex-col";
                 div.innerHTML = `
-                    <img src="${p.img || 'https://via.placeholder.com/150'}" class="h-40 object-cover mb-4">
+                    <img src="${p.img || 'https://via.placeholder.com/150'}" class="h-40 object-cover mb-4 rounded-lg">
                     <h3 class="text-xl font-bold text-sky-400">${p.name}</h3>
-                    <p class="text-slate-400 flex-1 mt-2">Precio: $${p.price}</p>
-                    <button class="mt-4 w-full" data-id="${d.id}">Solicitar Pedido</button>
+                    <p class="text-slate-400 mt-2 flex-1">Suministro verificado. Precio: $${p.price}</p>
+                    <button class="mt-4 w-full" onclick='addToCart(${JSON.stringify(p)})'>Añadir al Carrito</button>
                 `;
-                div.querySelector("button").onclick = () => createOrder(p);
                 list.appendChild(div);
             });
         });
     }
 
-    async function createOrder(p) {
-        if(!confirm(`¿Deseas solicitar ${p.name}?`)) return;
-        try {
-            await addDoc(collection(db, "orders"), {
-                user: auth.currentUser.email,
-                uid: auth.currentUser.uid,
-                product: p.name,
-                price: p.price,
-                status: "pendiente",
-                date: Date.now()
-            });
-            alert("Solicitud enviada al administrador.");
-        } catch(e) { alert("Error: " + e.message); }
+    window.showMyOrders = async () => {
+        const q = query(collection(db, "orders"), where("uid", "==", auth.currentUser.uid));
+        const snap = await getDocs(q);
+        let content = "TUS PEDIDOS:\n\n";
+        snap.forEach(d => {
+            const o = d.data();
+            content += `- Orden #${d.id.slice(0,5)}: ${o.status.toUpperCase()} ($${o.total})\n`;
+            if(o.status === "pago_confirmado") {
+                content += "  [ACCION: Confirma recepción abajo]\n";
+            }
+        });
+        // Para simplificar, mostramos la lista en un modal o dashboard de órdenes
+        renderOrdersList(snap, true);
+    };
+
+    function renderOrdersList(snap, isClient) {
+        // Esta función se usa para pintar las órdenes tanto para admin como para user
+        const target = isClient ? $("cart-items") : $("admin-orders-list");
+        if(isClient) toggleCart(); // Reutilizamos el modal para el cliente
+        
+        target.innerHTML = isClient ? "<h3 class='font-bold mb-4'>Historial de Pedidos</h3>" : "";
+        
+        snap.forEach(d => {
+            const o = d.data();
+            const div = document.createElement("div");
+            div.className = "card bg-slate-800/50 flex flex-col gap-2";
+            let actions = "";
+            
+            if(!isClient) {
+                if(o.status === 'pendiente') actions = `<button onclick="updateStatus('${d.id}', 'pago_confirmado')" class="success">Confirmar Pago</button> <button onclick="updateStatus('${d.id}', 'rechazado')" class="danger">Rechazar</button>`;
+            } else {
+                if(o.status === 'pago_confirmado') actions = `<button onclick="updateStatus('${d.id}', 'recibido')" class="success w-full">He recibido la mercancía</button>`;
+            }
+
+            div.innerHTML = `
+                <div class="flex justify-between border-b border-slate-700 pb-2">
+                    <span class="text-xs text-slate-500">ID: ${d.id.slice(0,8)}</span>
+                    <span class="status-${o.status} uppercase text-xs font-bold">${o.status.replace('_',' ')}</span>
+                </div>
+                <p><strong>Total:</strong> $${o.total} (${o.paymentMethod})</p>
+                <p class="text-xs text-slate-400">${o.user}</p>
+                <div class="mt-2 space-y-2">${actions}</div>
+            `;
+            target.appendChild(div);
+        });
     }
 
-    // ADMIN: GESTIÓN INVENTARIO
+    // ADMIN: ÓRDENES
+    function loadAdminOrders() {
+        onSnapshot(query(collection(db, "orders"), orderBy("date", "desc")), snap => {
+            renderOrdersList(snap, false);
+        });
+    }
+
+    // ADMIN: OTROS
+    async function loadStats() {
+        const prodSnap = await getDocs(collection(db, "products"));
+        const orderSnap = await getDocs(collection(db, "orders"));
+        const userSnap = await getDocs(collection(db, "users_data"));
+        $("stats-container").innerHTML = `
+            <div class="card border-l-4 border-sky-400"><h3>Suministros</h3><p class="text-4xl font-bold">${prodSnap.size}</p></div>
+            <div class="card border-l-4 border-amber-400"><h3>Pedidos</h3><p class="text-4xl font-bold">${orderSnap.size}</p></div>
+            <div class="card border-l-4 border-emerald-400"><h3>Usuarios</h3><p class="text-4xl font-bold">${userSnap.size}</p></div>
+        `;
+    }
+
+    // CRUD PRODUCTOS
     $("addProduct").onclick = async () => {
         const file = $("pImg").files[0];
-        const name = $("pName").value;
-        const price = $("pPrice").value;
-
-        if (!file || !name || !price) return alert("Completa todos los campos");
-
-        $("addProduct").disabled = true;
-        $("addProduct").innerText = "Subiendo...";
-
-        try {
-            const form = new FormData();
-            form.append("file", file);
-            form.append("upload_preset", UPLOAD_PRESET);
-
-            const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: "POST", body: form });
-            const data = await res.json();
-
-            await addDoc(collection(db, "products"), {
-                name,
-                price: Number(price),
-                img: data.secure_url,
-                date: Date.now()
-            });
-
-            alert("Producto guardado");
-            $("pName").value = ""; $("pPrice").value = ""; $("pImg").value = "";
-            $("form-add-p").classList.add('hidden');
-        } catch(e) { alert("Error: " + e.message); }
-        $("addProduct").disabled = false;
-        $("addProduct").innerText = "Guardar en Base de Datos";
+        if (!file) return alert("Imagen requerida");
+        const form = new FormData();
+        form.append("file", file);
+        form.append("upload_preset", UPLOAD_PRESET);
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: "POST", body: form });
+        const data = await res.json();
+        await addDoc(collection(db, "products"), { name: $("pName").value, price: Number($("pPrice").value), img: data.secure_url, date: Date.now() });
+        alert("Agregado");
     };
 
     function loadAdminInventory() {
-        onSnapshot(query(collection(db, "products"), orderBy("date", "desc")), snap => {
+        onSnapshot(collection(db, "products"), snap => {
             const list = $("admin-inventory-list");
             list.innerHTML = "";
             snap.forEach(d => {
                 const p = d.data();
                 const div = document.createElement("div");
-                div.className = "flex items-center justify-between p-4 bg-slate-800 rounded-lg border border-slate-700";
-                div.innerHTML = `
-                    <div class="flex items-center gap-4">
-                        <img src="${p.img}" class="w-12 h-12 object-cover rounded">
-                        <div>
-                            <p class="font-bold">${p.name}</p>
-                            <p class="text-xs text-slate-400">$${p.price}</p>
-                        </div>
-                    </div>
-                    <button class="danger" onclick="deleteItem('products', '${d.id}')">Eliminar</button>
-                `;
+                div.className = "flex items-center justify-between p-3 bg-slate-800 rounded border border-slate-700";
+                div.innerHTML = `<span>${p.name} - $${p.price}</span> <button class="danger p-1 text-xs" onclick="deleteItem('products', '${d.id}')">X</button>`;
                 list.appendChild(div);
             });
         });
     }
 
-    // ADMIN: ÓRDENES Y DASHBOARD
-    function loadAdminOrders() {
-        onSnapshot(collection(db, "orders"), snap => {
-            const ordersDiv = $("admin-orders-list");
-            const historyDiv = $("admin-history-list");
-            ordersDiv.innerHTML = "";
-            historyDiv.innerHTML = "";
-
-            snap.forEach(d => {
-                const o = d.data();
-                const div = document.createElement("div");
-                
-                if(o.status === "pendiente") {
-                    div.className = "card flex justify-between items-center";
-                    div.innerHTML = `
-                        <div>
-                            <p class="font-bold text-sky-400">${o.product}</p>
-                            <p class="text-xs text-slate-400">Solicitado por: ${o.user}</p>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="updateStatus('${d.id}', 'aprobado')">Aprobar</button>
-                            <button class="danger" onclick="updateStatus('${d.id}', 'rechazado')">Rechazar</button>
-                        </div>
-                    `;
-                    ordersDiv.appendChild(div);
-                } else {
-                    const row = document.createElement("div");
-                    row.className = "p-3 bg-slate-800/50 rounded flex justify-between";
-                    row.innerHTML = `<span>${o.user} compró ${o.product}</span> <span class="status-${o.status}">${o.status.toUpperCase()}</span>`;
-                    historyDiv.appendChild(row);
-                }
-            });
-        });
-    }
-
-    async function loadStats() {
-        const prodSnap = await getDocs(collection(db, "products"));
-        const orderSnap = await getDocs(collection(db, "orders"));
-        const userSnap = await getDocs(collection(db, "users_data"));
-
-        $("stats-container").innerHTML = `
-            <div class="card border-l-4 border-sky-400"><h3>Suministros</h3><p class="text-4xl font-bold">${prodSnap.size}</p></div>
-            <div class="card border-l-4 border-amber-400"><h3>Pedidos Hoy</h3><p class="text-4xl font-bold">${orderSnap.size}</p></div>
-            <div class="card border-l-4 border-emerald-400"><h3>Usuarios</h3><p class="text-4xl font-bold">${userSnap.size}</p></div>
-        `;
-    }
-
-    async function loadUsers() {
-        const snap = await getDocs(collection(db, "users_data"));
-        const list = $("admin-users-list");
-        list.innerHTML = `
-            <table class="w-full text-left">
-                <thead class="bg-slate-700 text-xs">
-                    <tr><th class="p-4">Email</th><th class="p-4">Rol</th><th class="p-4">Acción</th></tr>
-                </thead>
-                <tbody id="users-tbody"></tbody>
-            </table>`;
-        
-        const tbody = $("users-tbody");
-        snap.forEach(d => {
-            const u = d.data();
-            const tr = document.createElement("tr");
-            tr.className = "border-t border-slate-700";
-            tr.innerHTML = `
-                <td class="p-4">${u.email}</td>
-                <td class="p-4"><span class="bg-slate-900 px-2 py-1 rounded text-xs">${u.role}</span></td>
-                <td class="p-4"><button class="danger text-xs" onclick="deleteItem('users_data', '${d.id}')">Eliminar</button></td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-
-    // FUNCIONES GLOBALES DE ACCIÓN
     window.updateStatus = (id, status) => updateDoc(doc(db, "orders", id), { status });
-    window.deleteItem = async (col, id) => { if(confirm("¿Eliminar este registro?")) await deleteDoc(doc(db, col, id)); };
+    window.deleteItem = async (col, id) => { if(confirm("¿Eliminar?")) await deleteDoc(doc(db, col, id)); };
 
-    window.showMyOrders = async () => {
-        const q = query(collection(db, "orders"), where("uid", "==", auth.currentUser.uid));
-        const snap = await getDocs(q);
-        let list = "";
-        snap.forEach(d => {
-            const o = d.data();
-            list += `${o.product}: ${o.status.toUpperCase()}\n`;
-        });
-        alert(list || "No tienes pedidos aún");
-    };
-
-    // ESCUCHADOR DE SESIÓN
+    // SESIÓN
     onAuthStateChanged(auth, user => {
-        if (!user) {
-            show("landing");
+        if (!user) return show("landing");
+        if (user.email === "admin@vendors.com") {
+            show("admin");
+            loadAdminInventory();
+            loadAdminOrders();
+            loadStats();
         } else {
-            if (user.email === "admin@vendors.com") {
-                show("admin");
-                loadAdminInventory();
-                loadAdminOrders();
-                loadStats();
-            } else {
-                show("store");
-                $("user-welcome").innerText = `Conectado como: ${user.email}`;
-                loadStoreProducts();
-            }
+            show("store");
+            $("user-welcome").innerText = user.email;
+            loadStoreProducts();
         }
     });
 
