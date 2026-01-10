@@ -1,77 +1,78 @@
 * {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  margin: 0;
   box-sizing: border-box;
+  font-family: Arial, sans-serif;
 }
 
-body { background: #f8fafc; }
-
-.logo span { color: #4f46e5; }
-
-.nav {
-  display: flex;
-  justify-content: space-between;
-  padding: 20px;
+body {
+  margin: 0;
+  background: #0f172a;
+  color: white;
 }
 
-.hero {
-  padding: 80px 20px;
-  max-width: 700px;
-}
-
-.auth {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
-
-.auth-box {
-  background: white;
+.view {
+  display: none;
+  min-height: 100vh;
   padding: 40px;
-  border-radius: 16px;
-  width: 350px;
+  text-align: center;
+}
+
+h1, h2 {
+  margin-bottom: 10px;
+}
+
+button {
+  padding: 10px 20px;
+  border: none;
+  background: #3b82f6;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.85;
+}
+
+.link {
+  background: none;
+  color: #93c5fd;
+  margin-top: 10px;
 }
 
 input, select {
   width: 100%;
-  padding: 12px;
+  padding: 10px;
   margin: 10px 0;
+  border-radius: 6px;
+  border: none;
 }
 
-.btn {
-  background: #4f46e5;
-  color: white;
-  border: none;
-  padding: 12px;
-  width: 100%;
-  border-radius: 8px;
-  cursor: pointer;
+#auth form {
+  max-width: 300px;
+  margin: auto;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
 }
 
 .filters {
   display: flex;
   gap: 10px;
-  padding: 20px;
+  justify-content: center;
+  margin-bottom: 20px;
 }
 
-.grid {
+#products, #orders, #admin-orders {
   display: grid;
-  gap: 20px;
-  padding: 20px;
-  grid-template-columns: repeat(auto-fill, minmax(220px,1fr));
+  gap: 15px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .card {
-  background: white;
+  background: #1e293b;
   padding: 15px;
-  border-radius: 14px;
-  text-align: center;
-}
-
-.card img {
-  width: 100%;
-  height: 160px;
-  object-fit: cover;
   border-radius: 10px;
 }

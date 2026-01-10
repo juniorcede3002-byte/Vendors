@@ -1,76 +1,60 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VENDORS</title>
-
-<link rel="stylesheet" href="style.css">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;700;800&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <title>Vendor Shop</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- 1️⃣ LANDING PAGE -->
 <section id="landing" class="view">
-    <nav class="nav">
-        <h1 class="logo">V<span>ENDORS</span></h1>
-        <button onclick="showView('auth')">Ingresar</button>
-    </nav>
-
-    <header class="hero">
-        <div>
-            <h2>Plataforma de Compras Inteligente</h2>
-            <p>
-                Vendors es una plataforma moderna para gestionar y comprar
-                suministros corporativos, electrónicos y de oficina de forma
-                rápida y segura.
-            </p>
-            <button class="btn" onclick="showView('auth')">Comenzar</button>
-        </div>
-    </header>
+  <h1>Vendor Shop</h1>
+  <p>Plataforma moderna para compras inteligentes</p>
+  <button onclick="showView('auth')">Comenzar</button>
 </section>
 
-<!-- 2️⃣ AUTH -->
-<section id="auth" class="view auth" style="display:none">
-    <div class="auth-box">
-        <h2 id="auth-title">Iniciar Sesión</h2>
-
-        <form id="auth-form">
-            <input type="email" id="email" placeholder="Correo" required>
-            <input type="password" id="password" placeholder="Contraseña" required>
-            <button class="btn">Continuar</button>
-        </form>
-
-        <p>
-            <a href="#" onclick="toggleAuth()">Cambiar a Registro</a>
-        </p>
-    </div>
+<section id="auth" class="view">
+  <h2 id="auth-title">Iniciar Sesión</h2>
+  <form id="auth-form">
+    <input id="email" type="email" placeholder="Correo" required>
+    <input id="password" type="password" placeholder="Contraseña" required>
+    <button type="submit">Entrar</button>
+  </form>
+  <button class="link" onclick="toggleAuth()">Crear cuenta</button>
 </section>
 
-<!-- 3️⃣ TIENDA -->
-<section id="shop" class="view" style="display:none">
-    <nav class="nav">
-        <h1 class="logo">V<span>ENDORS</span></h1>
-        <span id="user-name"></span>
-        <button onclick="logout()">Salir</button>
-    </nav>
+<section id="shop" class="view">
+  <header>
+    <span>Usuario: <b id="user-name"></b></span>
+    <button onclick="logout()">Salir</button>
+  </header>
 
-    <!-- OPCIONES -->
-    <div class="filters">
-        <select id="filter-cat">
-            <option value="all">Todas</option>
-            <option value="electronica">Electrónica</option>
-            <option value="oficina">Oficina</option>
-        </select>
+  <h2>Tienda</h2>
 
-        <select id="filter-price">
-            <option value="all">Precio</option>
-            <option value="low">Menor a $50</option>
-            <option value="high">Mayor a $50</option>
-        </select>
-    </div>
+  <div class="filters">
+    <select id="filter-cat">
+      <option value="all">Todas</option>
+      <option value="tech">Tecnología</option>
+      <option value="ropa">Ropa</option>
+    </select>
 
-    <div id="products" class="grid"></div>
+    <select id="filter-price">
+      <option value="all">Todos</option>
+      <option value="low">Menos $50</option>
+      <option value="high">Más $50</option>
+    </select>
+  </div>
+
+  <div id="products"></div>
+
+  <h3>Mis pedidos</h3>
+  <div id="orders"></div>
+</section>
+
+<section id="admin" class="view">
+  <h2>Panel Administrativo</h2>
+  <button onclick="logout()">Cerrar sesión</button>
+  <div id="admin-orders"></div>
 </section>
 
 <script type="module" src="main.js"></script>
