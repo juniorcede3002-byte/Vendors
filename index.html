@@ -3,171 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendors Pro | Soluciones de Inventario</title>
+    <title>Vendors Pro | Emanuel Cedeño</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="light-theme">
+<body>
 
     <section id="view-landing" class="view">
         <nav class="nav-glass">
             <div class="logo">V<span>ENDORS</span></div>
-            <button class="btn-login" onclick="showView('view-auth')">Acceder</button>
+            <button class="btn-primary" onclick="showView('view-auth')">Acceder al Sistema</button>
         </nav>
         <div class="hero">
-            <h1>Gestión Inteligente de <span>Suministros.</span></h1>
-            <p>La plataforma B2B líder para el control de inventarios, compras corporativas y logística de entrega en Panamá. Diseñada para la eficiencia operativa de Emanuel Cedeño.</p>
-            <div class="hero-cards">
-                <div class="h-card"><i class="fas fa-bolt"></i> <h3>Rapidez</h3><p>Pedidos procesados al instante.</p></div>
-                <div class="h-card"><i class="fas fa-shield-alt"></i> <h3>Seguridad</h3><p>Pagos verificados vía Yappy y ACH.</p></div>
-                <div class="h-card"><i class="fas fa-chart-line"></i> <h3>Control</h3><p>Dashboard de métricas en tiempo real.</p></div>
+            <div class="hero-content">
+                <span class="badge">Emanuel Cedeño Presenta</span>
+                <h1>Suministros Inteligentes para <span>Empresas Modernas.</span></h1>
+                <p>La plataforma definitiva para la gestión de inventario, compras corporativas y logística con soporte para Yappy y transferencias directas en Panamá.</p>
+                <div class="hero-btns">
+                    <button class="btn-main" onclick="showView('view-auth')">Explorar Tienda <i class="fas fa-shopping-bag"></i></button>
+                </div>
             </div>
-            <button class="btn-cta" onclick="showView('view-auth')">Comenzar Ahora</button>
         </div>
     </section>
 
     <section id="view-auth" class="view" style="display:none;">
-        <div class="auth-container">
-            <div class="auth-box">
-                <h2 id="auth-title">Bienvenido</h2>
+        <div class="auth-overlay">
+            <div class="auth-card">
+                <button class="btn-close-auth" onclick="showView('view-landing')">&times;</button>
+                <h2 id="auth-title">Iniciar Sesión</h2>
                 <form id="form-auth">
-                    <input type="email" id="auth-email" placeholder="Correo electrónico" required>
-                    <input type="password" id="auth-password" placeholder="Contraseña (mín. 6 caracteres)" required>
-                    <button type="submit" class="btn-block">Continuar</button>
+                    <div class="input-group">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="auth-email" placeholder="Correo electrónico" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="auth-password" placeholder="Contraseña" required>
+                    </div>
+                    <button type="submit" class="btn-primary-full">Entrar al Sistema</button>
                 </form>
-                <p onclick="toggleAuth()" class="toggle-link">¿No tienes cuenta? Regístrate</p>
-                <button class="btn-back" onclick="showView('view-landing')">Volver al inicio</button>
+                <p class="auth-switch">¿No tienes cuenta? <a href="#" onclick="toggleAuth()">Regístrate aquí</a></p>
             </div>
         </div>
     </section>
 
-    <section id="view-user" class="view" style="display:none;">
+    <section id="view-app" class="view" style="display:none;">
         <header class="app-header">
             <div class="logo-sm">V<span>ENDORS</span></div>
-            <div class="search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" id="search-input" placeholder="Buscar productos..." oninput="filterProducts()">
-            </div>
-            <div class="header-actions">
-                <button class="btn-icon" onclick="showModal('modal-cart')"><i class="fas fa-shopping-cart"></i><span id="cart-count">0</span></button>
-                <button class="btn-icon" onclick="showModal('modal-profile')"><i class="fas fa-user-circle"></i></button>
-                <button class="btn-icon text-red" onclick="logout()"><i class="fas fa-power-off"></i></button>
-            </div>
-        </header>
-
-        <main class="app-content">
-            <div class="filter-chips">
-                <button class="chip active" onclick="filterCat('all')">Todos</button>
-                <button class="chip" onclick="filterCat('tech')">Tecnología</button>
-                <button class="chip" onclick="filterCat('oficina')">Oficina</button>
-            </div>
-            <div id="product-grid" class="grid"></div>
-            
-            <h2 class="section-title">Mi Historial de Compras</h2>
-            <div id="user-orders" class="orders-list"></div>
-        </main>
-    </section>
-
-    <section id="view-admin" class="view" style="display:none;">
-        <header class="app-header admin-head">
-            <div class="logo-sm">V<span>ADMIN</span></div>
-            <div class="header-actions">
-                <button class="btn-icon" onclick="showModal('modal-profile')"><i class="fas fa-cog"></i></button>
-                <button class="btn-icon text-red" onclick="logout()"><i class="fas fa-power-off"></i></button>
+            <div class="header-tools">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-input" placeholder="Buscar suministro..." oninput="filterProducts()">
+                </div>
+                <div class="user-controls">
+                    <button class="btn-icon user-only" onclick="openModal('modal-cart')">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span id="cart-count">0</span>
+                    </button>
+                    <button class="btn-icon" onclick="openModal('modal-profile')"><i class="fas fa-user-circle"></i></button>
+                    <button class="btn-logout" onclick="logout()"><i class="fas fa-power-off"></i></button>
+                </div>
             </div>
         </header>
 
-        <main class="app-content">
-            <div class="admin-dashboard">
-                <div class="stat-card"><h3>Ingresos Totales</h3><p id="stat-revenue">$0.00</p></div>
-                <div class="stat-card"><h3>Pedidos Pendientes</h3><p id="stat-pending">0</p></div>
-                <div class="stat-card"><h3>Usuarios Activos</h3><p id="stat-users">0</p></div>
+        <main class="container">
+            <div id="admin-panel" class="admin-only" style="display:none;">
+                <div class="stats-grid">
+                    <div class="stat-box"><h3>Ventas Totales</h3><p id="stat-revenue">$0.00</p></div>
+                    <div class="stat-box"><h3>Pedidos</h3><p id="stat-orders">0</p></div>
+                    <div class="stat-box"><h3>Usuarios</h3><p id="stat-users">0</p></div>
+                </div>
+                <div class="admin-actions">
+                    <button class="btn-add" onclick="openModal('modal-add-product')"><i class="fas fa-plus"></i> Añadir Producto</button>
+                </div>
+                <div class="admin-tabs">
+                    <button class="tab-btn active" onclick="switchAdminTab('inventory')">Inventario</button>
+                    <button class="tab-btn" onclick="switchAdminTab('requests')">Pedidos y Pagos</button>
+                </div>
             </div>
 
-            <div class="admin-tabs">
-                <button class="tab-btn active" onclick="switchTab('tab-inventory')">Inventario</button>
-                <button class="tab-btn" onclick="switchTab('tab-requests')">Solicitudes</button>
-                <button class="tab-btn" onclick="switchTab('tab-users')">Usuarios</button>
+            <div id="inventory-section">
+                <h2 class="section-title">Catálogo de Suministros</h2>
+                <div id="product-grid" class="grid"></div>
             </div>
 
-            <div id="tab-inventory" class="tab-content">
-                <button class="btn-add" onclick="showModal('modal-add-product')">+ Nuevo Producto</button>
-                <div id="admin-product-list" class="grid"></div>
+            <div id="requests-section" style="display:none;">
+                <h2 class="section-title">Gestión de Solicitudes</h2>
+                <div id="admin-orders-list" class="orders-list"></div>
             </div>
 
-            <div id="tab-requests" class="tab-content" style="display:none;">
-                <div id="admin-requests-list" class="orders-list"></div>
-            </div>
-
-            <div id="tab-users" class="tab-content" style="display:none;">
-                <div id="admin-users-list" class="user-table"></div>
+            <div class="user-only">
+                <h2 class="section-title">Mis Pedidos</h2>
+                <div id="user-orders-list" class="orders-list"></div>
             </div>
         </main>
     </section>
 
     <div id="modal-cart" class="modal">
-        <div class="modal-box">
+        <div class="modal-content">
             <span class="close" onclick="closeModal('modal-cart')">&times;</span>
-            <h2>Tu Carrito</h2>
+            <h2>Mi Bolsa de Compras</h2>
             <div id="cart-items"></div>
-            <div class="cart-summary">
+            <div class="cart-totals">
                 <p>Subtotal: <span id="cart-subtotal">$0.00</span></p>
                 <p>ITBMS (7%): <span id="cart-tax">$0.00</span></p>
-                <hr>
-                <h3>Total: <span id="cart-total">$0.00</span></h3>
+                <h3>Total a Pagar: <span id="cart-total">$0.00</span></h3>
             </div>
-            <button class="btn-block" onclick="showModal('modal-checkout')">Proceder al Pago</button>
+            <button class="btn-primary-full" onclick="openModal('modal-checkout')">Continuar al Pago</button>
         </div>
     </div>
 
     <div id="modal-checkout" class="modal">
-        <div class="modal-box checkout-box">
+        <div class="modal-content">
             <span class="close" onclick="closeModal('modal-checkout')">&times;</span>
-            <h2>Finalizar Compra</h2>
+            <h2>Datos de Entrega y Pago</h2>
             <form id="form-checkout">
                 <input type="text" id="check-name" placeholder="Nombre completo" required>
-                <input type="text" id="check-address" placeholder="Ubicación de entrega" required>
-                <input type="tel" id="check-phone" placeholder="Teléfono" required>
-                <select id="check-payment" required onchange="togglePaymentInfo()">
-                    <option value="efectivo">Efectivo</option>
+                <input type="text" id="check-address" placeholder="Ubicación Detallada (Ej: Oficina 302, Edificio Central)" required>
+                <input type="tel" id="check-phone" placeholder="Teléfono de contacto" required>
+                <select id="check-method" onchange="updatePaymentNote()">
                     <option value="yappy">Yappy (Panamá)</option>
+                    <option value="efectivo">Efectivo</option>
                     <option value="ach">Transferencia ACH</option>
                 </select>
-                <div id="payment-instructions" class="payment-note"></div>
-                <button type="submit" class="btn-block btn-success">Confirmar y Pagar</button>
-            </form>
-        </div>
-    </div>
-
-    <div id="modal-profile" class="modal">
-        <div class="modal-box">
-            <span class="close" onclick="closeModal('modal-profile')">&times;</span>
-            <h2>Mi Perfil</h2>
-            <form id="form-profile">
-                <label>Actualizar Correo</label>
-                <input type="email" id="profile-email">
-                <label>Nombre</label>
-                <input type="text" id="profile-name">
-                <button type="submit" class="btn-block">Guardar Cambios</button>
+                <div id="payment-note" class="info-box">Envía el pago al 6937-6895 (Emanuel Cedeño).</div>
+                <button type="submit" class="btn-success-full">Finalizar Compra</button>
             </form>
         </div>
     </div>
 
     <div id="modal-add-product" class="modal">
-        <div class="modal-box">
+        <div class="modal-content">
             <span class="close" onclick="closeModal('modal-add-product')">&times;</span>
-            <h2>Nuevo Suministro</h2>
+            <h2>Añadir al Inventario</h2>
             <form id="form-add-product">
-                <input type="file" id="prod-file" accept="image/*" required>
-                <input type="text" id="prod-name" placeholder="Nombre" required>
-                <textarea id="prod-desc" placeholder="Descripción detallada" required></textarea>
-                <input type="number" id="prod-price" placeholder="Precio ($)" step="0.01" required>
-                <select id="prod-cat">
-                    <option value="tech">Tecnología</option>
-                    <option value="oficina">Oficina</option>
-                </select>
-                <button type="submit" class="btn-block">Subir Producto</button>
+                <input type="file" id="p-file" accept="image/*" required>
+                <input type="text" id="p-name" placeholder="Nombre del producto" required>
+                <textarea id="p-desc" placeholder="Descripción detallada" required></textarea>
+                <input type="number" id="p-price" placeholder="Precio ($)" step="0.01" required>
+                <button type="submit" id="btn-p-upload" class="btn-primary-full">Subir Producto</button>
             </form>
         </div>
     </div>
