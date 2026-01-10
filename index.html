@@ -7,12 +7,28 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { margin: 0; background: #0f172a; color: #e2e8f0; overflow-x: hidden; }
+        :root {
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --border: #334155;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+        }
+
+        body.light-mode {
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.3s, color 0.3s; }
+        body { margin: 0; background: var(--bg-body); color: var(--text-main); overflow-x: hidden; }
         .hidden { display: none !important; }
-        .card { background: #1e293b; border: 1px solid #334155; padding: 20px; border-radius: 12px; margin-bottom: 16px; }
+        .card { background: var(--bg-card); border: 1px solid var(--border); padding: 20px; border-radius: 12px; margin-bottom: 16px; }
         .grid-products { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
-        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; outline: none; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-main); outline: none; }
         input:focus, select:focus { border-color: #38bdf8; }
         button { padding: 10px 20px; border-radius: 8px; border: none; background: #38bdf8; color: #000; font-weight: bold; cursor: pointer; transition: all 0.2s; }
         button:hover { background: #7dd3fc; transform: translateY(-1px); }
@@ -22,9 +38,9 @@
         button.success { background: #22c55e; color: white; }
         
         /* Sidebar Admin */
-        .sidebar { width: 260px; background: #1e293b; border-right: 1px solid #334155; height: 100vh; position: fixed; left: 0; top: 0; padding: 20px; }
+        .sidebar { width: 260px; background: var(--bg-card); border-right: 1px solid var(--border); height: 100vh; position: fixed; left: 0; top: 0; padding: 20px; }
         .admin-main { margin-left: 260px; padding: 40px; width: calc(100% - 260px); }
-        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; color: #94a3b8; cursor: pointer; margin-bottom: 5px; transition: 0.2s; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; color: var(--text-muted); cursor: pointer; margin-bottom: 5px; transition: 0.2s; }
         .nav-item:hover { background: #334155; color: white; }
         .nav-item.active { background: #38bdf8; color: #000; }
 
@@ -34,7 +50,6 @@
         .status-recibido { color: #22c55e; font-weight: bold; }
         .status-rechazado { color: #f87171; }
 
-        /* Modal simple */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
     </style>
 </head>
@@ -64,56 +79,35 @@
 </section>
 
 <!-- STORE (VISTA USUARIO) -->
-<section id="store" class="hidden py-20">
+<section id="store" class="hidden py-10">
     <div class="container mx-auto px-6">
         <div class="flex justify-between items-center mb-10">
             <div>
-                <h2 class="text-3xl font-bold">Catálogo de Suministros</h2>
+                <h2 class="text-3xl font-bold">Catálogo</h2>
                 <p id="user-welcome" class="text-slate-400"></p>
             </div>
-            <div class="flex gap-4">
+            <div class="flex gap-2">
                 <button onclick="toggleCart()" class="secondary relative">
-                    <i class="fas fa-shopping-cart"></i> Carrito
+                    <i class="fas fa-shopping-cart"></i>
                     <span id="cart-count" class="absolute -top-2 -right-2 bg-sky-500 text-xs px-2 rounded-full">0</span>
                 </button>
-                <button onclick="showMyOrders()" class="secondary">Mis Pedidos</button>
-                <button id="logout" class="danger">Salir</button>
+                <button onclick="showMyOrders()" class="secondary"><i class="fas fa-list"></i> Pedidos</button>
+                <button onclick="toggleSettings()" class="secondary"><i class="fas fa-cog"></i></button>
+                <button id="logout" class="danger"><i class="fas fa-sign-out-alt"></i></button>
             </div>
         </div>
         <div id="products-list" class="grid-products"></div>
     </div>
 </section>
 
-<!-- MODAL CARRITO / PAGO -->
-<div id="cart-modal" class="modal-overlay hidden">
-    <div class="card w-full max-w-lg overflow-y-auto max-h-[90vh]">
-        <h2 class="text-2xl font-bold mb-4">Tu Pedido</h2>
-        <div id="cart-items" class="space-y-3 mb-6"></div>
-        
-        <div class="border-t border-slate-700 pt-4 mt-4">
-            <h3 class="font-bold mb-2">Información de Pago</h3>
-            <select id="payment-method" onchange="updatePaymentInfo()">
-                <option value="efectivo">Efectivo</option>
-                <option value="yappy">Yappy (+507 6389-2022)</option>
-                <option value="transferencia">Transferencia Bancaria</option>
-            </select>
-            <div id="payment-details" class="text-sm bg-slate-900 p-3 rounded mt-2 text-sky-300">
-                Selecciona un método para ver los detalles.
-            </div>
-            <textarea id="order-notes" placeholder="Notas adicionales (ej: dirección de entrega, quién recibe)..." class="mt-4 h-24"></textarea>
-            
-            <div class="flex justify-between items-center mt-6">
-                <span class="text-xl font-bold">Total: $<span id="cart-total">0</span></span>
-                <div class="flex gap-2">
-                    <button onclick="toggleCart()" class="secondary">Cerrar</button>
-                    <button id="confirm-order-btn" class="success">Confirmar y Pagar</button>
-                </div>
-            </div>
-        </div>
+<!-- MODAL CARRITO / PAGO / CONFIG -->
+<div id="main-modal" class="modal-overlay hidden">
+    <div class="card w-full max-w-lg overflow-y-auto max-h-[90vh]" id="modal-content">
+        <!-- El contenido se inyecta dinámicamente -->
     </div>
 </div>
 
-<!-- ADMIN (VISTA PANEL DESGLOSADO) -->
+<!-- ADMIN -->
 <section id="admin" class="hidden">
     <div class="sidebar">
         <div class="text-2xl font-black text-sky-400 mb-10 px-2">ADMIN PANEL</div>
@@ -127,8 +121,8 @@
             <div class="nav-item" onclick="switchAdminTab('orders', this)">
                 <i class="fas fa-shopping-cart"></i> Solicitudes
             </div>
-            <div class="nav-item" onclick="switchAdminTab('users', this)">
-                <i class="fas fa-users"></i> Usuarios
+            <div class="nav-item" onclick="switchAdminTab('settings', this)">
+                <i class="fas fa-cog"></i> Ajustes
             </div>
         </nav>
         <div class="absolute bottom-10 left-0 w-full px-6">
@@ -137,45 +131,38 @@
     </div>
 
     <div class="admin-main">
-        <!-- Tab Dashboard -->
         <div id="tab-dashboard" class="admin-tab">
-            <h2 class="text-3xl font-bold mb-8">Resumen General</h2>
+            <h2 class="text-3xl font-bold mb-8">Resumen</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="stats-container"></div>
         </div>
-
-        <!-- Tab Inventario -->
         <div id="tab-inventory" class="admin-tab hidden">
             <div class="flex justify-between items-center mb-8">
-                <h2 class="text-3xl font-bold">Gestión de Inventario</h2>
-                <button onclick="document.getElementById('form-add-p').classList.toggle('hidden')">+ Nuevo Item</button>
+                <h2 class="text-3xl font-bold">Inventario</h2>
+                <button onclick="document.getElementById('form-add-p').classList.toggle('hidden')">+ Nuevo</button>
             </div>
             <div id="form-add-p" class="card hidden mb-8">
-                <input id="pName" placeholder="Nombre del suministro">
-                <input id="pPrice" type="number" placeholder="Precio ($)">
+                <input id="pName" placeholder="Nombre">
+                <input id="pPrice" type="number" placeholder="Precio">
                 <input id="pImg" type="file" accept="image/*">
-                <button id="addProduct" class="mt-4 w-full">Guardar Suministro</button>
+                <button id="addProduct" class="w-full mt-4">Guardar</button>
             </div>
             <div id="admin-inventory-list" class="space-y-2"></div>
         </div>
-
-        <!-- Tab Solicitudes -->
         <div id="tab-orders" class="admin-tab hidden">
-            <h2 class="text-3xl font-bold mb-8">Gestión de Pedidos</h2>
+            <h2 class="text-3xl font-bold mb-8">Pedidos Recibidos</h2>
             <div id="admin-orders-list" class="space-y-4"></div>
         </div>
-
-        <!-- Tab Usuarios -->
-        <div id="tab-users" class="admin-tab hidden">
-            <h2 class="text-3xl font-bold mb-8">Usuarios</h2>
-            <div id="admin-users-list" class="bg-slate-800 rounded-xl overflow-hidden"></div>
+        <div id="tab-settings" class="admin-tab hidden">
+            <h2 class="text-3xl font-bold mb-8">Configuración Admin</h2>
+            <div id="admin-settings-container"></div>
         </div>
     </div>
 </section>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, onSnapshot, updateDoc, doc, deleteDoc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, onSnapshot, updateDoc, doc, deleteDoc, query, orderBy, where, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
@@ -192,191 +179,280 @@
 
     const $ = id => document.getElementById(id);
     let cart = [];
+    let currentUserData = null;
 
-    // NAVEGACIÓN
+    // --- UTILS ---
     const show = id => {
         ["landing", "auth", "store", "admin"].forEach(s => $(s).classList.add("hidden"));
         $(id).classList.remove("hidden");
     };
 
-    window.switchAdminTab = (tabId, el) => {
-        document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        $(`tab-${tabId}`).classList.remove('hidden');
-        el.classList.add('active');
-        if(tabId === 'dashboard') loadStats();
-        if(tabId === 'users') loadUsers();
+    const closeModal = () => $("main-modal").classList.add("hidden");
+    const openModal = (html) => {
+        $("modal-content").innerHTML = html;
+        $("main-modal").classList.remove("hidden");
     };
 
-    // AUTH
-    $("goAuth").onclick = () => show("auth");
-    $("login").onclick = () => signInWithEmailAndPassword(auth, $("email").value, $("password").value).catch(e => alert("Error: " + e.message));
-    $("register").onclick = async () => {
-        try {
-            const res = await createUserWithEmailAndPassword(auth, $("email").value, $("password").value);
-            await addDoc(collection(db, "users_data"), { email: $("email").value, uid: res.user.uid, role: 'client', date: Date.now() });
-            alert("Registro exitoso");
-        } catch(e) { alert(e.message); }
-    };
-    $("logout").onclick = () => signOut(auth);
-    $("logoutAdmin").onclick = () => signOut(auth);
-
-    // CARRITO Y PAGO
-    window.toggleCart = () => $("cart-modal").classList.toggle("hidden");
-
-    window.updatePaymentInfo = () => {
-        const method = $("payment-method").value;
-        const info = $("payment-details");
-        if(method === 'yappy') info.innerText = "Yappy: +507 6389-2022 (A nombre de Vendors Pro)";
-        else if(method === 'transferencia') info.innerText = "Banco General: Cuenta Corriente 00-00-00-00 (Próximamente)";
-        else info.innerText = "Pago contra entrega.";
-    };
-
-    window.addToCart = (p) => {
-        cart.push(p);
-        updateCartUI();
-    };
-
-    function updateCartUI() {
-        $("cart-count").innerText = cart.length;
-        const itemsDiv = $("cart-items");
-        itemsDiv.innerHTML = "";
-        let total = 0;
-        cart.forEach((item, index) => {
-            total += item.price;
-            const div = document.createElement("div");
-            div.className = "flex justify-between items-center bg-slate-800 p-2 rounded";
-            div.innerHTML = `<span>${item.name}</span> <span>$${item.price} <button onclick="removeFromCart(${index})" class="text-red-400 ml-2">x</button></span>`;
-            itemsDiv.appendChild(div);
-        });
-        $("cart-total").innerText = total;
-    }
-
-    window.removeFromCart = (index) => {
-        cart.splice(index, 1);
-        updateCartUI();
-    };
-
-    $("confirm-order-btn").onclick = async () => {
-        if(cart.length === 0) return alert("Tu carrito está vacío.");
-        const method = $("payment-method").value;
-        const notes = $("order-notes").value;
-        
-        try {
-            await addDoc(collection(db, "orders"), {
-                user: auth.currentUser.email,
-                uid: auth.currentUser.uid,
-                products: cart,
-                total: $("cart-total").innerText,
-                paymentMethod: method,
-                notes: notes,
-                status: "pendiente", // pendiente -> pago_confirmado -> recibido
-                date: Date.now()
-            });
-            alert("Pedido confirmado. Por favor procede con el pago si elegiste Yappy o Transferencia.");
-            cart = [];
-            updateCartUI();
-            toggleCart();
-        } catch(e) { alert(e.message); }
-    };
-
-    // CLIENTE: CARGAR PRODUCTOS
-    async function loadStoreProducts() {
-        onSnapshot(collection(db, "products"), snap => {
-            const list = $("products-list");
-            list.innerHTML = "";
-            snap.forEach(d => {
-                const p = d.data();
-                const div = document.createElement("div");
-                div.className = "card flex flex-col";
-                div.innerHTML = `
-                    <img src="${p.img || 'https://via.placeholder.com/150'}" class="h-40 object-cover mb-4 rounded-lg">
-                    <h3 class="text-xl font-bold text-sky-400">${p.name}</h3>
-                    <p class="text-slate-400 mt-2 flex-1">Suministro verificado. Precio: $${p.price}</p>
-                    <button class="mt-4 w-full" onclick='addToCart(${JSON.stringify(p)})'>Añadir al Carrito</button>
-                `;
-                list.appendChild(div);
-            });
-        });
-    }
-
-    window.showMyOrders = async () => {
-        const q = query(collection(db, "orders"), where("uid", "==", auth.currentUser.uid));
-        const snap = await getDocs(q);
-        let content = "TUS PEDIDOS:\n\n";
-        snap.forEach(d => {
-            const o = d.data();
-            content += `- Orden #${d.id.slice(0,5)}: ${o.status.toUpperCase()} ($${o.total})\n`;
-            if(o.status === "pago_confirmado") {
-                content += "  [ACCION: Confirma recepción abajo]\n";
-            }
-        });
-        // Para simplificar, mostramos la lista en un modal o dashboard de órdenes
-        renderOrdersList(snap, true);
-    };
-
-    function renderOrdersList(snap, isClient) {
-        // Esta función se usa para pintar las órdenes tanto para admin como para user
-        const target = isClient ? $("cart-items") : $("admin-orders-list");
-        if(isClient) toggleCart(); // Reutilizamos el modal para el cliente
-        
-        target.innerHTML = isClient ? "<h3 class='font-bold mb-4'>Historial de Pedidos</h3>" : "";
-        
-        snap.forEach(d => {
-            const o = d.data();
-            const div = document.createElement("div");
-            div.className = "card bg-slate-800/50 flex flex-col gap-2";
-            let actions = "";
-            
-            if(!isClient) {
-                if(o.status === 'pendiente') actions = `<button onclick="updateStatus('${d.id}', 'pago_confirmado')" class="success">Confirmar Pago</button> <button onclick="updateStatus('${d.id}', 'rechazado')" class="danger">Rechazar</button>`;
-            } else {
-                if(o.status === 'pago_confirmado') actions = `<button onclick="updateStatus('${d.id}', 'recibido')" class="success w-full">He recibido la mercancía</button>`;
-            }
-
-            div.innerHTML = `
-                <div class="flex justify-between border-b border-slate-700 pb-2">
-                    <span class="text-xs text-slate-500">ID: ${d.id.slice(0,8)}</span>
-                    <span class="status-${o.status} uppercase text-xs font-bold">${o.status.replace('_',' ')}</span>
-                </div>
-                <p><strong>Total:</strong> $${o.total} (${o.paymentMethod})</p>
-                <p class="text-xs text-slate-400">${o.user}</p>
-                <div class="mt-2 space-y-2">${actions}</div>
-            `;
-            target.appendChild(div);
-        });
-    }
-
-    // ADMIN: ÓRDENES
-    function loadAdminOrders() {
-        onSnapshot(query(collection(db, "orders"), orderBy("date", "desc")), snap => {
-            renderOrdersList(snap, false);
-        });
-    }
-
-    // ADMIN: OTROS
-    async function loadStats() {
-        const prodSnap = await getDocs(collection(db, "products"));
-        const orderSnap = await getDocs(collection(db, "orders"));
-        const userSnap = await getDocs(collection(db, "users_data"));
-        $("stats-container").innerHTML = `
-            <div class="card border-l-4 border-sky-400"><h3>Suministros</h3><p class="text-4xl font-bold">${prodSnap.size}</p></div>
-            <div class="card border-l-4 border-amber-400"><h3>Pedidos</h3><p class="text-4xl font-bold">${orderSnap.size}</p></div>
-            <div class="card border-l-4 border-emerald-400"><h3>Usuarios</h3><p class="text-4xl font-bold">${userSnap.size}</p></div>
-        `;
-    }
-
-    // CRUD PRODUCTOS
-    $("addProduct").onclick = async () => {
-        const file = $("pImg").files[0];
-        if (!file) return alert("Imagen requerida");
+    async function uploadToCloudinary(file) {
         const form = new FormData();
         form.append("file", file);
         form.append("upload_preset", UPLOAD_PRESET);
         const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: "POST", body: form });
         const data = await res.json();
-        await addDoc(collection(db, "products"), { name: $("pName").value, price: Number($("pPrice").value), img: data.secure_url, date: Date.now() });
-        alert("Agregado");
+        return data.secure_url;
+    }
+
+    // --- THEME ---
+    window.toggleTheme = () => {
+        document.body.classList.toggle("light-mode");
+        localStorage.setItem("theme", document.body.classList.contains("light-mode") ? "light" : "dark");
+    };
+    if(localStorage.getItem("theme") === "light") document.body.classList.add("light-mode");
+
+    // --- AUTH ---
+    $("goAuth").onclick = () => show("auth");
+    $("login").onclick = () => signInWithEmailAndPassword(auth, $("email").value, $("password").value).catch(e => alert("Error: " + e.message));
+    $("register").onclick = async () => {
+        try {
+            const res = await createUserWithEmailAndPassword(auth, $("email").value, $("password").value);
+            const data = { email: $("email").value, uid: res.user.uid, role: 'client', name: 'Nuevo Usuario', residence: '', date: Date.now() };
+            await setDoc(doc(db, "users_data", res.user.uid), data);
+        } catch(e) { alert(e.message); }
+    };
+    $("logout").onclick = () => signOut(auth);
+    $("logoutAdmin").onclick = () => signOut(auth);
+
+    // --- CARRITO & PAGO ---
+    window.toggleCart = () => {
+        let total = cart.reduce((acc, p) => acc + p.price, 0);
+        let itemsHtml = cart.map((p, i) => `
+            <div class="flex justify-between items-center bg-slate-800/50 p-2 rounded mb-1">
+                <span>${p.name}</span>
+                <span>$${p.price} <button onclick="removeFromCart(${i})" class="text-red-400 ml-2">x</button></span>
+            </div>
+        `).join('') || '<p class="text-center text-slate-500">Carrito vacío</p>';
+
+        openModal(`
+            <h2 class="text-2xl font-bold mb-4">Tu Pedido</h2>
+            <div class="mb-4">${itemsHtml}</div>
+            <div class="border-t border-slate-700 pt-4">
+                <h3 class="font-bold mb-2">Información de Pago</h3>
+                <select id="pay-method" onchange="updatePayDetails()">
+                    <option value="efectivo">Efectivo</option>
+                    <option value="yappy">Yappy (+507 6389-2022)</option>
+                    <option value="transferencia">Transferencia Bancaria</option>
+                </select>
+                <div id="pay-info" class="text-sm p-3 bg-sky-900/30 rounded mt-2 text-sky-300">Selecciona un método.</div>
+                
+                <div id="yappy-req" class="hidden mt-4">
+                    <label class="text-xs font-bold text-amber-400">SUBIR COMPROBANTE (OBLIGATORIO):</label>
+                    <input type="file" id="pay-img" accept="image/*">
+                </div>
+
+                <div id="trans-req" class="hidden mt-4 space-y-2">
+                    <input id="pay-sender" placeholder="¿Quién envía?">
+                    <input id="pay-bank" placeholder="Banco de origen">
+                    <input id="pay-amount" type="number" placeholder="Monto enviado">
+                </div>
+
+                <textarea id="pay-notes" placeholder="Notas de entrega..." class="mt-4"></textarea>
+                <div class="flex justify-between items-center mt-6">
+                    <span class="text-xl font-bold">Total: $${total}</span>
+                    <div class="flex gap-2">
+                        <button onclick="closeModal()" class="secondary">Cerrar</button>
+                        <button onclick="confirmOrder()" class="success">Confirmar</button>
+                    </div>
+                </div>
+            </div>
+        `);
+    };
+
+    window.updatePayDetails = () => {
+        const m = $("pay-method").value;
+        const info = $("pay-info");
+        $("yappy-req").classList.add("hidden");
+        $("trans-req").classList.add("hidden");
+
+        if(m === 'yappy') {
+            info.innerText = "Yappy: +507 6389-2022 a nombre de Vendors Pro. Debe subir imagen del comprobante.";
+            $("yappy-req").classList.remove("hidden");
+        } else if(m === 'transferencia') {
+            info.innerText = "Banco General: Cuenta 00-00-00-00. Complete los datos de transferencia.";
+            $("trans-req").classList.remove("hidden");
+        } else {
+            info.innerText = "Pago en efectivo al recibir.";
+        }
+    };
+
+    window.addToCart = (p) => { cart.push(p); $("cart-count").innerText = cart.length; };
+    window.removeFromCart = (i) => { cart.splice(i, 1); $("cart-count").innerText = cart.length; toggleCart(); };
+
+    window.confirmOrder = async () => {
+        if(cart.length === 0) return alert("Carrito vacío");
+        const method = $("pay-method").value;
+        let proofImg = "";
+        let transData = null;
+
+        if(method === 'yappy') {
+            const file = $("pay-img").files[0];
+            if(!file) return alert("Comprobante de Yappy obligatorio");
+            proofImg = await uploadToCloudinary(file);
+        } else if(method === 'transferencia') {
+            if(!$("pay-sender").value || !$("pay-bank").value) return alert("Complete datos de transferencia");
+            transData = { sender: $("pay-sender").value, bank: $("pay-bank").value, amount: $("pay-amount").value };
+        }
+
+        await addDoc(collection(db, "orders"), {
+            uid: auth.currentUser.uid,
+            userEmail: auth.currentUser.email,
+            products: cart,
+            total: cart.reduce((a,b) => a + b.price, 0),
+            status: "pendiente",
+            method, proofImg, transData,
+            notes: $("pay-notes").value,
+            date: Date.now()
+        });
+        alert("Pedido enviado correctamente.");
+        cart = []; $("cart-count").innerText = "0";
+        closeModal();
+    };
+
+    // --- HISTORIAL PEDIDOS ---
+    window.showMyOrders = async () => {
+        const q = query(collection(db, "orders"), where("uid", "==", auth.currentUser.uid), orderBy("date", "desc"));
+        const snap = await getDocs(q);
+        let ordersHtml = "";
+        snap.forEach(d => {
+            const o = d.data();
+            let action = o.status === 'pago_confirmado' ? `<button onclick="updateStatus('${d.id}', 'recibido')" class="success w-full mt-2">Confirmar Recepción</button>` : "";
+            ordersHtml += `
+                <div class="card bg-slate-800/30 text-sm">
+                    <div class="flex justify-between font-bold">
+                        <span>Orden #${d.id.slice(0,5)}</span>
+                        <span class="status-${o.status}">${o.status.toUpperCase()}</span>
+                    </div>
+                    <p class="mt-2">Total: $${o.total} (${o.method})</p>
+                    ${action}
+                </div>
+            `;
+        });
+        openModal(`<h2 class="text-xl font-bold mb-4">Mis Pedidos</h2><div class="space-y-2">${ordersHtml || 'Sin pedidos'}</div><button onclick="closeModal()" class="w-full mt-4 secondary">Cerrar</button>`);
+    };
+
+    // --- CONFIGURACIÓN & PERFIL ---
+    window.toggleSettings = () => {
+        openModal(`
+            <h2 class="text-2xl font-bold mb-4">Configuraciones</h2>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center p-3 bg-slate-800 rounded">
+                    <span>Modo de Vista</span>
+                    <button onclick="toggleTheme()" class="secondary text-xs">Cambiar Tema</button>
+                </div>
+                <div class="border-t border-slate-700 pt-4">
+                    <h3 class="font-bold mb-2">Ajustes de Perfil</h3>
+                    <input id="up-name" placeholder="Nombre completo" value="${currentUserData?.name || ''}">
+                    <input id="up-residence" placeholder="Dirección de residencia" value="${currentUserData?.residence || ''}">
+                    <button onclick="updateProfileData()" class="w-full mt-2">Guardar Cambios</button>
+                    <button onclick="resetPass()" class="w-full mt-2 secondary text-xs">Olvidé mi contraseña / Resetear</button>
+                </div>
+                <button onclick="closeModal()" class="w-full mt-4 secondary">Cerrar</button>
+            </div>
+        `);
+    };
+
+    window.updateProfileData = async () => {
+        const name = $("up-name").value;
+        const resi = $("up-residence").value;
+        await updateDoc(doc(db, "users_data", auth.currentUser.uid), { name, residence: resi });
+        alert("Perfil actualizado");
+        closeModal();
+    };
+
+    window.resetPass = () => {
+        sendPasswordResetEmail(auth, auth.currentUser.email)
+            .then(() => alert("Correo de restauración enviado a " + auth.currentUser.email))
+            .catch(e => alert(e.message));
+    };
+
+    // --- ADMIN LOGIC ---
+    function loadAdminOrders() {
+        onSnapshot(query(collection(db, "orders"), orderBy("date", "desc")), snap => {
+            const list = $("admin-orders-list");
+            list.innerHTML = "";
+            snap.forEach(d => {
+                const o = d.data();
+                let proof = o.proofImg ? `<img src="${o.proofImg}" class="w-24 h-24 object-cover rounded mt-2 cursor-pointer" onclick="window.open('${o.proofImg}')">` : "";
+                let trans = o.transData ? `<div class="text-xs bg-black/20 p-2 mt-2">De: ${o.transData.sender} | Banco: ${o.transData.bank} | $: ${o.transData.amount}</div>` : "";
+                
+                let btns = o.status === 'pendiente' ? `
+                    <div class="flex gap-2 mt-3">
+                        <button onclick="updateStatus('${d.id}', 'pago_confirmado')" class="success text-xs">Confirmar Pago</button>
+                        <button onclick="updateStatus('${d.id}', 'rechazado')" class="danger text-xs">Rechazar</button>
+                    </div>` : "";
+
+                list.innerHTML += `
+                    <div class="card">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-bold">${o.userEmail}</p>
+                                <p class="text-xs text-slate-500">${new Date(o.date).toLocaleString()}</p>
+                            </div>
+                            <span class="status-${o.status} uppercase text-xs">${o.status}</span>
+                        </div>
+                        <p class="mt-2">Total: <strong>$${o.total}</strong> via ${o.method}</p>
+                        ${proof} ${trans}
+                        <p class="text-xs italic mt-1 text-slate-400">Nota: ${o.notes || 'Ninguna'}</p>
+                        ${btns}
+                    </div>
+                `;
+            });
+        });
+    }
+
+    window.updateStatus = async (id, status) => { await updateDoc(doc(db, "orders", id), { status }); if(status === 'recibido') alert("Entrega finalizada"); };
+
+    // --- INIT ---
+    onAuthStateChanged(auth, async user => {
+        if (!user) return show("landing");
+        const docRef = doc(db, "users_data", user.uid);
+        const docSnap = await getDoc(docRef);
+        currentUserData = docSnap.exists() ? docSnap.data() : null;
+
+        if (user.email === "admin@vendors.com") {
+            show("admin");
+            loadAdminOrders();
+            loadAdminInventory();
+            loadStats();
+            $("admin-settings-container").innerHTML = `<button onclick="toggleTheme()" class="secondary">Cambiar Tema</button>`;
+        } else {
+            show("store");
+            $("user-welcome").innerText = currentUserData?.name || user.email;
+            onSnapshot(collection(db, "products"), snap => {
+                const list = $("products-list");
+                list.innerHTML = "";
+                snap.forEach(d => {
+                    const p = d.data();
+                    list.innerHTML += `
+                        <div class="card">
+                            <img src="${p.img}" class="h-40 w-full object-cover rounded-lg mb-4">
+                            <h3 class="font-bold text-sky-400">${p.name}</h3>
+                            <p class="text-sm text-slate-400">$${p.price}</p>
+                            <button class="w-full mt-4" onclick='addToCart(${JSON.stringify({id:d.id, ...p})})'>Añadir</button>
+                        </div>
+                    `;
+                });
+            });
+        }
+    });
+
+    // CRUD Suministros (Admin)
+    $("addProduct").onclick = async () => {
+        const file = $("pImg").files[0];
+        if(!file || !$("pName").value) return alert("Faltan datos");
+        const url = await uploadToCloudinary(file);
+        await addDoc(collection(db, "products"), { name: $("pName").value, price: Number($("pPrice").value), img: url, date: Date.now() });
+        alert("Producto añadido");
+        $("form-add-p").classList.add("hidden");
     };
 
     function loadAdminInventory() {
@@ -384,32 +460,22 @@
             const list = $("admin-inventory-list");
             list.innerHTML = "";
             snap.forEach(d => {
-                const p = d.data();
-                const div = document.createElement("div");
-                div.className = "flex items-center justify-between p-3 bg-slate-800 rounded border border-slate-700";
-                div.innerHTML = `<span>${p.name} - $${p.price}</span> <button class="danger p-1 text-xs" onclick="deleteItem('products', '${d.id}')">X</button>`;
-                list.appendChild(div);
+                list.innerHTML += `<div class="flex justify-between items-center p-3 bg-slate-800 rounded mb-2">
+                    <span>${d.data().name} - $${d.data().price}</span>
+                    <button class="danger p-1 text-xs" onclick="deleteItem('products', '${d.id}')">Borrar</button>
+                </div>`;
             });
         });
     }
 
-    window.updateStatus = (id, status) => updateDoc(doc(db, "orders", id), { status });
-    window.deleteItem = async (col, id) => { if(confirm("¿Eliminar?")) await deleteDoc(doc(db, col, id)); };
-
-    // SESIÓN
-    onAuthStateChanged(auth, user => {
-        if (!user) return show("landing");
-        if (user.email === "admin@vendors.com") {
-            show("admin");
-            loadAdminInventory();
-            loadAdminOrders();
-            loadStats();
-        } else {
-            show("store");
-            $("user-welcome").innerText = user.email;
-            loadStoreProducts();
-        }
-    });
+    async function loadStats() {
+        const oSnap = await getDocs(collection(db, "orders"));
+        const pSnap = await getDocs(collection(db, "products"));
+        $("stats-container").innerHTML = `
+            <div class="card"><h3>Ventas</h3><p class="text-3xl font-bold">${oSnap.size}</p></div>
+            <div class="card"><h3>Items</h3><p class="text-3xl font-bold">${pSnap.size}</p></div>
+        `;
+    }
 
 </script>
 </body>
