@@ -2,51 +2,112 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Vendors Pro | Sistema de Suministros</title>
+    <title>V-Shop | Gestión de Suministros</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="custom-scroll">
 
-    <section id="view-auth" class="view-section active">
-        <div class="auth-card">
-            <h1>Vendors System</h1>
-            <p>Inicia sesión para gestionar suministros</p>
+    <section id="view-auth" class="view-section active items-center justify-center p-4">
+        <div class="glass p-8 w-full max-w-md rounded-2xl shadow-2xl">
+            <div class="text-center mb-8">
+                <div class="inline-block bg-indigo-600 p-4 rounded-2xl mb-4">
+                    <i data-lucide="shopping-bag" class="text-white w-8 h-8"></i>
+                </div>
+                <h1 class="text-3xl font-black tracking-tighter">V-SHOP</h1>
+                <p id="auth-subtitle" class="text-slate-400 text-sm mt-2">Ingresa para explorar la tienda</p>
+            </div>
             
-            <input id="auth-email" type="email" placeholder="Correo electrónico">
-            <input id="auth-pass" type="password" placeholder="Contraseña">
-            
-            <div id="reg-fields" class="hidden">
-                <input id="auth-name" type="text" placeholder="Nombre completo">
+            <div class="space-y-4">
+                <div id="register-only" class="hidden">
+                    <input id="auth-name" type="text" placeholder="Nombre completo" class="mb-4">
+                </div>
+                <input id="auth-email" type="email" placeholder="Correo electrónico">
+                <input id="auth-pass" type="password" placeholder="Contraseña">
+                
+                <button id="btn-auth-action" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center gap-2 mt-4 shadow-lg shadow-indigo-600/30">
+                    <span id="btn-text">Iniciar Sesión</span>
+                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </button>
             </div>
 
-            <button id="btn-auth-action" class="btn-primary">Entrar</button>
-            <p id="toggle-auth" class="link-text">¿No tienes cuenta? Regístrate</p>
+            <div class="mt-8 text-center">
+                <p id="toggle-auth" class="text-indigo-400 text-sm cursor-pointer hover:underline">
+                    ¿No tienes cuenta? Regístrate aquí
+                </p>
+            </div>
         </div>
     </section>
 
     <section id="view-app" class="view-section">
-        <header>
-            <div class="user-info">
-                <h2 id="display-name">Usuario</h2>
-                <span id="display-role" class="badge">Rol</span>
+        <header class="glass sticky top-0 z-50 px-6 py-4 flex justify-between items-center border-b border-white/5">
+            <div class="flex items-center gap-10">
+                <h2 class="text-2xl font-black text-indigo-500 tracking-tighter cursor-pointer" onclick="showSection('shop')">V-SHOP</h2>
+                <nav id="nav-links" class="hidden md:flex gap-6 text-sm font-bold text-slate-400">
+                    </nav>
             </div>
-            <button id="btn-logout" class="btn-danger">Cerrar Sesión</button>
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <p id="display-name" class="text-sm font-bold leading-none text-white">Usuario</p>
+                    <span id="display-role" class="text-[9px] uppercase tracking-widest text-indigo-400 font-black">Cargando...</span>
+                </div>
+                <button id="btn-logout" class="bg-slate-800 hover:bg-red-600/20 hover:text-red-500 p-2.5 rounded-xl transition-all">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                </button>
+            </div>
         </header>
 
-        <div id="admin-panel" class="hidden">
-            <div class="card">
-                <h3>Añadir Producto</h3>
-                <input id="p-name" type="text" placeholder="Nombre del producto">
-                <input id="p-stock" type="number" placeholder="Cantidad inicial">
-                <input id="p-file" type="file">
-                <button id="btn-save-product" class="btn-success">Guardar Producto</button>
+        <main class="max-w-7xl mx-auto p-6 w-full">
+            <div id="section-shop" class="space-y-8">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h3 class="text-3xl font-extrabold tracking-tight">Suministros en Stock</h3>
+                        <p class="text-slate-400">Visualiza y solicita los productos disponibles.</p>
+                    </div>
+                </div>
+                <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    </div>
             </div>
-        </div>
 
-        <h3>Inventario / Catálogo</h3>
-        <div id="product-list" class="grid-container">
+            <div id="section-admin" class="hidden space-y-8">
+                <div class="flex items-center gap-3 border-b border-white/10 pb-6">
+                    <div class="bg-orange-500/20 p-2 rounded-lg">
+                        <i data-lucide="layout-dashboard" class="text-orange-500"></i>
+                    </div>
+                    <h3 class="text-3xl font-black uppercase tracking-tighter">Panel de Gestión</h3>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="glass p-8 rounded-2xl lg:col-span-2 shadow-xl">
+                        <h4 class="text-xl font-bold mb-6 flex items-center gap-2">
+                            <i data-lucide="package-plus" class="text-indigo-400"></i> Agregar al Inventario
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <input id="p-name" placeholder="Nombre del suministro">
+                            <input id="p-price" type="number" placeholder="Precio ($)">
+                            <div class="md:col-span-2">
+                                <input id="p-img-url" placeholder="URL de la imagen del producto">
+                            </div>
+                            <button id="btn-save-product" class="md:col-span-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2">
+                                <i data-lucide="save" class="w-5 h-5"></i> REGISTRAR SUMINISTRO
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="glass p-8 rounded-2xl border-orange-500/30 shadow-xl">
+                        <h4 class="text-xl font-bold mb-4 text-orange-400 flex items-center gap-2">
+                            <i data-lucide="user-plus"></i> Promover Admin
+                        </h4>
+                        <input id="admin-target-email" placeholder="email@ejemplo.com" class="mb-4">
+                        <button id="btn-promote-user" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 rounded-lg text-sm transition-all">
+                            DAR ACCESO ADMIN
+                        </button>
+                    </div>
+                </div>
             </div>
+        </main>
     </section>
 
     <script type="module" src="app.js"></script>

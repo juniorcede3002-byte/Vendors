@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, query, where, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
 // Configuración de Firebase
 const firebaseConfig = {
@@ -9,134 +9,155 @@ const firebaseConfig = {
     projectId: "proyectovendor"
 };
 
-// Cloudinary Config (Unsigned preset)
-const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/demo/image/upload";
-const CLOUDINARY_PRESET = "ml_default"; 
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-let userData = null;
+let currentUser = null;
 let isRegister = false;
 
-// --- ELEMENTOS UI ---
-const authBtn = document.getElementById('btn-auth-action');
-const toggleAuthText = document.getElementById('toggle-auth');
-const regFields = document.getElementById('reg-fields');
+// --- NAVEGACIÓN ENTRE VISTAS ---
+const setView = (viewId) => {
+    document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+    document.getElementById(viewId).classList.add('active');
+    lucide.createIcons();
+};
+
+window.showSection = (sectionId) => {
+    document.getElementById('section-shop').classList.toggle('hidden', sectionId !== 'shop');
+    document.getElementById('section-admin').classList.toggle('hidden', sectionId !== 'admin');
+};
 
 // --- AUTENTICACIÓN ---
-window.toggleAuth = () => {
+document.getElementById('toggle-auth').onclick = () => {
     isRegister = !isRegister;
-    regFields.classList.toggle('hidden', !isRegister);
-    authBtn.innerText = isRegister ? 'Registrarse' : 'Entrar';
-    toggleAuthText.innerText = isRegister ? '¿Ya tienes cuenta? Entra' : '¿No tienes cuenta? Regístrate';
+    document.getElementById('register-only').classList.toggle('hidden', !isRegister);
+    document.getElementById('btn-text').innerText = isRegister ? 'Crear Cuenta' : 'Iniciar Sesión';
+    document.getElementById('toggle-auth').innerText = isRegister ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate aquí';
 };
-toggleAuthText.onclick = window.toggleAuth;
 
-authBtn.onclick = async () => {
-    const email = document.getElementById('auth-email').value;
-    const pass = document.getElementById('auth-pass').value;
-    const name = document.getElementById('auth-name').value;
+document.getElementById('btn-auth-action').onclick = async () => {
+    const email = document.getElementById('auth-email').value.trim();
+    const pass = document.getElementById('auth-pass').value.trim();
+    const name = document.getElementById('auth-name').value.trim();
+
+    if (!email || !pass) return alert("Por favor rellena los campos.");
 
     try {
         if (isRegister) {
             const res = await createUserWithEmailAndPassword(auth, email, pass);
-            const role = email.includes('admin') ? 'admin' : 'user';
-            await setDoc(doc(db, "users", res.user.uid), { name, email, role });
+            await setDoc(doc(db, "users", res.user.uid), {
+                uid: res.user.uid,
+                name: name || email.split('@')[0],
+                email,
+                role: "user" // Rol por defecto (Solicitante)
+            });
         } else {
             await signInWithEmailAndPassword(auth, email, pass);
         }
-    } catch (e) { alert(e.message); }
+    } catch (err) { alert("Error: " + err.message); }
 };
 
 document.getElementById('btn-logout').onclick = () => signOut(auth);
 
-// --- ESTADO DE SESIÓN ---
+// --- MONITOR DE ESTADO DEL USUARIO ---
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        const snap = await getDoc(doc(db, "users", user.uid));
-        userData = snap.exists() ? snap.data() : { name: user.email, role: 'user' };
+        const docSnap = await getDoc(doc(db, "users", user.uid));
+        currentUser = docSnap.exists() ? docSnap.data() : { name: user.email, role: 'user' };
         
-        document.getElementById('display-name').innerText = userData.name;
-        document.getElementById('display-role').innerText = userData.role;
+        document.getElementById('display-name').innerText = currentUser.name;
+        document.getElementById('display-role').innerText = currentUser.role;
         
-        if (userData.role === 'admin') document.getElementById('admin-panel').classList.remove('hidden');
-        
-        showView('view-app');
-        loadProducts();
+        renderNavLinks();
+        loadInventory();
+        setView('view-app');
     } else {
-        showView('view-auth');
+        setView('view-auth');
     }
 });
 
-function showView(id) {
-    document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
+function renderNavLinks() {
+    const nav = document.getElementById('nav-links');
+    nav.classList.remove('hidden');
+    let links = `<button onclick="showSection('shop')" class="hover:text-white">Tienda</button>`;
+    if (currentUser.role === 'admin') {
+        links += `<button onclick="showSection('admin')" class="text-orange-500 font-bold">Panel Admin</button>`;
+    }
+    nav.innerHTML = links;
 }
 
-// --- LOGICA DE PRODUCTOS (Admin) ---
+// --- GESTIÓN DE INVENTARIO ---
 document.getElementById('btn-save-product').onclick = async () => {
     const name = document.getElementById('p-name').value;
-    const stock = parseInt(document.getElementById('p-stock').value);
-    const file = document.getElementById('p-file').files[0];
-    const btn = document.getElementById('btn-save-product');
+    const price = document.getElementById('p-price').value;
+    const img = document.getElementById('p-img-url').value;
 
-    if (!name || isNaN(stock)) return alert("Datos incompletos");
+    if (!name || !price) return alert("Nombre y precio son obligatorios.");
 
-    btn.disabled = true;
-    btn.innerText = "Subiendo...";
-
-    let imageUrl = "";
-    if (file) {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', CLOUDINARY_PRESET);
-        const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
-        const data = await res.json();
-        imageUrl = data.secure_url;
-    }
-
-    await addDoc(collection(db, "products"), { name, stock, img: imageUrl });
-    alert("Producto guardado");
-    btn.disabled = false;
-    btn.innerText = "Guardar Producto";
+    try {
+        await addDoc(collection(db, "products"), {
+            name,
+            price: parseFloat(price),
+            img: img || "https://via.placeholder.com/200",
+            createdAt: Date.now()
+        });
+        alert("Producto añadido exitosamente.");
+        document.getElementById('p-name').value = "";
+        document.getElementById('p-price').value = "";
+    } catch (e) { alert("Error al guardar: " + e.message); }
 };
 
-// --- CARGAR PRODUCTOS (Realtime) ---
-function loadProducts() {
-    onSnapshot(collection(db, "products"), (snap) => {
+function loadInventory() {
+    onSnapshot(collection(db, "products"), (snapshot) => {
         const list = document.getElementById('product-list');
         list.innerHTML = "";
-        snap.forEach(d => {
-            const p = d.data();
+        snapshot.forEach(docItem => {
+            const p = docItem.data();
             const card = document.createElement('div');
-            card.className = "card product-card";
+            card.className = "product-card glass rounded-2xl overflow-hidden border border-white/5";
             card.innerHTML = `
-                <img src="${p.img || 'https://via.placeholder.com/150'}">
-                <h4>${p.name}</h4>
-                <p>Stock: ${p.stock}</p>
-                ${userData.role === 'admin' 
-                    ? `<button onclick="deleteProduct('${d.id}')" class="btn-danger" style="font-size:10px">Eliminar</button>` 
-                    : `<button onclick="requestOrder('${d.id}', '${p.name}', ${p.stock})" class="btn-primary">Pedir</button>`}
+                <div class="h-44 bg-slate-800 relative">
+                    <img src="${p.img}" class="w-full h-full object-cover">
+                    ${currentUser.role === 'admin' ? `
+                        <button onclick="deleteProduct('${docItem.id}')" class="absolute top-2 right-2 bg-red-500 p-1.5 rounded-lg text-white">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    ` : ''}
+                </div>
+                <div class="p-5">
+                    <h4 class="font-bold text-white truncate">${p.name}</h4>
+                    <p class="text-indigo-400 font-black text-xl mt-1">$${p.price}</p>
+                    <button onclick="alert('Solicitud enviada')" class="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 py-2 rounded-xl text-xs font-bold transition-all">
+                        SOLICITAR
+                    </button>
+                </div>
             `;
             list.appendChild(card);
         });
+        lucide.createIcons();
     });
 }
 
-// Funciones globales para botones dinámicos
-window.deleteProduct = (id) => deleteDoc(doc(db, "products", id));
-window.requestOrder = async (id, name, stock) => {
-    const qty = prompt(`¿Cuántos ${name} deseas solicitar?`, "1");
-    if (qty && parseInt(qty) <= stock) {
-        await addDoc(collection(db, "orders"), {
-            product: name,
-            qty: parseInt(qty),
-            user: userData.name,
-            status: "pending",
-            date: Date.now()
-        });
-        alert("Solicitud enviada");
-    } else alert("Cantidad no válida o insuficiente stock");
+// Función global para borrar
+window.deleteProduct = async (id) => {
+    if (confirm("¿Eliminar este suministro definitivamente?")) {
+        await deleteDoc(doc(db, "products", id));
+    }
+};
+
+// --- GESTIÓN DE ROLES ---
+document.getElementById('btn-promote-user').onclick = async () => {
+    const email = document.getElementById('admin-target-email').value.trim();
+    if (!email) return;
+
+    const q = query(collection(db, "users"), where("email", "==", email));
+    const snap = await getDocs(q);
+    
+    if (!snap.empty) {
+        await updateDoc(doc(db, "users", snap.docs[0].id), { role: "admin" });
+        alert(`Usuario ${email} ahora es Administrador.`);
+    } else {
+        alert("Usuario no encontrado.");
+    }
 };
