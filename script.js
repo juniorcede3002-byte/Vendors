@@ -11,66 +11,74 @@ const firebaseConfig = {
   appId: "1:1038115164902:web:3d72bd44f3e5da487c2127"
 };
 
-// Inicializar Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-const form = document.getElementById('product-form');
-const productList = document.getElementById('product-list');
+// Manejo del Modal
+const modal = document.getElementById("modal");
+const btnOpen = document.getElementById("open-modal");
+const spanClose = document.querySelector(".close");
 
-// --- FUNCIÓN: GUARDAR PRODUCTO ---
+btnOpen.onclick = () => modal.style.display = "block";
+spanClose.onclick = () => modal.style.display = "none";
+window.onclick = (event) => { if (event.target == modal) modal.style.display = "none"; };
+
+// Subida de datos
+const form = document.getElementById('product-form');
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-save');
-    
-    const file = document.getElementById('product-image').files[0];
-    const name = document.getElementById('product-name').value;
+    const file = document.getElementById('media-file').files[0];
     const desc = document.getElementById('product-desc').value;
-    const price = document.getElementById('product-price').value;
 
     try {
         btn.innerText = "Subiendo...";
         btn.disabled = true;
 
-        // 1. Subir imagen a Storage
-        const storageRef = ref(storage, 'productos/' + Date.now() + "_" + file.name);
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
+        const isVideo = file.type.includes('video');
+        const storageRef = ref(storage, `content/${Date.now()}_${file.name}`);
+        
+        // 1. Subir a Storage
+        const snapshot = await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(snapshot.ref);
 
-        // 2. Guardar datos en Firestore
+        // 2. Guardar en Firestore
         await addDoc(collection(db, "productos"), {
-            nombre: name,
             descripcion: desc,
-            precio: parseFloat(price),
-            imagen: url,
-            createdAt: new Date()
+            mediaUrl: url,
+            tipo: isVideo ? 'video' : 'foto',
+            timestamp: new Date()
         });
 
         form.reset();
-        alert("Producto agregado al stock");
+        modal.style.display = "none";
+        alert("Publicado con éxito");
     } catch (error) {
         console.error(error);
-        alert("Error al subir: " + error.message);
+        alert("Error al subir archivo");
     } finally {
-        btn.innerText = "Guardar en Inventario";
+        btn.innerText = "Publicar en Inventario";
         btn.disabled = false;
     }
 });
 
-// --- FUNCIÓN: LEER STOCK EN TIEMPO REAL ---
-const q = query(collection(db, "productos"), orderBy("createdAt", "desc"));
+// Cargar inventario en tiempo real
+const q = query(collection(db, "productos"), orderBy("timestamp", "desc"));
 onSnapshot(q, (snapshot) => {
-    productList.innerHTML = '';
+    const feed = document.getElementById('feed');
+    feed.innerHTML = '';
     snapshot.forEach((doc) => {
-        const item = doc.data();
-        productList.innerHTML += `
-            <div class="card">
-                <img src="${item.imagen}" alt="${item.nombre}">
-                <div class="card-info">
-                    <h3>${item.nombre}</h3>
-                    <p>${item.descripcion}</p>
-                    <span class="price">$${item.precio}</span>
+        const p = doc.data();
+        const mediaTag = p.tipo === 'video' 
+            ? `<video src="${p.mediaUrl}" controls></video>` 
+            : `<img src="${p.mediaUrl}">`;
+        
+        feed.innerHTML += `
+            <div class="product-card">
+                ${mediaTag}
+                <div class="info">
+                    <p>${p.descripcion}</p>
                 </div>
             </div>
         `;
