@@ -15,230 +15,195 @@ const db = getFirestore(app);
 const CLOUD_NAME = "df79cjklp";
 const UPLOAD_PRESET = "vendors_preset";
 
-// ESTADO GLOBAL
-let products = [];
+// --- ESTADO LOCAL ---
+let allProducts = [];
 let cart = [];
-let currentRole = 'user';
-let currentCategory = 'todos';
-let searchTerm = '';
+let role = '';
+let filterCat = 'todos';
+let searchTxt = '';
 
-// --- INICIALIZACIÓN ---
-document.addEventListener('DOMContentLoaded', () => {
-    initRealtimeData();
-    setupEventListeners();
-});
-
-// --- ROLES ---
-window.setRole = (role) => {
-    currentRole = role;
-    document.body.className = `role-${role}`;
-    document.getElementById('current-role-text').innerText = role === 'admin' ? 'Admin' : 'Usuario';
-    closeAllModals();
+// --- SISTEMA DE LOGS Y ROLES ---
+window.selectRole = (selected) => {
+    role = selected;
+    document.body.className = `${selected}-mode`;
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    initApp();
 };
 
-// --- ESCUCHA DE DATOS ---
-function initRealtimeData() {
-    // Escuchar Productos
+window.logout = () => {
+    location.reload();
+};
+
+// --- INICIALIZACIÓN ---
+function initApp() {
     onSnapshot(query(collection(db, "productos"), orderBy("fecha", "desc")), (snap) => {
-        products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderGrid();
+        allProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderFeed();
     });
 
-    // Escuchar Pedidos
     onSnapshot(query(collection(db, "pedidos"), orderBy("fecha", "desc")), (snap) => {
-        const pedidos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderOrders(pedidos);
+        renderOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
 }
 
-// --- RENDERIZADO INTELIGENTE (BÚSQUEDA Y FILTRO) ---
-function renderGrid() {
+// --- RENDERIZADO ---
+function renderFeed() {
     const grid = document.getElementById('product-grid');
-    grid.innerHTML = "";
+    grid.innerHTML = '';
 
-    const filtered = products.filter(p => {
-        const matchesCat = currentCategory === 'todos' || p.categoria === currentCategory;
-        const matchesSearch = p.nombre.toLowerCase().includes(searchTerm.toLowerCase());
+    const filtered = allProducts.filter(p => {
+        const matchesCat = filterCat === 'todos' || p.categoria === filterCat;
+        const matchesSearch = p.nombre.toLowerCase().includes(searchTxt.toLowerCase());
         return matchesCat && matchesSearch;
     });
 
     filtered.forEach(p => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-            <div class="card-media">
-                ${p.tipo === 'video' ? `<video src="${p.mediaUrl}"></video>` : `<img src="${p.mediaUrl}">`}
-            </div>
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.innerHTML = `
+            <div class="card-media">${p.tipo === 'video' ? `<video src="${p.mediaUrl}"></video>` : `<img src="${p.mediaUrl}">`}</div>
             <div class="card-body">
                 <h3>${p.nombre}</h3>
                 <div style="display:flex; justify-content:space-between; align-items:center">
-                    <span class="price">$${p.precio.toFixed(2)}</span>
-                    <div class="admin-only">
-                        <button class="btn-danger-sm" onclick="event.stopPropagation(); deleteProd('${p.id}')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+                    <span class="price-hero" style="font-size:1.2rem">$${p.precio}</span>
+                    <button class="admin-only btn-secondary" onclick="event.stopPropagation(); deleteProd('${p.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
             </div>
         `;
-        card.onclick = () => openDetail(p);
-        grid.appendChild(card);
+        el.onclick = () => showDetail(p);
+        grid.appendChild(el);
     });
 }
 
-// --- BUSCADOR Y FILTROS ---
-function setupEventListeners() {
-    // Buscador
-    document.getElementById('search-input').oninput = (e) => {
-        searchTerm = e.target.value;
-        renderGrid();
-    };
-
-    // Filtros
-    document.querySelectorAll('.filter-chip').forEach(chip => {
-        chip.onclick = () => {
-            document.querySelector('.filter-chip.active').classList.remove('active');
-            chip.classList.add('active');
-            currentCategory = chip.dataset.category;
-            renderGrid();
-        };
-    });
-
-    // Modales disparadores
-    document.getElementById('profile-trigger').onclick = () => showModal('modal-role');
-    document.getElementById('cart-trigger').onclick = () => { renderCart(); showModal('modal-cart'); };
-    document.getElementById('btn-open-upload').onclick = () => showModal('modal-upload');
-    document.getElementById('btn-open-admin-orders').onclick = () => showModal('modal-orders');
-    document.getElementById('view-orders-btn')?.addEventListener('click', () => showModal('modal-orders'));
-
-    // Cerrar modales
-    document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.onclick = () => closeAllModals();
-    });
-}
-
-// --- FUNCIONES CORE ---
-async function deleteProd(id) {
-    if(confirm("¿Eliminar del stock?")) await deleteDoc(doc(db, "productos", id));
-}
-
-function openDetail(p) {
-    const box = document.getElementById('detail-media');
-    box.innerHTML = p.tipo === 'video' ? `<video src="${p.mediaUrl}" controls autoplay></video>` : `<img src="${p.mediaUrl}">`;
-    document.getElementById('detail-title').innerText = p.nombre;
-    document.getElementById('detail-desc').innerText = p.descripcion;
-    document.getElementById('detail-price').innerText = `$${p.precio.toFixed(2)}`;
-    document.getElementById('detail-cat').innerText = p.categoria;
-    
-    document.getElementById('btn-add-to-cart').onclick = () => {
-        cart.push(p);
-        updateCartCount();
-        closeAllModals();
-    };
-    showModal('modal-detail');
-}
-
-// --- GESTIÓN DE CARRITO Y CHECKOUT ---
-function updateCartCount() {
-    document.getElementById('cart-count').innerText = cart.length;
-}
-
-function renderCart() {
-    const list = document.getElementById('cart-items-list');
-    let total = 0;
-    list.innerHTML = cart.length ? "" : "<p>Bolsa vacía</p>";
-    cart.forEach((item, i) => {
-        total += item.precio;
-        list.innerHTML += `
-            <div class="cart-item">
-                <div><strong>${item.nombre}</strong><br><small>$${item.precio}</small></div>
-                <button onclick="removeFromCart(${i})" class="btn-remove">Quitar</button>
-            </div>
-        `;
-    });
-    document.getElementById('cart-total-amount').innerText = `$${total.toFixed(2)}`;
-}
-
-window.removeFromCart = (i) => { cart.splice(i,1); renderCart(); updateCartCount(); };
-
-document.getElementById('btn-checkout').onclick = () => {
-    if(!cart.length) return;
-    hideModal('modal-cart');
-    showModal('modal-checkout');
+// --- BUSCADOR Y CATEGORÍAS ---
+document.getElementById('main-search').oninput = (e) => {
+    searchTxt = e.target.value;
+    renderFeed();
 };
 
+document.querySelectorAll('.chip').forEach(c => {
+    c.onclick = () => {
+        document.querySelector('.chip.active').classList.remove('active');
+        c.classList.add('active');
+        filterCat = c.dataset.cat;
+        renderFeed();
+    };
+});
+
+// --- FUNCIONALIDAD PRODUCTOS ---
+window.showDetail = (p) => {
+    const container = document.getElementById('detail-media-container');
+    container.innerHTML = p.tipo === 'video' ? `<video src="${p.mediaUrl}" controls autoplay></video>` : `<img src="${p.mediaUrl}">`;
+    document.getElementById('det-title').innerText = p.nombre;
+    document.getElementById('det-desc').innerText = p.descripcion;
+    document.getElementById('det-price').innerText = `$${p.precio}`;
+    document.getElementById('det-cat').innerText = p.categoria;
+    
+    document.getElementById('add-to-cart-btn').onclick = () => {
+        cart.push(p);
+        updateCart();
+        closeModal('modal-detail');
+    };
+    showModal('modal-detail');
+};
+
+function updateCart() {
+    document.getElementById('cart-badge').innerText = cart.length;
+}
+
+window.deleteProd = async (id) => {
+    if(confirm("¿Eliminar del inventario?")) await deleteDoc(doc(db, "productos", id));
+};
+
+// --- PEDIDOS Y GESTIÓN ---
 document.getElementById('checkout-form').onsubmit = async (e) => {
     e.preventDefault();
     await addDoc(collection(db, "pedidos"), {
-        productos: cart,
-        total: cart.reduce((a,b) => a + b.precio, 0),
-        ubicacion: document.getElementById('check-location').value,
+        items: cart,
+        total: cart.reduce((a, b) => a + b.precio, 0),
+        direccion: document.getElementById('ship-address').value,
         estado: 'pendiente',
-        fecha: new Date(),
-        rol: currentRole
+        fecha: new Date()
     });
-    alert("Pedido enviado. Pendiente de aprobación.");
-    cart = []; updateCartCount(); closeAllModals();
+    alert("Solicitud enviada correctamente.");
+    cart = []; updateCart(); closeModal('modal-checkout');
 };
 
-// --- GESTIÓN DE PEDIDOS (ADMIN) ---
 function renderOrders(pedidos) {
-    const container = document.getElementById('orders-container');
-    container.innerHTML = "";
+    const list = document.getElementById('orders-list');
+    list.innerHTML = '';
     pedidos.forEach(o => {
         const card = document.createElement('div');
-        card.className = 'order-card';
+        card.className = 'card-body';
+        card.style = 'background:#f1f5f9; margin-bottom:10px; border-radius:10px';
         card.innerHTML = `
             <div style="display:flex; justify-content:space-between">
-                <strong>Pedido: ${o.productos.map(p => p.nombre).join(', ')}</strong>
+                <strong>Pedido: ${o.items.map(i => i.nombre).join(', ')}</strong>
                 <span class="status-badge status-${o.estado}">${o.estado}</span>
             </div>
-            <p>Ubicación: ${o.ubicacion}</p>
+            <p style="font-size:0.8rem">Ubicación: ${o.direccion}</p>
             <div class="admin-only" style="margin-top:10px">
-                <button class="btn-approve" onclick="changeStatus('${o.id}', 'aprobado')">Aprobar</button>
-                <button class="btn-reject" onclick="changeStatus('${o.id}', 'rechazado')">Rechazar</button>
+                <button class="btn-primary" onclick="updateStatus('${o.id}', 'aprobado')" style="padding:5px 10px; font-size:0.7rem">Aprobar</button>
+                <button class="btn-secondary" onclick="updateStatus('${o.id}', 'rechazado')" style="padding:5px 10px; font-size:0.7rem">Rechazar</button>
             </div>
         `;
-        container.appendChild(card);
+        list.appendChild(card);
     });
 }
 
-window.changeStatus = async (id, status) => {
+window.updateStatus = async (id, status) => {
     await updateDoc(doc(db, "pedidos", id), { estado: status });
 };
 
-// --- SUBIDA (ADMIN) ---
-document.getElementById('upload-form').onsubmit = async (e) => {
+// --- SUBIDA DE ARCHIVOS (ADMIN) ---
+document.getElementById('add-product-form').onsubmit = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-publish');
-    btn.disabled = true; btn.innerText = "Subiendo...";
-    
-    const file = document.getElementById('up-file').files[0];
+    btn.disabled = true; btn.innerText = "Subiendo multimedia...";
+
+    const file = document.getElementById('p-file').files[0];
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', UPLOAD_PRESET);
 
     try {
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, { method: "POST", body: formData });
-        const cloud = await res.json();
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, { method: 'POST', body: formData });
+        const data = await res.json();
 
         await addDoc(collection(db, "productos"), {
-            nombre: document.getElementById('up-name').value,
-            categoria: document.getElementById('up-cat').value,
-            descripcion: document.getElementById('up-desc').value,
-            precio: parseFloat(document.getElementById('up-price').value),
-            mediaUrl: cloud.secure_url,
-            tipo: cloud.resource_type,
+            nombre: document.getElementById('p-name').value,
+            categoria: document.getElementById('p-cat').value,
+            descripcion: document.getElementById('p-desc').value,
+            precio: parseFloat(document.getElementById('p-price').value),
+            mediaUrl: data.secure_url,
+            tipo: data.resource_type,
             fecha: new Date()
         });
-        closeAllModals();
-        document.getElementById('upload-form').reset();
-    } catch (err) { alert(err.message); }
-    finally { btn.disabled = false; btn.innerText = "Publicar"; }
+        closeModal('modal-add');
+        document.getElementById('add-product-form').reset();
+    } catch (err) { alert(err.message); } finally { btn.disabled = false; btn.innerText = "Publicar"; }
 };
 
 // --- HELPERS MODALES ---
-function showModal(id) { document.getElementById(id).style.display = 'flex'; }
-function hideModal(id) { document.getElementById(id).style.display = 'none'; }
-function closeAllModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
-function closeAllModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
+window.showModal = (id) => document.getElementById(id).style.display = 'flex';
+window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+
+document.getElementById('cart-btn').onclick = () => {
+    const list = document.getElementById('cart-list');
+    list.innerHTML = cart.length ? '' : 'Bolsa vacía';
+    let total = 0;
+    cart.forEach(i => { total += i.precio; list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee">${i.nombre} - $${i.precio}</div>`; });
+    document.getElementById('cart-sum').innerText = `$${total.toFixed(2)}`;
+    showModal('modal-cart');
+};
+
+window.openCheckout = () => { if(cart.length) { closeModal('modal-cart'); showModal('modal-checkout'); } };
+document.getElementById('admin-orders-btn').onclick = () => showModal('modal-orders');
+document.getElementById('view-my-orders').onclick = () => {
+    document.getElementById('orders-title-text').innerText = "Estado de mis Solicitudes";
+    showModal('modal-orders');
+};
+document.getElementById('open-add-modal').onclick = () => showModal('modal-add');
