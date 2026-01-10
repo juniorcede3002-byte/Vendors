@@ -1,103 +1,48 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Vendors Pro | Gestión Integral</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <title>Vendors System</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-    <!-- 1. LANDING PAGE -->
-    <section id="view-landing" class="view-section active flex-col items-center justify-center text-center px-6">
-        <div class="decor"></div>
-        <div class="relative z-10 max-w-4xl">
-            <div class="mb-8 inline-flex items-center gap-3 bg-slate-900/50 p-2 pr-6 rounded-full border border-slate-800">
-                <div class="w-10 h-10 bg-sky-500 rounded-full flex items-center justify-center text-slate-950 font-black">V</div>
-                <span class="text-xs font-bold tracking-widest uppercase">Sistema de Suministros Pro</span>
-            </div>
-            <h1 class="title">Toda tu tienda en <br><span class="accent">un solo lugar.</span></h1>
-            <p class="sub">Gestiona inventarios, aprueba solicitudes y controla el flujo de materiales de tu empresa con precisión quirúrgica.</p>
-            <button onclick="navigateTo('auth')" class="cta">
-                IR A COMPRAR
-                <i class="fas fa-arrow-right ml-3"></i>
-            </button>
-        </div>
-    </section>
+<!-- LANDING -->
+<section id="view-landing" class="view active">
+  <h1>Sistema de Suministros</h1>
+  <p>Gestiona inventarios y pedidos en un solo lugar</p>
+  <button onclick="showView('view-auth')">Ingresar</button>
+</section>
 
-    <!-- 2. AUTHENTICATION -->
-    <section id="view-auth" class="view-section flex-col items-center justify-center">
-        <div class="w-full max-w-md relative p-6">
-            <button onclick="navigateTo('landing')" class="back-btn">
-                <i class="fas fa-chevron-left"></i> Volver al inicio
-            </button>
-            <div class="glass p-10 rounded-[2.5rem] shadow-2xl">
-                <div class="text-center mb-10">
-                    <h2 class="text-3xl font-black mb-2" id="auth-title">Acceso Seguro</h2>
-                    <p class="text-slate-500 text-sm" id="auth-subtitle">Ingresa para gestionar tus pedidos</p>
-                </div>
+<!-- AUTH -->
+<section id="view-auth" class="view">
+  <h2>Acceso Seguro</h2>
 
-                <div class="space-y-4">
-                    <div class="space-y-2">
-                        <label class="label">Email Corporativo</label>
-                        <input id="auth-email" type="email" class="input" placeholder="admin@empresa.com">
-                    </div>
-                    <div class="space-y-2">
-                        <label class="label">Contraseña</label>
-                        <input id="auth-pass" type="password" class="input" placeholder="••••••••">
-                    </div>
-                    <div id="register-fields" class="hidden space-y-2">
-                        <label class="label">Nombre Completo</label>
-                        <input id="auth-name" type="text" class="input" placeholder="Nombre de usuario">
-                    </div>
+  <input id="auth-email" type="email" placeholder="Correo" />
+  <input id="auth-pass" type="password" placeholder="Contraseña" />
 
-                    <button id="btn-auth-action" class="primary-btn">INICIAR SESIÓN</button>
+  <div id="register-box" class="hidden">
+    <input id="auth-name" type="text" placeholder="Nombre completo" />
+  </div>
 
-                    <button id="btn-switch-auth" class="switch-link">¿No tienes cuenta? Regístrate aquí</button>
-                </div>
-            </div>
-        </div>
-    </section>
+  <button id="btn-auth-action">Iniciar sesión</button>
+  <p id="switch-auth" onclick="toggleRegisterUI(true)">¿No tienes cuenta? Regístrate</p>
+</section>
 
-    <!-- 3. INTERFAZ PRINCIPAL -->
-    <section id="view-app" class="view-section flex flex-col md:flex-row">
-        <!-- Sidebar -->
-        <aside class="sidebar glass">
-            <div class="flex items-center gap-3 mb-12">
-                <div class="w-10 h-10 bg-sky-500 rounded-xl flex items-center justify-center text-slate-950 font-black">V</div>
-                <div>
-                    <span class="text-xl font-black block leading-none">VENDORS</span>
-                    <span class="text-[10px] font-bold text-sky-500 uppercase tracking-tighter">Shop & Management</span>
-                </div>
-            </div>
+<!-- USER -->
+<section id="view-user" class="view">
+  <h2>Panel Usuario</h2>
+  <p>Catálogo disponible</p>
+  <button onclick="logout()">Cerrar sesión</button>
+</section>
 
-            <nav id="sidebar-nav" class="flex-grow space-y-2"></nav>
+<!-- ADMIN -->
+<section id="view-admin" class="view">
+  <h2>Panel Administrador</h2>
+  <p>Gestión de inventario</p>
+  <button onclick="logout()">Cerrar sesión</button>
+</section>
 
-            <div class="mt-auto pt-6 border-t border-slate-800">
-                <div class="flex items-center gap-4 bg-slate-900/80 p-4 rounded-2xl mb-4">
-                    <div class="w-12 h-12 rounded-xl bg-sky-500 flex items-center justify-center font-black text-slate-950 text-xl" id="user-avatar">?</div>
-                    <div class="flex-grow overflow-hidden">
-                        <p class="text-sm font-black truncate text-white" id="user-display-name">...</p>
-                        <p class="text-[9px] text-sky-400 font-black uppercase" id="user-role-tag">CARGANDO</p>
-                    </div>
-                </div>
-                <button id="btn-logout" class="logout-btn">Cerrar Sesión <i class="fas fa-power-off ml-2"></i></button>
-            </div>
-        </aside>
-
-        <!-- Main Content Area -->
-        <main class="main-content">
-            <div id="app-dynamic-view" class="max-w-6xl mx-auto w-full"></div>
-        </main>
-    </section>
-
-    <!-- MODAL GLOBAL -->
-    <div id="modal-container" class="modal hidden">
-        <div class="glass p-10 rounded-[3rem] w-full max-w-lg shadow-2xl relative" id="modal-body"></div>
-    </div>
-
-    <script type="module" src="app.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
