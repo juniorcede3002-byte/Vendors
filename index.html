@@ -164,18 +164,19 @@
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, getDocs, onSnapshot, updateDoc, doc, deleteDoc, query, orderBy, where, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+    // --- CONFIGURACIONES (Mantenidas según lo solicitado) ---
     const firebaseConfig = {
         apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
         authDomain: "proyectovendor.firebaseapp.com",
         projectId: "proyectovendor"
     };
 
+    const CLOUD_NAME = "df79cjklp";
+    const UPLOAD_PRESET = "vendors_preset";
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-
-    const CLOUD_NAME = "df79cjklp";
-    const UPLOAD_PRESET = "vendors_preset";
 
     const $ = id => document.getElementById(id);
     let cart = [];
@@ -193,6 +194,7 @@
         $("main-modal").classList.remove("hidden");
     };
 
+    // --- CLOUDINARY UPLOAD ---
     async function uploadToCloudinary(file) {
         const form = new FormData();
         form.append("file", file);
@@ -221,6 +223,14 @@
     };
     $("logout").onclick = () => signOut(auth);
     $("logoutAdmin").onclick = () => signOut(auth);
+
+    // --- ADMIN TABS ---
+    window.switchAdminTab = (tab, el) => {
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        $(`tab-${tab}`).classList.remove('hidden');
+        el.classList.add('active');
+    };
 
     // --- CARRITO & PAGO ---
     window.toggleCart = () => {
@@ -468,12 +478,18 @@
         });
     }
 
+    window.deleteItem = async (coll, id) => {
+        if(confirm("¿Estás seguro de eliminar este item?")) {
+            await deleteDoc(doc(db, coll, id));
+        }
+    };
+
     async function loadStats() {
         const oSnap = await getDocs(collection(db, "orders"));
         const pSnap = await getDocs(collection(db, "products"));
         $("stats-container").innerHTML = `
             <div class="card"><h3>Ventas</h3><p class="text-3xl font-bold">${oSnap.size}</p></div>
-            <div class="card"><h3>Items</h3><p class="text-3xl font-bold">${pSnap.size}</p></div>
+            <div class="card"><h3>Items en Stock</h3><p class="text-3xl font-bold">${pSnap.size}</p></div>
         `;
     }
 
