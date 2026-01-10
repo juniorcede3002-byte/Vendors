@@ -1,63 +1,411 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Vendors</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles.css">
-</head>
+    <meta charset="UTF-8">
+    <title>Vendors Pro | Admin & Store</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; background: #0f172a; color: #e2e8f0; overflow-x: hidden; }
+        .hidden { display: none !important; }
+        .card { background: #1e293b; border: 1px solid #334155; padding: 20px; border-radius: 12px; margin-bottom: 16px; }
+        .grid-products { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; outline: none; }
+        input:focus { border-color: #38bdf8; }
+        button { padding: 10px 20px; border-radius: 8px; border: none; background: #38bdf8; color: #000; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        button:hover { background: #7dd3fc; transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+        button.secondary { background: #475569; color: white; }
+        button.danger { background: #ef4444; color: white; }
+        
+        /* Sidebar Admin */
+        .sidebar { width: 260px; background: #1e293b; border-right: 1px solid #334155; height: 100vh; position: fixed; left: 0; top: 0; padding: 20px; }
+        .admin-main { margin-left: 260px; padding: 40px; width: calc(100% - 260px); }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; color: #94a3b8; cursor: pointer; margin-bottom: 5px; transition: 0.2s; }
+        .nav-item:hover { background: #334155; color: white; }
+        .nav-item.active { background: #38bdf8; color: #000; }
 
+        /* Status colors */
+        .status-pendiente { color: #fbbf24; }
+        .status-aprobado { color: #34d399; }
+        .status-rechazado { color: #f87171; }
+    </style>
+</head>
 <body>
 
 <!-- LANDING -->
-<section id="landing">
-  <div class="card center">
-    <h1>Vendors</h1>
-    <p>Plataforma de compras con validación administrativa.</p>
-    <button id="goAuth">Entrar</button>
-  </div>
+<section id="landing" class="min-h-screen flex items-center justify-center text-center">
+    <div class="card max-w-md w-full p-12">
+        <h1 class="text-5xl font-black text-sky-400 mb-4">Vendors</h1>
+        <p class="text-slate-400 mb-8">Gestión de suministros y validación de compras.</p>
+        <button id="goAuth" class="w-full text-lg py-4">Entrar al Sistema</button>
+    </div>
 </section>
 
 <!-- AUTH -->
-<section id="auth" class="hidden">
-  <div class="card center">
-    <h2>Acceso</h2>
-    <input id="email" placeholder="Correo">
-    <input id="password" type="password" placeholder="Contraseña">
-    <button id="login">Login</button>
-    <button id="register">Registro</button>
-  </div>
+<section id="auth" class="hidden min-h-screen flex items-center justify-center">
+    <div class="card w-full max-w-sm">
+        <h2 class="text-2xl font-bold mb-6 text-center">Acceso</h2>
+        <input id="email" type="email" placeholder="Correo electrónico">
+        <input id="password" type="password" placeholder="Contraseña">
+        <div class="flex flex-col gap-2 mt-4">
+            <button id="login">Iniciar Sesión</button>
+            <button id="register" class="secondary">Registrarse</button>
+        </div>
+        <button onclick="location.reload()" class="mt-4 text-sm text-slate-500 hover:text-white w-full">Volver</button>
+    </div>
 </section>
 
-<!-- STORE -->
-<section id="store" class="hidden">
-  <div class="container">
-    <h2>Productos</h2>
-    <div id="products" class="grid"></div>
-    <button id="logout">Cerrar sesión</button>
-  </div>
+<!-- STORE (VISTA USUARIO) -->
+<section id="store" class="hidden py-20">
+    <div class="container mx-auto px-6">
+        <div class="flex justify-between items-center mb-10">
+            <div>
+                <h2 class="text-3xl font-bold">Catálogo de Suministros</h2>
+                <p id="user-welcome" class="text-slate-400"></p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="showMyOrders()" class="secondary">Mis Pedidos</button>
+                <button id="logout" class="danger">Salir</button>
+            </div>
+        </div>
+        <div id="products-list" class="grid-products"></div>
+    </div>
 </section>
 
-<!-- ADMIN -->
+<!-- ADMIN (VISTA PANEL DESGLOSADO) -->
 <section id="admin" class="hidden">
-  <div class="container">
-    <h2>Panel Admin</h2>
-
-    <div class="card">
-      <h3>Nuevo producto</h3>
-      <input id="pName" placeholder="Nombre">
-      <input id="pPrice" type="number" placeholder="Precio">
-      <input id="pImg" type="file">
-      <button id="addProduct">Agregar</button>
+    <div class="sidebar">
+        <div class="text-2xl font-black text-sky-400 mb-10 px-2">ADMIN PANEL</div>
+        <nav>
+            <div class="nav-item active" onclick="switchAdminTab('dashboard', this)">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </div>
+            <div class="nav-item" onclick="switchAdminTab('inventory', this)">
+                <i class="fas fa-boxes"></i> Inventario
+            </div>
+            <div class="nav-item" onclick="switchAdminTab('orders', this)">
+                <i class="fas fa-shopping-cart"></i> Solicitudes
+            </div>
+            <div class="nav-item" onclick="switchAdminTab('users', this)">
+                <i class="fas fa-users"></i> Usuarios
+            </div>
+            <div class="nav-item" onclick="switchAdminTab('history', this)">
+                <i class="fas fa-history"></i> Historial
+            </div>
+        </nav>
+        <div class="absolute bottom-10 left-0 w-full px-6">
+            <button id="logoutAdmin" class="danger w-full">Cerrar Sesión</button>
+        </div>
     </div>
 
-    <h3>Compras</h3>
-    <div id="orders"></div>
+    <div class="admin-main">
+        <!-- Tab Dashboard -->
+        <div id="tab-dashboard" class="admin-tab">
+            <h2 class="text-3xl font-bold mb-8">Resumen General</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="stats-container">
+                <!-- Estadísticas dinámicas -->
+            </div>
+        </div>
 
-    <button id="logoutAdmin">Cerrar sesión</button>
-  </div>
+        <!-- Tab Inventario -->
+        <div id="tab-inventory" class="admin-tab hidden">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-bold">Gestión de Inventario</h2>
+                <button onclick="document.getElementById('form-add-p').classList.toggle('hidden')">+ Nuevo Item</button>
+            </div>
+            
+            <div id="form-add-p" class="card hidden mb-8">
+                <h3 class="text-xl font-bold mb-4 text-sky-400">Agregar Suministro</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <input id="pName" placeholder="Nombre del suministro">
+                    <input id="pPrice" type="number" placeholder="Precio ($)">
+                    <input id="pImg" type="file" accept="image/*" class="text-sm">
+                </div>
+                <button id="addProduct" class="mt-4">Guardar en Base de Datos</button>
+            </div>
+
+            <div id="admin-inventory-list" class="space-y-2">
+                <!-- Lista de productos en formato simple -->
+            </div>
+        </div>
+
+        <!-- Tab Solicitudes -->
+        <div id="tab-orders" class="admin-tab hidden">
+            <h2 class="text-3xl font-bold mb-8">Pedidos Pendientes</h2>
+            <div id="admin-orders-list" class="space-y-4">
+                <!-- Lista de órdenes pendientes -->
+            </div>
+        </div>
+
+        <!-- Tab Usuarios -->
+        <div id="tab-users" class="admin-tab hidden">
+            <h2 class="text-3xl font-bold mb-8">Usuarios Registrados</h2>
+            <div id="admin-users-list" class="bg-slate-800 rounded-xl overflow-hidden">
+                <!-- Tabla de usuarios -->
+            </div>
+        </div>
+
+        <!-- Tab Historial -->
+        <div id="tab-history" class="admin-tab hidden">
+            <h2 class="text-3xl font-bold mb-8">Historial de Operaciones</h2>
+            <div id="admin-history-list" class="space-y-2 text-sm">
+                <!-- Historial de ventas terminadas -->
+            </div>
+        </div>
+    </div>
 </section>
 
-<script type="module" src="app.js"></script>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, onSnapshot, updateDoc, doc, deleteDoc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
+        authDomain: "proyectovendor.firebaseapp.com",
+        projectId: "proyectovendor"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const CLOUD_NAME = "df79cjklp";
+    const UPLOAD_PRESET = "vendors_preset";
+
+    const $ = id => document.getElementById(id);
+
+    // NAVEGACIÓN
+    const show = id => {
+        ["landing", "auth", "store", "admin"].forEach(s => $(s).classList.add("hidden"));
+        $(id).classList.remove("hidden");
+    };
+
+    window.switchAdminTab = (tabId, el) => {
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        $(`tab-${tabId}`).classList.remove('hidden');
+        el.classList.add('active');
+        if(tabId === 'dashboard') loadStats();
+        if(tabId === 'users') loadUsers();
+    };
+
+    // AUTH
+    $("goAuth").onclick = () => show("auth");
+    $("login").onclick = () => signInWithEmailAndPassword(auth, $("email").value, $("password").value).catch(e => alert("Error: " + e.message));
+    $("register").onclick = async () => {
+        try {
+            const res = await createUserWithEmailAndPassword(auth, $("email").value, $("password").value);
+            await addDoc(collection(db, "users_data"), { email: $("email").value, uid: res.user.uid, role: 'client', date: Date.now() });
+            alert("Registro exitoso");
+        } catch(e) { alert(e.message); }
+    };
+    $("logout").onclick = () => signOut(auth);
+    $("logoutAdmin").onclick = () => signOut(auth);
+
+    // CLIENTE: CARGAR PRODUCTOS
+    async function loadStoreProducts() {
+        const list = $("products-list");
+        list.innerHTML = `<p class="col-span-full text-center">Cargando suministros...</p>`;
+        
+        onSnapshot(collection(db, "products"), snap => {
+            list.innerHTML = "";
+            snap.forEach(d => {
+                const p = d.data();
+                const div = document.createElement("div");
+                div.className = "card flex flex-col";
+                div.innerHTML = `
+                    <img src="${p.img || 'https://via.placeholder.com/150'}" class="h-40 object-cover mb-4">
+                    <h3 class="text-xl font-bold text-sky-400">${p.name}</h3>
+                    <p class="text-slate-400 flex-1 mt-2">Precio: $${p.price}</p>
+                    <button class="mt-4 w-full" data-id="${d.id}">Solicitar Pedido</button>
+                `;
+                div.querySelector("button").onclick = () => createOrder(p);
+                list.appendChild(div);
+            });
+        });
+    }
+
+    async function createOrder(p) {
+        if(!confirm(`¿Deseas solicitar ${p.name}?`)) return;
+        try {
+            await addDoc(collection(db, "orders"), {
+                user: auth.currentUser.email,
+                uid: auth.currentUser.uid,
+                product: p.name,
+                price: p.price,
+                status: "pendiente",
+                date: Date.now()
+            });
+            alert("Solicitud enviada al administrador.");
+        } catch(e) { alert("Error: " + e.message); }
+    }
+
+    // ADMIN: GESTIÓN INVENTARIO
+    $("addProduct").onclick = async () => {
+        const file = $("pImg").files[0];
+        const name = $("pName").value;
+        const price = $("pPrice").value;
+
+        if (!file || !name || !price) return alert("Completa todos los campos");
+
+        $("addProduct").disabled = true;
+        $("addProduct").innerText = "Subiendo...";
+
+        try {
+            const form = new FormData();
+            form.append("file", file);
+            form.append("upload_preset", UPLOAD_PRESET);
+
+            const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: "POST", body: form });
+            const data = await res.json();
+
+            await addDoc(collection(db, "products"), {
+                name,
+                price: Number(price),
+                img: data.secure_url,
+                date: Date.now()
+            });
+
+            alert("Producto guardado");
+            $("pName").value = ""; $("pPrice").value = ""; $("pImg").value = "";
+            $("form-add-p").classList.add('hidden');
+        } catch(e) { alert("Error: " + e.message); }
+        $("addProduct").disabled = false;
+        $("addProduct").innerText = "Guardar en Base de Datos";
+    };
+
+    function loadAdminInventory() {
+        onSnapshot(query(collection(db, "products"), orderBy("date", "desc")), snap => {
+            const list = $("admin-inventory-list");
+            list.innerHTML = "";
+            snap.forEach(d => {
+                const p = d.data();
+                const div = document.createElement("div");
+                div.className = "flex items-center justify-between p-4 bg-slate-800 rounded-lg border border-slate-700";
+                div.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <img src="${p.img}" class="w-12 h-12 object-cover rounded">
+                        <div>
+                            <p class="font-bold">${p.name}</p>
+                            <p class="text-xs text-slate-400">$${p.price}</p>
+                        </div>
+                    </div>
+                    <button class="danger" onclick="deleteItem('products', '${d.id}')">Eliminar</button>
+                `;
+                list.appendChild(div);
+            });
+        });
+    }
+
+    // ADMIN: ÓRDENES Y DASHBOARD
+    function loadAdminOrders() {
+        onSnapshot(collection(db, "orders"), snap => {
+            const ordersDiv = $("admin-orders-list");
+            const historyDiv = $("admin-history-list");
+            ordersDiv.innerHTML = "";
+            historyDiv.innerHTML = "";
+
+            snap.forEach(d => {
+                const o = d.data();
+                const div = document.createElement("div");
+                
+                if(o.status === "pendiente") {
+                    div.className = "card flex justify-between items-center";
+                    div.innerHTML = `
+                        <div>
+                            <p class="font-bold text-sky-400">${o.product}</p>
+                            <p class="text-xs text-slate-400">Solicitado por: ${o.user}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="updateStatus('${d.id}', 'aprobado')">Aprobar</button>
+                            <button class="danger" onclick="updateStatus('${d.id}', 'rechazado')">Rechazar</button>
+                        </div>
+                    `;
+                    ordersDiv.appendChild(div);
+                } else {
+                    const row = document.createElement("div");
+                    row.className = "p-3 bg-slate-800/50 rounded flex justify-between";
+                    row.innerHTML = `<span>${o.user} compró ${o.product}</span> <span class="status-${o.status}">${o.status.toUpperCase()}</span>`;
+                    historyDiv.appendChild(row);
+                }
+            });
+        });
+    }
+
+    async function loadStats() {
+        const prodSnap = await getDocs(collection(db, "products"));
+        const orderSnap = await getDocs(collection(db, "orders"));
+        const userSnap = await getDocs(collection(db, "users_data"));
+
+        $("stats-container").innerHTML = `
+            <div class="card border-l-4 border-sky-400"><h3>Suministros</h3><p class="text-4xl font-bold">${prodSnap.size}</p></div>
+            <div class="card border-l-4 border-amber-400"><h3>Pedidos Hoy</h3><p class="text-4xl font-bold">${orderSnap.size}</p></div>
+            <div class="card border-l-4 border-emerald-400"><h3>Usuarios</h3><p class="text-4xl font-bold">${userSnap.size}</p></div>
+        `;
+    }
+
+    async function loadUsers() {
+        const snap = await getDocs(collection(db, "users_data"));
+        const list = $("admin-users-list");
+        list.innerHTML = `
+            <table class="w-full text-left">
+                <thead class="bg-slate-700 text-xs">
+                    <tr><th class="p-4">Email</th><th class="p-4">Rol</th><th class="p-4">Acción</th></tr>
+                </thead>
+                <tbody id="users-tbody"></tbody>
+            </table>`;
+        
+        const tbody = $("users-tbody");
+        snap.forEach(d => {
+            const u = d.data();
+            const tr = document.createElement("tr");
+            tr.className = "border-t border-slate-700";
+            tr.innerHTML = `
+                <td class="p-4">${u.email}</td>
+                <td class="p-4"><span class="bg-slate-900 px-2 py-1 rounded text-xs">${u.role}</span></td>
+                <td class="p-4"><button class="danger text-xs" onclick="deleteItem('users_data', '${d.id}')">Eliminar</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // FUNCIONES GLOBALES DE ACCIÓN
+    window.updateStatus = (id, status) => updateDoc(doc(db, "orders", id), { status });
+    window.deleteItem = async (col, id) => { if(confirm("¿Eliminar este registro?")) await deleteDoc(doc(db, col, id)); };
+
+    window.showMyOrders = async () => {
+        const q = query(collection(db, "orders"), where("uid", "==", auth.currentUser.uid));
+        const snap = await getDocs(q);
+        let list = "";
+        snap.forEach(d => {
+            const o = d.data();
+            list += `${o.product}: ${o.status.toUpperCase()}\n`;
+        });
+        alert(list || "No tienes pedidos aún");
+    };
+
+    // ESCUCHADOR DE SESIÓN
+    onAuthStateChanged(auth, user => {
+        if (!user) {
+            show("landing");
+        } else {
+            if (user.email === "admin@vendors.com") {
+                show("admin");
+                loadAdminInventory();
+                loadAdminOrders();
+                loadStats();
+            } else {
+                show("store");
+                $("user-welcome").innerText = `Conectado como: ${user.email}`;
+                loadStoreProducts();
+            }
+        }
+    });
+
+</script>
 </body>
 </html>
