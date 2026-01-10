@@ -2,95 +2,74 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Vendors Básico</title>
+<title>Vendors Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<style>
-  body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #0f172a;
-    color: #e5e7eb;
-    text-align: center;
-  }
-  section {
-    display: none;
-    min-height: 100vh;
-    padding: 40px;
-  }
-  section.active {
-    display: block;
-  }
-  input, button {
-    padding: 10px;
-    margin: 6px;
-    width: 250px;
-    border-radius: 6px;
-    border: none;
-  }
-  button {
-    cursor: pointer;
-    background: #38bdf8;
-    font-weight: bold;
-  }
-</style>
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 </head>
+<body class="bg-slate-950 text-white p-6">
 
-<body>
-
-<!-- LOGIN / REGISTER -->
-<section id="auth" class="active">
-  <h2>Acceso</h2>
-  <input id="email" type="email" placeholder="Correo"><br>
-  <input id="password" type="password" placeholder="Contraseña"><br>
-  <input id="name" type="text" placeholder="Nombre (solo registro)"><br>
-
-  <button onclick="login()">Iniciar sesión</button><br>
-  <button onclick="register()">Registrarse</button>
+<!-- LOGIN -->
+<section id="login">
+  <h1 class="text-3xl font-bold mb-4">Login</h1>
+  <input id="email" class="p-2 text-black" placeholder="Email"><br><br>
+  <input id="password" type="password" class="p-2 text-black" placeholder="Password"><br><br>
+  <button onclick="login()" class="bg-sky-500 px-4 py-2">Entrar</button>
 </section>
 
-<!-- USER -->
-<section id="user">
-  <h2>Panel Usuario</h2>
+<!-- APP -->
+<section id="app" class="hidden">
 
-  <p>Subir imagen (Cloudinary)</p>
-  <input type="file" id="file"><br>
-  <button onclick="uploadImage()">Subir imagen</button>
+<h1 class="text-3xl font-bold mb-4">Vendors Pro</h1>
 
-  <div id="imgResult"></div><br>
+<p id="roleTag" class="mb-4 text-sky-400"></p>
 
-  <button onclick="logout()">Cerrar sesión</button>
-</section>
+<!-- ADMIN PANEL -->
+<div id="adminPanel" class="hidden border p-4 mb-6">
+  <h2 class="text-xl font-bold mb-2">Admin - Subir Producto</h2>
+  <input id="pname" placeholder="Nombre" class="p-2 text-black"><br><br>
+  <input id="pprice" placeholder="Precio" type="number" class="p-2 text-black"><br><br>
+  <input id="pstock" placeholder="Stock" type="number" class="p-2 text-black"><br><br>
+  <input type="file" id="pimg"><br><br>
+  <button onclick="addProduct()" class="bg-green-500 px-4 py-2">Guardar</button>
+</div>
 
-<!-- ADMIN -->
-<section id="admin">
-  <h2>Panel Administrador</h2>
-  <p>Vista solo admin</p>
-  <button onclick="logout()">Cerrar sesión</button>
+<!-- DASHBOARD -->
+<div id="dashboard" class="border p-4 mb-6">
+  <h2 class="text-xl font-bold">Dashboard</h2>
+  <p>Total Ventas: <span id="totalSales">$0</span></p>
+</div>
+
+<!-- PRODUCTOS -->
+<h2 class="text-xl font-bold mb-2">Productos</h2>
+<div id="products" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+
+<!-- CARRITO -->
+<h2 class="text-xl font-bold mt-6">Carrito</h2>
+<div id="cart"></div>
+
+<select id="paymentMethod" class="text-black mt-2">
+  <option value="yappy">Yappy</option>
+  <option value="ach">ACH</option>
+  <option value="efectivo">Efectivo</option>
+</select><br><br>
+
+<button onclick="checkout()" class="bg-yellow-500 px-4 py-2">Enviar Pedido</button>
+
 </section>
 
 <script type="module">
-/* =======================
-   FIREBASE IMPORTS
-======================= */
+/* ================= FIREBASE ================= */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut
-} from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-import {
-  getFirestore,
-  doc,
-  setDoc,
-  getDoc
-} from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
-
-/* =======================
-   🔥 TU FIREBASE REAL
-======================= */
+/* CONFIG */
 const firebaseConfig = {
   apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
   authDomain: "proyectovendor.firebaseapp.com",
@@ -104,97 +83,140 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* =======================
-   VISTAS
-======================= */
-function show(id) {
-  document.querySelectorAll("section")
-    .forEach(s => s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
+/* ================= CLOUDINARY ================= */
+async function uploadImage(file){
+  const data=new FormData();
+  data.append("file",file);
+  data.append("upload_preset","vendors_preset");
+
+  const res=await fetch("https://api.cloudinary.com/v1_1/ml_default/image/upload",{
+    method:"POST",
+    body:data
+  });
+  return (await res.json()).secure_url;
 }
 
-/* =======================
-   LOGIN
-======================= */
-window.login = async () => {
-  await signInWithEmailAndPassword(
-    auth,
-    email.value,
-    password.value
-  );
+/* ================= AUTH ================= */
+let currentUser=null;
+let cart=[];
+
+window.login=async()=>{
+  await signInWithEmailAndPassword(auth,email.value,password.value);
 };
 
-/* =======================
-   REGISTER
-======================= */
-window.register = async () => {
-  const cred = await createUserWithEmailAndPassword(
-    auth,
-    email.value,
-    password.value
-  );
+onAuthStateChanged(auth, async user=>{
+  if(!user) return;
+  currentUser=user;
+  login.classList.add("hidden");
+  app.classList.remove("hidden");
 
-  await setDoc(doc(db, "users", cred.user.uid), {
-    email: email.value,
-    name: name.value,
-    role: "user",
-    created: Date.now()
-  });
-};
+  const uref=doc(db,"users",user.uid);
+  const usnap=await getDoc(uref);
 
-/* =======================
-   AUTH STATE
-======================= */
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    show("auth");
-    return;
-  }
+  let role="user";
+  if(usnap.exists()) role=usnap.data().role;
 
-  const ref = doc(db, "users", user.uid);
-  const snap = await getDoc(ref);
+  roleTag.innerText="Rol: "+role;
 
-  if (!snap.exists()) {
-    show("user");
-    return;
-  }
+  if(role==="admin") adminPanel.classList.remove("hidden");
 
-  const role = snap.data().role;
-  show(role === "admin" ? "admin" : "user");
+  loadProducts();
+  loadDashboard();
 });
 
-/* =======================
-   LOGOUT
-======================= */
-window.logout = async () => {
-  await signOut(auth);
+/* ================= PRODUCTS ================= */
+async function loadProducts(){
+  onSnapshot(collection(db,"products"), snap=>{
+    products.innerHTML="";
+    snap.forEach(d=>{
+      const p=d.data();
+      products.innerHTML+=`
+      <div class="border p-4">
+        <img src="${p.image}" class="h-32 w-full object-cover">
+        <h3>${p.name}</h3>
+        <p>$${p.price}</p>
+        <button onclick='addToCart("${d.id}","${p.name}",${p.price})'
+        class="bg-sky-500 px-2 py-1">🛒</button>
+      </div>`;
+    });
+  });
+}
+
+window.addToCart=(id,name,price)=>{
+  const f=cart.find(i=>i.id===id);
+  if(f) f.qty++;
+  else cart.push({id,name,price,qty:1});
+  renderCart();
 };
 
-/* =======================
-   CLOUDINARY UPLOAD
-======================= */
-window.uploadImage = async () => {
-  const file = document.getElementById("file").files[0];
-  if (!file) return alert("Selecciona una imagen");
+function renderCart(){
+  cart.innerHTML="";
+  document.getElementById("cart").innerHTML=cart.map(p=>
+    `${p.name} x${p.qty} = $${p.qty*p.price}<br>`
+  ).join("");
+}
 
-  const formData = new FormData();
-  formData.append("file", file);
-
-  // USA CUALQUIERA DE LOS DOS
-  formData.append("upload_preset", "vendors_preset"); // o "ml_default"
-
-  const res = await fetch(
-    "https://api.cloudinary.com/v1_1/TU_CLOUD_NAME/image/upload",
-    {
-      method: "POST",
-      body: formData
-    }
-  );
-
-  const data = await res.json();
-  imgResult.innerHTML = `<img src="${data.secure_url}" width="200">`;
+/* ================= ADMIN ================= */
+window.addProduct=async()=>{
+  const img=await uploadImage(pimg.files[0]);
+  await addDoc(collection(db,"products"),{
+    name:pname.value,
+    price:+pprice.value,
+    stock:+pstock.value,
+    image:img,
+    createdAt:Date.now()
+  });
+  alert("Producto agregado");
 };
+
+/* ================= CHECKOUT ================= */
+window.checkout=async()=>{
+  const total=cart.reduce((s,p)=>s+p.price*p.qty,0);
+  const method=paymentMethod.value;
+
+  const order=await addDoc(collection(db,"orders"),{
+    userId:currentUser.uid,
+    items:cart,
+    total,
+    paymentMethod:method,
+    yappyPhone:"63892022",
+    yappyName:"Emanuel Cedeño",
+    status:"pending_payment",
+    createdAt:Date.now()
+  });
+
+  generateInvoice({items:cart,total});
+  cart=[];
+  renderCart();
+  alert("Pedido enviado");
+};
+
+/* ================= PDF ================= */
+function generateInvoice(order){
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF();
+  pdf.text("FACTURA - Vendors Pro",20,20);
+  let y=40;
+  order.items.forEach(p=>{
+    pdf.text(`${p.name} x${p.qty} - $${p.price*p.qty}`,20,y);
+    y+=10;
+  });
+  pdf.text("TOTAL: $"+order.total,20,y+10);
+  pdf.save("factura.pdf");
+}
+
+/* ================= DASHBOARD ================= */
+function loadDashboard(){
+  onSnapshot(collection(db,"orders"), snap=>{
+    let total=0;
+    snap.forEach(d=>{
+      const o=d.data();
+      if(o.status==="paid") total+=o.total;
+    });
+    totalSales.innerText="$"+total;
+  });
+}
+
 </script>
-
 </body>
 </html>
