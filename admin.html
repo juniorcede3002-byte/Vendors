@@ -2,33 +2,42 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vendors - Admin</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <nav class="navbar">
-        <h1>Vendors | Panel Admin</h1>
+        <h1>VENDORS | Panel Administrativo</h1>
     </nav>
 
     <div class="container">
         <section class="form-container">
-            <h2>Subir Producto</h2>
+            <h2>Subir Nuevo Producto</h2>
             <form id="product-form">
+                <label>Imagen del Producto</label>
                 <input type="file" id="product-image" accept="image/*" required>
-                <input type="text" id="product-name" placeholder="Nombre del producto" required>
-                <textarea id="product-desc" placeholder="Descripción breve" required></textarea>
-                <input type="number" id="product-price" placeholder="Precio ($)" required>
-                <button type="submit">Publicar Producto</button>
+                
+                <label>Nombre</label>
+                <input type="text" id="product-name" placeholder="Ej: Laptop Dell" required>
+                
+                <label>Descripción</label>
+                <textarea id="product-desc" placeholder="Detalles del suministro..." required></textarea>
+                
+                <label>Precio ($)</label>
+                <input type="number" id="product-price" placeholder="0.00" required>
+                
+                <button type="submit" id="btn-save">Guardar en Inventario</button>
             </form>
         </section>
 
         <section class="preview-container">
-            <h2>Productos Publicados</h2>
+            <h2>Stock Actual (Firebase)</h2>
             <div id="product-list" class="grid">
                 </div>
         </section>
     </div>
 
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
