@@ -4,121 +4,79 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vendors | Emanuel Cedeño</title>
+
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
-    <section id="landing-page" class="view-section">
-        <nav class="landing-nav">
-            <h1 class="logo">V<span>ENDORS</span></h1>
-            <div class="nav-links">
-                <a href="#contacto">Contacto</a>
-                <button class="btn-login-small" onclick="showView('auth-screen')">Entrar</button>
-            </div>
-        </nav>
+<section id="landing-page" class="view-section">
+    <nav class="landing-nav">
+        <h1 class="logo">V<span>ENDORS</span></h1>
+        <button class="btn-login-small" onclick="showView('auth-screen')">Entrar</button>
+    </nav>
 
-        <header class="hero">
-            <div class="hero-text">
-                <span class="badge-new">Tienda de Suministros 2026</span>
-                <h1>Tu tienda de <span>confianza.</span></h1>
-                <p>Gestiona y compra suministros corporativos con la mejor tecnología. Plataforma diseñada por Emanuel Cedeño.</p>
-                <button class="btn-cta" onclick="showView('auth-screen')">Ir a Comprar <i class="fas fa-shopping-cart"></i></button>
-            </div>
-            <div class="hero-visual">
-                <img src="https://images.unsplash.com/photo-1556740734-79386822538b?q=80&w=1000&auto=format&fit=crop" alt="Tienda Suministros">
-            </div>
-        </header>
-
-        <footer id="contacto" class="landing-footer">
-            <div class="footer-info">
-                <h3>Contacto del Desarrollador</h3>
-                <p><strong>Emanuel Clemente Cedeño Morán</strong></p>
-                <p><i class="fas fa-envelope"></i> Emanuel.cedeño1234@gmail.com</p>
-                <p><i class="fas fa-phone"></i> +507 69376895</p>
-            </div>
-        </footer>
-    </section>
-
-    <section id="auth-screen" class="view-section auth-overlay" style="display: none;">
-        <div class="auth-card">
-            <button class="btn-back" onclick="showView('landing-page')"><i class="fas fa-arrow-left"></i></button>
-            <h2 id="auth-title">Ingresar</h2>
-            <form id="auth-form">
-                <input type="email" id="auth-email" placeholder="Correo electrónico" required>
-                <input type="password" id="auth-pass" placeholder="Contraseña (mín. 6 caracteres)" required>
-                <button type="submit" class="btn-primary-full">Continuar</button>
-            </form>
-            <p class="auth-toggle">¿No tienes cuenta? <a href="#" onclick="toggleAuthMode()">Regístrate aquí</a></p>
+    <header class="hero">
+        <div class="hero-text">
+            <h1>Tu tienda de <span>confianza</span></h1>
+            <p>Compra y gestiona suministros corporativos.</p>
+            <button class="btn-primary-full" onclick="showView('auth-screen')">
+                Ir a Comprar <i class="fas fa-shopping-cart"></i>
+            </button>
         </div>
-    </section>
-
-    <section id="app-screen" class="view-section" style="display: none;">
-        <nav class="app-nav">
-            <div class="app-nav-container">
-                <h1 class="logo">V<span>ENDORS</span></h1>
-                <div class="app-actions">
-                    <div class="user-pill" onclick="showModal('modal-profile')">
-                        <i class="fas fa-user-circle"></i> <span id="display-name">Usuario</span>
-                    </div>
-                    <button class="admin-only btn-nav-sec" onclick="showModal('modal-admin-orders')">Pedidos</button>
-                    <button class="admin-only btn-nav-pri" onclick="showModal('modal-add')"><i class="fas fa-plus"></i></button>
-                    <button class="user-only btn-icon" onclick="showModal('modal-cart')">
-                        <i class="fas fa-shopping-bag"></i> <span id="cart-count">0</span>
-                    </button>
-                    <button class="logout-icon" onclick="logout()"><i class="fas fa-power-off"></i></button>
-                </div>
-            </div>
-        </nav>
-
-        <main class="main-content">
-            <div id="product-grid" class="product-grid"></div>
-        </main>
-    </section>
-
-    <div id="modal-add" class="modal-overlay">
-        <div class="modal-card">
-            <span class="close" onclick="closeModal('modal-add')">&times;</span>
-            <h2>Nuevo Producto</h2>
-            <form id="add-product-form">
-                <input type="file" id="item-file" accept="image/*,video/*" required>
-                <input type="text" id="item-name" placeholder="Nombre del suministro" required>
-                <input type="number" id="item-price" placeholder="Precio ($)" required>
-                <select id="item-cat">
-                    <option value="electronica">Electrónica</option>
-                    <option value="oficina">Oficina</option>
-                </select>
-                <button type="submit" id="btn-upload-item" class="btn-primary-full">Publicar Item</button>
-            </form>
+        <div class="hero-visual">
+            <img src="https://images.unsplash.com/photo-1556740734-79386822538b?q=80&w=1000&auto=format&fit=crop">
         </div>
+    </header>
+</section>
+
+<section id="auth-screen" class="view-section auth-overlay" style="display:none;">
+    <div class="auth-card">
+        <h2 id="auth-title">Ingresar</h2>
+        <form id="auth-form">
+            <input type="email" id="auth-email" placeholder="Correo" required>
+            <input type="password" id="auth-pass" placeholder="Contraseña" required>
+            <button class="btn-primary-full">Continuar</button>
+        </form>
+        <p class="auth-toggle">
+            ¿No tienes cuenta? <a href="#" onclick="toggleAuthMode()">Regístrate aquí</a>
+        </p>
     </div>
+</section>
 
-    <div id="modal-profile" class="modal-overlay">
-        <div class="modal-card">
-            <span class="close" onclick="closeModal('modal-profile')">&times;</span>
-            <h2>Mi Perfil</h2>
-            <form id="profile-form">
-                <label>Nombre Completo</label>
-                <input type="text" id="prof-name">
-                <label>Dirección Residencial</label>
-                <textarea id="prof-address"></textarea>
-                <button type="submit" class="btn-primary-full">Guardar</button>
-            </form>
-            <hr>
-            <h3>Mis Pedidos</h3>
-            <div id="user-history" class="history-list"></div>
+<section id="app-screen" class="view-section" style="display:none;">
+    <nav class="app-nav-container">
+        <h1 class="logo">V<span>ENDORS</span></h1>
+        <div class="app-actions">
+            <span class="user-pill"><i class="fas fa-user"></i> <span id="display-name"></span></span>
+            <button class="admin-only" onclick="showModal('modal-add')">+ Producto</button>
+            <button onclick="logout()"><i class="fas fa-power-off"></i></button>
         </div>
-    </div>
+    </nav>
 
-    <div id="modal-admin-orders" class="modal-overlay">
-        <div class="modal-card wide">
-            <span class="close" onclick="closeModal('modal-admin-orders')">&times;</span>
-            <h2>Panel de Aprobación</h2>
-            <div id="admin-orders-list"></div>
-        </div>
-    </div>
+    <main>
+        <div id="product-grid" class="product-grid"></div>
+    </main>
+</section>
 
-    <script type="module" src="main.js"></script>
+<div id="modal-add" class="modal-overlay">
+    <div class="modal-card">
+        <span class="close" onclick="closeModal('modal-add')">&times;</span>
+        <h2>Nuevo Producto</h2>
+        <form id="add-product-form">
+            <input type="file" id="item-file" required>
+            <input type="text" id="item-name" placeholder="Nombre" required>
+            <input type="number" id="item-price" placeholder="Precio" required>
+            <select id="item-cat">
+                <option value="electronica">Electrónica</option>
+                <option value="oficina">Oficina</option>
+            </select>
+            <button id="btn-upload-item" class="btn-primary-full">Publicar</button>
+        </form>
+    </div>
+</div>
+
+<script type="module" src="main.js"></script>
 </body>
 </html>
