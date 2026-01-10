@@ -73,8 +73,9 @@
         <div class="flex flex-col gap-2 mt-4">
             <button id="login">Iniciar Sesión</button>
             <button id="register" class="secondary">Registrarse</button>
+            <button id="forgotPassword" class="bg-transparent text-sky-400 text-sm hover:underline py-1 mt-2">¿Olvidaste tu contraseña?</button>
         </div>
-        <button onclick="location.reload()" class="mt-4 text-sm text-slate-500 hover:text-white w-full">Volver</button>
+        <button onclick="location.reload()" class="mt-6 text-sm text-slate-500 hover:text-white w-full">Volver</button>
     </div>
 </section>
 
@@ -164,7 +165,7 @@
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, getDocs, onSnapshot, updateDoc, doc, deleteDoc, query, orderBy, where, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // --- CONFIGURACIONES (Mantenidas según lo solicitado) ---
+    // --- CONFIGURACIONES ---
     const firebaseConfig = {
         apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
         authDomain: "proyectovendor.firebaseapp.com",
@@ -214,6 +215,19 @@
     // --- AUTH ---
     $("goAuth").onclick = () => show("auth");
     $("login").onclick = () => signInWithEmailAndPassword(auth, $("email").value, $("password").value).catch(e => alert("Error: " + e.message));
+    
+    // Función de recuperación de contraseña desde la pantalla de login
+    $("forgotPassword").onclick = () => {
+        const email = $("email").value;
+        if (!email) return alert("Por favor, ingresa tu correo electrónico primero.");
+        
+        if (confirm(`¿Enviar un enlace de restauración a ${email}?`)) {
+            sendPasswordResetEmail(auth, email)
+                .then(() => alert("Correo de restauración enviado. Revisa tu bandeja de entrada."))
+                .catch(e => alert("Error: " + e.message));
+        }
+    };
+
     $("register").onclick = async () => {
         try {
             const res = await createUserWithEmailAndPassword(auth, $("email").value, $("password").value);
