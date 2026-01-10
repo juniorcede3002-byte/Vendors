@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc, getDoc, getDocs, setDoc, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc, getDoc, setDoc, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
@@ -12,7 +12,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Cloudinary
 const CLOUD_NAME = "df79cjklp";
 const UPLOAD_PRESET = "vendors_preset";
 
@@ -20,18 +19,18 @@ let cart = [];
 let allProducts = [];
 let isLoginMode = true;
 
-// --- NAVEGACIÓN ---
+// --- VISTAS ---
 window.showView = (id) => {
     document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
     document.getElementById(id).style.display = 'block';
 };
 
-window.showModal = (id) => document.getElementById(id).style.display = 'flex';
+window.openModal = (id) => document.getElementById(id).style.display = 'flex';
 window.closeModal = (id) => document.getElementById(id).style.display = 'none';
 
 window.toggleAuth = () => {
     isLoginMode = !isLoginMode;
-    document.getElementById('auth-title').innerText = isLoginMode ? "Bienvenido" : "Crea tu Cuenta";
+    document.getElementById('auth-title').innerText = isLoginMode ? "Iniciar Sesión" : "Registrarse";
 };
 
 // --- AUTH ---
@@ -43,23 +42,19 @@ document.getElementById('form-auth').onsubmit = async (e) => {
         if(isLoginMode) await signInWithEmailAndPassword(auth, email, pass);
         else {
             const res = await createUserWithEmailAndPassword(auth, email, pass);
-            await setDoc(doc(db, "users", res.user.uid), { email, role: 'user', name: email.split('@')[0] });
+            await setDoc(doc(db, "users", res.user.uid), { email, role: 'user' });
         }
     } catch (err) { alert("Error: " + err.message); }
 };
 
 onAuthStateChanged(auth, async user => {
     if(user) {
-        const uSnap = await getDoc(doc(db, "users", user.uid));
-        const role = (user.email === 'admin@vendors.com') ? 'admin' : (uSnap.exists() ? uSnap.data().role : 'user');
-        
-        if(role === 'admin') {
-            showView('view-admin');
-            initAdmin();
-        } else {
-            showView('view-user');
-            initUser();
-        }
+        const isAdmin = user.email === 'admin@vendors.com';
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = isAdmin ? 'block' : 'none');
+        document.querySelectorAll('.user-only').forEach(el => el.style.display = isAdmin ? 'none' : 'block');
+        showView('view-app');
+        loadProducts();
+        if(isAdmin) loadAdminData(); else loadUserOrders();
     } else {
         showView('view-landing');
     }
@@ -67,191 +62,127 @@ onAuthStateChanged(auth, async user => {
 
 window.logout = () => signOut(auth);
 
-// --- LÓGICA DE TIENDA (USUARIO) ---
-function initUser() {
-    onSnapshot(query(collection(db, "products"), orderBy("date", "desc")), snap => {
+// --- TIENDA ---
+function loadProducts() {
+    onSnapshot(query(collection(db, "productos"), orderBy("fecha", "desc")), snap => {
         allProducts = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        renderProducts(allProducts);
+        renderGrid(allProducts);
     });
-    loadUserOrders();
 }
 
-function renderProducts(list) {
+function renderGrid(list) {
     const grid = document.getElementById('product-grid');
     grid.innerHTML = '';
+    const isAdmin = auth.currentUser?.email === 'admin@vendors.com';
     list.forEach(p => {
         grid.innerHTML += `
-            <div class="p-card">
-                <img src="${p.image}">
-                <div class="p-info">
-                    <h3>${p.name}</h3>
-                    <p style="font-size:0.8rem; color:#64748b">${p.desc}</p>
-                    <p class="p-price">$${p.price.toFixed(2)}</p>
-                    <button class="btn-block" onclick="addToCart('${p.id}')">Añadir al Carrito</button>
+            <div class="card">
+                ${isAdmin ? `<button onclick="deleteProd('${p.id}')" style="position:absolute;top:10;right:10;background:red;color:white;padding:5px;border-radius:5px;">X</button>` : ''}
+                <img src="${p.imagen}">
+                <div class="card-content">
+                    <h3>${p.nombre}</h3>
+                    <p class="price">$${p.precio.toFixed(2)}</p>
+                    ${!isAdmin ? `<button class="btn-primary-full" onclick="addToCart('${p.id}')">Añadir a la bolsa</button>` : ''}
                 </div>
             </div>`;
     });
 }
 
 window.addToCart = (id) => {
-    const item = allProducts.find(p => p.id === id);
-    cart.push(item);
+    const prod = allProducts.find(p => p.id === id);
+    cart.push(prod);
     updateCartUI();
+    alert("Agregado al carrito");
 };
 
 function updateCartUI() {
     document.getElementById('cart-count').innerText = cart.length;
-    const list = document.getElementById('cart-items');
-    list.innerHTML = '';
-    let subtotal = 0;
-    cart.forEach((item, index) => {
-        subtotal += item.price;
-        list.innerHTML += `<div class="order-item"><span>${item.name}</span> <b>$${item.price}</b> <i class="fas fa-trash text-red" onclick="removeFromCart(${index})"></i></div>`;
-    });
-    const tax = subtotal * 0.07;
-    document.getElementById('cart-subtotal').innerText = `$${subtotal.toFixed(2)}`;
+    let sub = cart.reduce((acc, curr) => acc + curr.precio, 0);
+    let tax = sub * 0.07;
+    document.getElementById('cart-subtotal').innerText = `$${sub.toFixed(2)}`;
     document.getElementById('cart-tax').innerText = `$${tax.toFixed(2)}`;
-    document.getElementById('cart-total').innerText = `$${(subtotal + tax).toFixed(2)}`;
+    document.getElementById('cart-total').innerText = `$${(sub + tax).toFixed(2)}`;
+    
+    const itemsDiv = document.getElementById('cart-items');
+    itemsDiv.innerHTML = cart.map((item, i) => `
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px;border-bottom:1px solid #eee;padding-bottom:5px;">
+            <span>${item.nombre}</span>
+            <b>$${item.precio}</b>
+            <span onclick="removeFromCart(${i})" style="color:red;cursor:pointer;">&times;</span>
+        </div>
+    `).join('');
 }
 
-window.removeFromCart = (index) => {
-    cart.splice(index, 1);
-    updateCartUI();
-};
+window.removeFromCart = (i) => { cart.splice(i, 1); updateCartUI(); };
 
-window.togglePaymentInfo = () => {
-    const method = document.getElementById('check-payment').value;
-    const note = document.getElementById('payment-instructions');
-    if(method === 'yappy') note.innerText = "Envía el total al 6937-6895 (Emanuel Cedeño). Adjunta captura en el chat de entrega.";
-    else if(method === 'ach') note.innerText = "Banco General, Cuenta de Ahorros: 04-72-98-123456-0. Nombre: Emanuel Cedeño.";
-    else note.innerText = "El pago se realizará en efectivo al momento de recibir los suministros.";
-};
-
+// --- CHECKOUT ---
 document.getElementById('form-checkout').onsubmit = async (e) => {
     e.preventDefault();
-    if(cart.length === 0) return alert("Carrito vacío");
-
-    const orderData = {
+    const order = {
         userId: auth.currentUser.uid,
-        userEmail: auth.currentUser.email,
-        customer: document.getElementById('check-name').value,
-        address: document.getElementById('check-address').value,
-        phone: document.getElementById('check-phone').value,
-        payment: document.getElementById('check-payment').value,
-        items: cart.map(i => i.name),
+        email: auth.currentUser.email,
+        cliente: document.getElementById('check-name').value,
+        ubicacion: document.getElementById('check-address').value,
+        items: cart.map(i => i.nombre),
         total: parseFloat(document.getElementById('cart-total').innerText.replace('$','')),
-        status: 'Pendiente',
-        date: Date.now()
+        metodo: document.getElementById('check-method').value,
+        estado: 'Pendiente',
+        fecha: Date.now()
     };
-
-    await addDoc(collection(db, "orders"), orderData);
-    alert("Pedido enviado con éxito");
-    cart = [];
-    updateCartUI();
-    closeModal('modal-checkout');
-    closeModal('modal-cart');
+    await addDoc(collection(db, "orders"), order);
+    alert("¡Pedido Realizado! Emanuel revisará tu pago pronto.");
+    cart = []; updateCartUI(); closeModal('modal-checkout'); closeModal('modal-cart');
 };
 
-function loadUserOrders() {
-    const q = query(collection(db, "orders"), where("userId", "==", auth.currentUser.uid), orderBy("date", "desc"));
-    onSnapshot(q, snap => {
-        const div = document.getElementById('user-orders');
-        div.innerHTML = '';
-        snap.forEach(d => {
-            const o = d.data();
-            div.innerHTML += `
-                <div class="order-item">
-                    <div><b>Pedido #${d.id.slice(0,5)}</b><br><small>${o.items.join(', ')}</small></div>
-                    <div class="status-badge ${o.status === 'Pendiente' ? 'pending' : 'approved'}">${o.status}</div>
-                </div>`;
-        });
-    });
-}
-
-// --- ADMIN ---
-function initAdmin() {
-    onSnapshot(collection(db, "products"), snap => {
-        const list = document.getElementById('admin-product-list');
-        list.innerHTML = '';
-        snap.forEach(d => {
-            const p = d.data();
-            list.innerHTML += `
-                <div class="p-card">
-                    <img src="${p.image}">
-                    <div class="p-info">
-                        <h4>${p.name}</h4>
-                        <button class="btn-block text-red" onclick="deleteProd('${d.id}')">Eliminar</button>
-                    </div>
-                </div>`;
-        });
-    });
-
+// --- ADMIN LOGIC ---
+function loadAdminData() {
     onSnapshot(collection(db, "orders"), snap => {
-        const list = document.getElementById('admin-requests-list');
         let revenue = 0;
-        let pendingCount = 0;
+        const list = document.getElementById('admin-orders-list');
         list.innerHTML = '';
         snap.forEach(d => {
             const o = d.data();
-            if(o.status === 'Aprobado') revenue += o.total;
-            else pendingCount++;
-
+            if(o.estado === 'Aprobado') revenue += o.total;
             list.innerHTML += `
-                <div class="order-item">
-                    <div>
-                        <b>Cliente: ${o.customer}</b> (${o.phone})<br>
-                        <small>Pago: ${o.payment} | Total: $${o.total}</small><br>
-                        <p>Dirección: ${o.address}</p>
-                    </div>
-                    <div>
-                        <button onclick="updateOrderStatus('${d.id}', 'Aprobado')" class="btn-success">Confirmar</button>
-                        <button onclick="updateOrderStatus('${d.id}', 'Rechazado')" class="text-red">X</button>
-                    </div>
+                <div class="info-box" style="background:white; color:black;">
+                    <b>Cliente: ${o.cliente}</b> - $${o.total}<br>
+                    <small>Ubicación: ${o.ubicacion}</small><br>
+                    <small>Items: ${o.items.join(', ')}</small><br>
+                    <button onclick="updateOrder('${d.id}', 'Aprobado')" style="background:green;color:white;padding:4px 8px;border-radius:5px;margin-top:5px;">Aprobar Pago</button>
                 </div>`;
         });
         document.getElementById('stat-revenue').innerText = `$${revenue.toFixed(2)}`;
-        document.getElementById('stat-pending').innerText = pendingCount;
-    });
-
-    getDocs(collection(db, "users")).then(snap => {
-        document.getElementById('stat-users').innerText = snap.size;
-        const uList = document.getElementById('admin-users-list');
-        uList.innerHTML = '';
-        snap.forEach(d => {
-            const u = d.data();
-            uList.innerHTML += `<div class="order-item">${u.email} <button onclick="deleteUser('${d.id}')" class="text-red">Eliminar</button></div>`;
-        });
+        document.getElementById('stat-orders').innerText = snap.size;
     });
 }
 
 document.getElementById('form-add-product').onsubmit = async (e) => {
     e.preventDefault();
-    const file = document.getElementById('prod-file').files[0];
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", UPLOAD_PRESET);
+    const btn = document.getElementById('btn-p-upload');
+    btn.innerText = "Subiendo..."; btn.disabled = true;
+    try {
+        const file = document.getElementById('p-file').files[0];
+        const fData = new FormData();
+        fData.append('file', file);
+        fData.append('upload_preset', UPLOAD_PRESET);
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: fData });
+        const img = await res.json();
 
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: "POST", body: formData });
-    const imgData = await res.json();
-
-    await addDoc(collection(db, "products"), {
-        name: document.getElementById('prod-name').value,
-        desc: document.getElementById('prod-desc').value,
-        price: parseFloat(document.getElementById('prod-price').value),
-        category: document.getElementById('prod-cat').value,
-        image: imgData.secure_url,
-        date: Date.now()
-    });
-    alert("Producto subido");
-    closeModal('modal-add-product');
+        await addDoc(collection(db, "productos"), {
+            nombre: document.getElementById('p-name').value,
+            precio: parseFloat(document.getElementById('p-price').value),
+            imagen: img.secure_url,
+            fecha: Date.now()
+        });
+        alert("Producto Publicado");
+        closeModal('modal-add-product');
+    } catch { alert("Error al subir"); }
+    finally { btn.innerText = "Subir Producto"; btn.disabled = false; }
 };
 
-window.deleteProd = async (id) => { if(confirm("¿Eliminar?")) await deleteDoc(doc(db, "products", id)); };
-window.updateOrderStatus = async (id, status) => { await updateDoc(doc(db, "orders", id), { status }); };
-
-window.switchTab = (id) => {
-    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(id).style.display = 'block';
-    event.currentTarget.classList.add('active');
+window.deleteProd = async (id) => { if(confirm("¿Eliminar?")) await deleteDoc(doc(db, "productos", id)); };
+window.updateOrder = async (id, status) => { await updateDoc(doc(db, "orders", id), { estado: status }); };
+window.switchAdminTab = (tab) => {
+    document.getElementById('inventory-section').style.display = tab === 'inventory' ? 'block' : 'none';
+    document.getElementById('requests-section').style.display = tab === 'requests' ? 'block' : 'none';
 };
