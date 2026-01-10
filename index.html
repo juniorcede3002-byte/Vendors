@@ -1,48 +1,272 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Vendors System</title>
-  <link rel="stylesheet" href="styles.css" />
+    <meta charset="UTF-8">
+    <title>Vendors Pro | Funcional</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: white; margin: 0; font-family: sans-serif; }
+        .view-section { display: none; min-height: 100vh; padding: 20px; }
+        .view-section.active { display: flex; flex-direction: column; }
+        .hidden { display: none; }
+        .card { background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #334155; }
+        input { background: #0f172a; border: 1px solid #334155; padding: 10px; border-radius: 6px; color: white; width: 100%; margin-bottom: 10px; }
+        button { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-primary { background: #38bdf8; color: #0f172a; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-success { background: #22c55e; color: white; }
+    </style>
 </head>
 <body>
 
-<!-- LANDING -->
-<section id="view-landing" class="view active">
-  <h1>Sistema de Suministros</h1>
-  <p>Gestiona inventarios y pedidos en un solo lugar</p>
-  <button onclick="showView('view-auth')">Ingresar</button>
-</section>
+    <!-- 1. LANDING PAGE -->
+    <section id="view-landing" class="view-section active items-center justify-center text-center">
+        <h1 class="text-5xl font-bold mb-4">Vendors System</h1>
+        <p class="text-slate-400 mb-8">Gestión de suministros corporativos e inventario.</p>
+        <button onclick="navigateTo('auth')" class="btn-primary text-xl px-12 py-4">IR A COMPRAR</button>
+    </section>
 
-<!-- AUTH -->
-<section id="view-auth" class="view">
-  <h2>Acceso Seguro</h2>
+    <!-- 2. AUTHENTICATION -->
+    <section id="view-auth" class="view-section items-center justify-center">
+        <div class="card w-full max-w-md">
+            <h2 id="auth-title" class="text-2xl font-bold mb-6 text-center">Iniciar Sesión</h2>
+            <input id="auth-email" type="email" placeholder="Correo electrónico">
+            <input id="auth-pass" type="password" placeholder="Contraseña">
+            <div id="register-fields" class="hidden">
+                <input id="auth-name" type="text" placeholder="Nombre completo">
+            </div>
+            <button id="btn-auth-action" class="btn-primary w-full mb-4">ACCEDER</button>
+            <p id="btn-switch-auth" class="text-sky-400 text-sm cursor-pointer text-center">¿No tienes cuenta? Regístrate</p>
+            <button onclick="navigateTo('landing')" class="w-full text-slate-500 mt-4 text-xs">VOLVER ATRÁS</button>
+        </div>
+    </section>
 
-  <input id="auth-email" type="email" placeholder="Correo" />
-  <input id="auth-pass" type="password" placeholder="Contraseña" />
+    <!-- 3. INTERFAZ PRINCIPAL -->
+    <section id="view-app" class="view-section">
+        <header class="flex justify-between items-center mb-8 border-b border-slate-700 pb-4">
+            <div>
+                <h2 class="text-xl font-bold" id="user-display">Cargando...</h2>
+                <span id="role-tag" class="text-xs text-sky-400 font-mono uppercase"></span>
+            </div>
+            <button onclick="logout()" class="btn-danger text-xs">Cerrar Sesión</button>
+        </header>
 
-  <div id="register-box" class="hidden">
-    <input id="auth-name" type="text" placeholder="Nombre completo" />
-  </div>
+        <!-- Navegación Interna -->
+        <div id="nav-tabs" class="flex gap-2 mb-6 overflow-x-auto"></div>
 
-  <button id="btn-auth-action">Iniciar sesión</button>
-  <p id="switch-auth" onclick="toggleRegisterUI(true)">¿No tienes cuenta? Regístrate</p>
-</section>
+        <!-- Contenido Dinámico -->
+        <div id="tab-content" class="flex-grow"></div>
+    </section>
 
-<!-- USER -->
-<section id="view-user" class="view">
-  <h2>Panel Usuario</h2>
-  <p>Catálogo disponible</p>
-  <button onclick="logout()">Cerrar sesión</button>
-</section>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-<!-- ADMIN -->
-<section id="view-admin" class="view">
-  <h2>Panel Administrador</h2>
-  <p>Gestión de inventario</p>
-  <button onclick="logout()">Cerrar sesión</button>
-</section>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
+            authDomain: "proyectovendor.firebaseapp.com",
+            projectId: "proyectovendor"
+        };
 
-<script type="module" src="app.js"></script>
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = "vendors-pro-system-v2";
+
+        let currentUser = null;
+        let isRegisterMode = false;
+        let activeListeners = [];
+
+        // --- NAVEGACIÓN ---
+        window.navigateTo = (viewId) => {
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(`view-${viewId}`).classList.add('active');
+        };
+
+        // --- AUTENTICACIÓN ---
+        document.getElementById('btn-switch-auth').onclick = () => {
+            isRegisterMode = !isRegisterMode;
+            document.getElementById('auth-title').innerText = isRegisterMode ? 'Crear Cuenta' : 'Iniciar Sesión';
+            document.getElementById('register-fields').classList.toggle('hidden', !isRegisterMode);
+            document.getElementById('btn-auth-action').innerText = isRegisterMode ? 'REGISTRARSE' : 'ACCEDER';
+            document.getElementById('btn-switch-auth').innerText = isRegisterMode ? '¿Ya tienes cuenta? Entra' : '¿No tienes cuenta? Regístrate';
+        };
+
+        document.getElementById('btn-auth-action').onclick = async () => {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-pass').value;
+            const name = document.getElementById('auth-name').value;
+            if(!email || !pass) return alert("Completa los campos");
+
+            try {
+                if (isRegisterMode) {
+                    const res = await createUserWithEmailAndPassword(auth, email, pass);
+                    const role = email.includes('admin') ? 'admin' : 'applicant';
+                    await setDoc(doc(db, 'artifacts', appId, 'users', res.user.uid, 'settings', 'profile'), {
+                        uid: res.user.uid, name: name || email.split('@')[0], email, role, created: Date.now()
+                    });
+                } else {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                }
+            } catch (e) { alert("Error: " + e.message); }
+        };
+
+        window.logout = () => signOut(auth);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const snap = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'));
+                currentUser = snap.exists() ? snap.data() : { role: 'applicant', name: user.email };
+                setupUI();
+                navigateTo('app');
+            } else {
+                navigateTo('landing');
+            }
+        });
+
+        // --- INTERFAZ ---
+        function setupUI() {
+            document.getElementById('user-display').innerText = `Hola, ${currentUser.name}`;
+            document.getElementById('role-tag').innerText = currentUser.role;
+            const tabs = document.getElementById('nav-tabs');
+            
+            const menu = currentUser.role === 'admin' 
+                ? [{id:'stock', n:'Inventario'}, {id:'orders', n:'Pedidos'}, {id:'history', n:'Historial'}]
+                : [{id:'shop', n:'Tienda'}, {id:'my-orders', n:'Mis Pedidos'}];
+
+            tabs.innerHTML = menu.map(m => `<button onclick="loadTab('${m.id}')" class="bg-slate-800 text-xs p-2 rounded">${m.n}</button>`).join('');
+            loadTab(menu[0].id);
+        }
+
+        window.loadTab = (id) => {
+            activeListeners.forEach(u => u());
+            activeListeners = [];
+            const container = document.getElementById('tab-content');
+            container.innerHTML = 'Cargando...';
+
+            if(id === 'stock') renderStock(container);
+            if(id === 'shop') renderShop(container);
+            if(id === 'orders') renderAdminOrders(container);
+            if(id === 'my-orders') renderUserOrders(container);
+            if(id === 'history') renderHistory(container);
+        };
+
+        // --- FUNCIONES DE VISTA ---
+        function renderStock(c) {
+            c.innerHTML = `
+                <div class="card">
+                    <h3 class="font-bold mb-4">Agregar Producto</h3>
+                    <input id="p-name" placeholder="Nombre">
+                    <input id="p-qty" type="number" placeholder="Cantidad">
+                    <button onclick="addStock()" class="btn-success w-full">Añadir al Stock</button>
+                </div>
+                <div id="list"></div>`;
+            const unsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'inventory'), s => {
+                document.getElementById('list').innerHTML = s.docs.map(d => `
+                    <div class="card flex justify-between items-center">
+                        <span>${d.data().name} (${d.data().qty})</span>
+                        <button onclick="deleteProd('${d.id}')" class="text-red-500 text-xs">Eliminar</button>
+                    </div>
+                `).join('');
+            });
+            activeListeners.push(unsub);
+        }
+
+        function renderShop(c) {
+            c.innerHTML = `<div id="list" class="grid grid-cols-2 gap-4"></div>`;
+            const unsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'inventory'), s => {
+                document.getElementById('list').innerHTML = s.docs.map(d => {
+                    const p = d.data();
+                    return `
+                        <div class="card">
+                            <p class="font-bold">${p.name}</p>
+                            <p class="text-xs text-slate-400">Stock: ${p.qty}</p>
+                            <button onclick="orderItem('${d.id}', '${p.name}', ${p.qty})" class="btn-primary w-full mt-2 text-xs" ${p.qty <= 0 ? 'disabled' : ''}>Solicitar</button>
+                        </div>
+                    `;
+                }).join('');
+            });
+            activeListeners.push(unsub);
+        }
+
+        function renderAdminOrders(c) {
+            c.innerHTML = `<div id="list"></div>`;
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), where('status', '==', 'pending'));
+            activeListeners.push(onSnapshot(q, s => {
+                document.getElementById('list').innerHTML = s.docs.map(d => {
+                    const o = d.data();
+                    return `
+                        <div class="card">
+                            <p><b>${o.product}</b> x${o.qty}</p>
+                            <p class="text-xs">De: ${o.userName}</p>
+                            <div class="flex gap-2 mt-4">
+                                <button onclick="handleOrder('${d.id}', 'approved', '${o.pid}', ${o.qty})" class="btn-success flex-grow text-xs">Aprobar</button>
+                                <button onclick="handleOrder('${d.id}', 'rejected')" class="btn-danger flex-grow text-xs">Rechazar</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }));
+        }
+
+        function renderUserOrders(c) {
+            c.innerHTML = `<div id="list"></div>`;
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), where('uid', '==', currentUser.uid));
+            activeListeners.push(onSnapshot(q, s => {
+                document.getElementById('list').innerHTML = s.docs.map(d => `
+                    <div class="card flex justify-between">
+                        <span>${d.data().product} (x${d.data().qty})</span>
+                        <span class="text-xs font-bold uppercase">${d.data().status}</span>
+                    </div>
+                `).join('');
+            }));
+        }
+
+        function renderHistory(c) {
+            c.innerHTML = `<div id="list"></div>`;
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), orderBy('date', 'desc'));
+            activeListeners.push(onSnapshot(q, s => {
+                document.getElementById('list').innerHTML = s.docs.map(d => `
+                    <div class="card text-xs">
+                        <p><b>${d.data().product}</b> - ${d.data().status}</p>
+                        <p>${d.data().userName} - ${new Date(d.data().date).toLocaleDateString()}</p>
+                    </div>
+                `).join('');
+            }));
+        }
+
+        // --- LÓGICA DE DATOS ---
+        window.addStock = async () => {
+            const name = document.getElementById('p-name').value;
+            const qty = parseInt(document.getElementById('p-qty').value);
+            if(name && qty) await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'inventory'), { name, qty });
+        };
+
+        window.deleteProd = (id) => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id));
+
+        window.orderItem = async (pid, name, stock) => {
+            const q = prompt(`¿Cuántos ${name} necesitas? (Max: ${stock})`, "1");
+            const qty = parseInt(q);
+            if(!qty || qty > stock) return alert("Cantidad inválida");
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), {
+                pid, product: name, qty, uid: currentUser.uid, userName: currentUser.name, status: 'pending', date: Date.now()
+            });
+            alert("Solicitud enviada");
+        };
+
+        window.handleOrder = async (oid, status, pid, qty) => {
+            if (status === 'approved') {
+                const ref = doc(db, 'artifacts', appId, 'public', 'data', 'inventory', pid);
+                const s = await getDoc(ref);
+                if(s.exists() && s.data().qty >= qty) {
+                    await updateDoc(ref, { qty: s.data().qty - qty });
+                } else { return alert("Ya no hay stock suficiente"); }
+            }
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', oid), { status });
+        };
+
+    </script>
 </body>
 </html>
