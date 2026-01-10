@@ -15,43 +15,42 @@
             <h1 class="logo">V<span>ENDORS</span></h1>
             <div class="nav-links">
                 <a href="#contacto">Contacto</a>
-                <button class="btn-login-small" onclick="showView('auth-screen')">Ingresar</button>
+                <button class="btn-login-small" onclick="showView('auth-screen')">Entrar</button>
             </div>
         </nav>
 
         <header class="hero">
             <div class="hero-text">
-                <span class="badge-new">Panel de Gestión 2026</span>
-                <h1>Suministros a un <span>clic de distancia.</span></h1>
-                <p>Plataforma profesional para la gestión de inventarios y solicitudes corporativas creada por Emanuel Cedeño.</p>
-                <button class="btn-cta" onclick="showView('auth-screen')">Ir a comprar <i class="fas fa-shopping-cart"></i></button>
+                <span class="badge-new">Tienda de Suministros 2026</span>
+                <h1>Tu tienda de <span>confianza.</span></h1>
+                <p>Gestiona y compra suministros corporativos con la mejor tecnología. Plataforma diseñada por Emanuel Cedeño.</p>
+                <button class="btn-cta" onclick="showView('auth-screen')">Ir a Comprar <i class="fas fa-shopping-cart"></i></button>
             </div>
             <div class="hero-visual">
-                <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1000&auto=format&fit=crop" alt="Dashboard Preview">
+                <img src="https://images.unsplash.com/photo-1556740734-79386822538b?q=80&w=1000&auto=format&fit=crop" alt="Tienda Suministros">
             </div>
         </header>
 
         <footer id="contacto" class="landing-footer">
-            <div class="footer-content">
-                <div class="footer-info">
-                    <h3>Desarrollado por:</h3>
-                    <p><strong>Emanuel Clemente Cedeño Morán</strong></p>
-                    <p><i class="fas fa-envelope"></i> Emanuel.cedeño1234@gmail.com</p>
-                    <p><i class="fas fa-phone"></i> +507 69376895</p>
-                </div>
+            <div class="footer-info">
+                <h3>Contacto del Desarrollador</h3>
+                <p><strong>Emanuel Clemente Cedeño Morán</strong></p>
+                <p><i class="fas fa-envelope"></i> Emanuel.cedeño1234@gmail.com</p>
+                <p><i class="fas fa-phone"></i> +507 69376895</p>
             </div>
         </footer>
     </section>
 
     <section id="auth-screen" class="view-section auth-overlay" style="display: none;">
         <div class="auth-card">
-            <button class="btn-back" onclick="showView('landing-page')"><i class="fas fa-arrow-left"></i> Volver</button>
-            <h2>Inicia Sesión</h2>
-            <p>Accede con Google para gestionar tus pedidos.</p>
-            <button class="google-login-btn" id="login-google">
-                <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google">
-                Continuar con Google
-            </button>
+            <button class="btn-back" onclick="showView('landing-page')"><i class="fas fa-arrow-left"></i></button>
+            <h2 id="auth-title">Ingresar</h2>
+            <form id="auth-form">
+                <input type="email" id="auth-email" placeholder="Correo electrónico" required>
+                <input type="password" id="auth-pass" placeholder="Contraseña (mín. 6 caracteres)" required>
+                <button type="submit" class="btn-primary-full">Continuar</button>
+            </form>
+            <p class="auth-toggle">¿No tienes cuenta? <a href="#" onclick="toggleAuthMode()">Regístrate aquí</a></p>
         </div>
     </section>
 
@@ -60,13 +59,12 @@
             <div class="app-nav-container">
                 <h1 class="logo">V<span>ENDORS</span></h1>
                 <div class="app-actions">
-                    <div class="user-profile-pill" onclick="showModal('modal-profile')">
-                        <img id="user-avatar" src="" alt="Avatar">
-                        <span id="user-name-display">Usuario</span>
+                    <div class="user-pill" onclick="showModal('modal-profile')">
+                        <i class="fas fa-user-circle"></i> <span id="display-name">Usuario</span>
                     </div>
-                    <button id="btn-admin-panel" class="admin-only btn-nav-sec">Dashboard</button>
-                    <button id="btn-add-stock" class="admin-only btn-nav-pri"><i class="fas fa-plus"></i></button>
-                    <button id="btn-cart" class="user-only btn-cart-trigger">
+                    <button class="admin-only btn-nav-sec" onclick="showModal('modal-admin-orders')">Pedidos</button>
+                    <button class="admin-only btn-nav-pri" onclick="showModal('modal-add')"><i class="fas fa-plus"></i></button>
+                    <button class="user-only btn-icon" onclick="showModal('modal-cart')">
                         <i class="fas fa-shopping-bag"></i> <span id="cart-count">0</span>
                     </button>
                     <button class="logout-icon" onclick="logout()"><i class="fas fa-power-off"></i></button>
@@ -74,66 +72,53 @@
             </div>
         </nav>
 
-        <main class="main-layout">
-            <div class="filter-row">
-                <button class="chip active" data-cat="todos">Todos</button>
-                <button class="chip" data-cat="electronica">Electrónica</button>
-                <button class="chip" data-cat="oficina">Oficina</button>
-            </div>
+        <main class="main-content">
             <div id="product-grid" class="product-grid"></div>
         </main>
     </section>
 
-    <div id="modal-profile" class="modal-wrapper">
-        <div class="modal-content">
+    <div id="modal-add" class="modal-overlay">
+        <div class="modal-card">
+            <span class="close" onclick="closeModal('modal-add')">&times;</span>
+            <h2>Nuevo Producto</h2>
+            <form id="add-product-form">
+                <input type="file" id="item-file" accept="image/*,video/*" required>
+                <input type="text" id="item-name" placeholder="Nombre del suministro" required>
+                <input type="number" id="item-price" placeholder="Precio ($)" required>
+                <select id="item-cat">
+                    <option value="electronica">Electrónica</option>
+                    <option value="oficina">Oficina</option>
+                </select>
+                <button type="submit" id="btn-upload-item" class="btn-primary-full">Publicar Item</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-profile" class="modal-overlay">
+        <div class="modal-card">
             <span class="close" onclick="closeModal('modal-profile')">&times;</span>
             <h2>Mi Perfil</h2>
-            <form id="profile-edit-form">
-                <label>Nombre:</label><input type="text" id="prof-name-input">
-                <label>Dirección Residencial:</label><textarea id="prof-addr-input"></textarea>
-                <button type="submit" class="btn-save">Actualizar</button>
+            <form id="profile-form">
+                <label>Nombre Completo</label>
+                <input type="text" id="prof-name">
+                <label>Dirección Residencial</label>
+                <textarea id="prof-address"></textarea>
+                <button type="submit" class="btn-primary-full">Guardar</button>
             </form>
             <hr>
             <h3>Mis Pedidos</h3>
-            <div id="user-history-list" class="history-list"></div>
+            <div id="user-history" class="history-list"></div>
         </div>
     </div>
 
-    <div id="modal-admin-orders" class="modal-wrapper">
-        <div class="modal-content wide">
+    <div id="modal-admin-orders" class="modal-overlay">
+        <div class="modal-card wide">
             <span class="close" onclick="closeModal('modal-admin-orders')">&times;</span>
-            <h2>Gestión de Pedidos (Admin)</h2>
-            <div id="admin-orders-list" class="history-list"></div>
+            <h2>Panel de Aprobación</h2>
+            <div id="admin-orders-list"></div>
         </div>
     </div>
 
-    <div id="modal-add-product" class="modal-wrapper">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('modal-add-product')">&times;</span>
-            <h2>Nuevo Producto</h2>
-            <form id="add-item-form">
-                <input type="file" id="item-file" accept="image/*,video/*" required>
-                <input type="text" id="item-name" placeholder="Nombre" required>
-                <select id="item-cat"><option value="electronica">Electrónica</option><option value="oficina">Oficina</option></select>
-                <textarea id="item-desc" placeholder="Descripción"></textarea>
-                <input type="number" id="item-price" placeholder="Precio" required>
-                <button type="submit" id="btn-upload" class="btn-save">Publicar Suministro</button>
-            </form>
-        </div>
-    </div>
-
-    <div id="modal-cart" class="modal-wrapper">
-        <div class="modal-content sidebar-modal">
-            <span class="close" onclick="closeModal('modal-cart')">&times;</span>
-            <h2>Tu Bolsa</h2>
-            <div id="cart-items-list"></div>
-            <div class="cart-footer">
-                <p>Total: <span id="cart-total-sum">$0.00</span></p>
-                <button onclick="processOrder()" class="btn-save w-100">Confirmar y Pagar</button>
-            </div>
-        </div>
-    </div>
-
-    <script type="module" src="script.js"></script>
+    <script type="module" src="main.js"></script>
 </body>
 </html>
