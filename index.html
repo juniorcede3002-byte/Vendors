@@ -1,105 +1,177 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vendor Shop | Emanuel Cedeño</title>
-  <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendors Pro | Soluciones de Inventario</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
+<body class="light-theme">
 
-<section id="landing" class="view">
-  <div class="hero">
-    <h1>V<span>ENDOR</span> SHOP</h1>
-    <p>Plataforma moderna para compras inteligentes y gestión de suministros.</p>
-    <button class="btn-main" onclick="showView('auth')">Comenzar ahora <i class="fas fa-arrow-right"></i></button>
-  </div>
-</section>
+    <section id="view-landing" class="view">
+        <nav class="nav-glass">
+            <div class="logo">V<span>ENDORS</span></div>
+            <button class="btn-login" onclick="showView('view-auth')">Acceder</button>
+        </nav>
+        <div class="hero">
+            <h1>Gestión Inteligente de <span>Suministros.</span></h1>
+            <p>La plataforma B2B líder para el control de inventarios, compras corporativas y logística de entrega en Panamá. Diseñada para la eficiencia operativa de Emanuel Cedeño.</p>
+            <div class="hero-cards">
+                <div class="h-card"><i class="fas fa-bolt"></i> <h3>Rapidez</h3><p>Pedidos procesados al instante.</p></div>
+                <div class="h-card"><i class="fas fa-shield-alt"></i> <h3>Seguridad</h3><p>Pagos verificados vía Yappy y ACH.</p></div>
+                <div class="h-card"><i class="fas fa-chart-line"></i> <h3>Control</h3><p>Dashboard de métricas en tiempo real.</p></div>
+            </div>
+            <button class="btn-cta" onclick="showView('view-auth')">Comenzar Ahora</button>
+        </div>
+    </section>
 
-<section id="auth" class="view">
-  <div class="auth-card">
-    <h2 id="auth-title">Iniciar Sesión</h2>
-    <form id="auth-form">
-      <div class="input-group">
-        <label>Correo Electrónico</label>
-        <input id="email" type="email" placeholder="ejemplo@correo.com" required>
-      </div>
-      <div class="input-group">
-        <label>Contraseña</label>
-        <input id="password" type="password" placeholder="••••••••" required>
-      </div>
-      <button type="submit" class="btn-primary">Entrar</button>
-    </form>
-    <button class="link" onclick="toggleAuth()">¿No tienes cuenta? Crear una</button>
-  </div>
-</section>
+    <section id="view-auth" class="view" style="display:none;">
+        <div class="auth-container">
+            <div class="auth-box">
+                <h2 id="auth-title">Bienvenido</h2>
+                <form id="form-auth">
+                    <input type="email" id="auth-email" placeholder="Correo electrónico" required>
+                    <input type="password" id="auth-password" placeholder="Contraseña (mín. 6 caracteres)" required>
+                    <button type="submit" class="btn-block">Continuar</button>
+                </form>
+                <p onclick="toggleAuth()" class="toggle-link">¿No tienes cuenta? Regístrate</p>
+                <button class="btn-back" onclick="showView('view-landing')">Volver al inicio</button>
+            </div>
+        </div>
+    </section>
 
-<section id="shop" class="view">
-  <header class="app-header">
-    <div class="user-pill">
-      <i class="fas fa-user-circle"></i> <span id="user-name"></span>
+    <section id="view-user" class="view" style="display:none;">
+        <header class="app-header">
+            <div class="logo-sm">V<span>ENDORS</span></div>
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-input" placeholder="Buscar productos..." oninput="filterProducts()">
+            </div>
+            <div class="header-actions">
+                <button class="btn-icon" onclick="showModal('modal-cart')"><i class="fas fa-shopping-cart"></i><span id="cart-count">0</span></button>
+                <button class="btn-icon" onclick="showModal('modal-profile')"><i class="fas fa-user-circle"></i></button>
+                <button class="btn-icon text-red" onclick="logout()"><i class="fas fa-power-off"></i></button>
+            </div>
+        </header>
+
+        <main class="app-content">
+            <div class="filter-chips">
+                <button class="chip active" onclick="filterCat('all')">Todos</button>
+                <button class="chip" onclick="filterCat('tech')">Tecnología</button>
+                <button class="chip" onclick="filterCat('oficina')">Oficina</button>
+            </div>
+            <div id="product-grid" class="grid"></div>
+            
+            <h2 class="section-title">Mi Historial de Compras</h2>
+            <div id="user-orders" class="orders-list"></div>
+        </main>
+    </section>
+
+    <section id="view-admin" class="view" style="display:none;">
+        <header class="app-header admin-head">
+            <div class="logo-sm">V<span>ADMIN</span></div>
+            <div class="header-actions">
+                <button class="btn-icon" onclick="showModal('modal-profile')"><i class="fas fa-cog"></i></button>
+                <button class="btn-icon text-red" onclick="logout()"><i class="fas fa-power-off"></i></button>
+            </div>
+        </header>
+
+        <main class="app-content">
+            <div class="admin-dashboard">
+                <div class="stat-card"><h3>Ingresos Totales</h3><p id="stat-revenue">$0.00</p></div>
+                <div class="stat-card"><h3>Pedidos Pendientes</h3><p id="stat-pending">0</p></div>
+                <div class="stat-card"><h3>Usuarios Activos</h3><p id="stat-users">0</p></div>
+            </div>
+
+            <div class="admin-tabs">
+                <button class="tab-btn active" onclick="switchTab('tab-inventory')">Inventario</button>
+                <button class="tab-btn" onclick="switchTab('tab-requests')">Solicitudes</button>
+                <button class="tab-btn" onclick="switchTab('tab-users')">Usuarios</button>
+            </div>
+
+            <div id="tab-inventory" class="tab-content">
+                <button class="btn-add" onclick="showModal('modal-add-product')">+ Nuevo Producto</button>
+                <div id="admin-product-list" class="grid"></div>
+            </div>
+
+            <div id="tab-requests" class="tab-content" style="display:none;">
+                <div id="admin-requests-list" class="orders-list"></div>
+            </div>
+
+            <div id="tab-users" class="tab-content" style="display:none;">
+                <div id="admin-users-list" class="user-table"></div>
+            </div>
+        </main>
+    </section>
+
+    <div id="modal-cart" class="modal">
+        <div class="modal-box">
+            <span class="close" onclick="closeModal('modal-cart')">&times;</span>
+            <h2>Tu Carrito</h2>
+            <div id="cart-items"></div>
+            <div class="cart-summary">
+                <p>Subtotal: <span id="cart-subtotal">$0.00</span></p>
+                <p>ITBMS (7%): <span id="cart-tax">$0.00</span></p>
+                <hr>
+                <h3>Total: <span id="cart-total">$0.00</span></h3>
+            </div>
+            <button class="btn-block" onclick="showModal('modal-checkout')">Proceder al Pago</button>
+        </div>
     </div>
-    <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Salir</button>
-  </header>
 
-  <div class="container">
-    <h2>Catálogo de Productos</h2>
-    
-    <div class="filters">
-      <select id="filter-cat">
-        <option value="all">Todas las categorías</option>
-        <option value="tech">Tecnología</option>
-        <option value="ropa">Ropa</option>
-        <option value="oficina">Oficina</option>
-      </select>
-
-      <select id="filter-price">
-        <option value="all">Todos los precios</option>
-        <option value="low">Menos de $50</option>
-        <option value="high">Más de $50</option>
-      </select>
+    <div id="modal-checkout" class="modal">
+        <div class="modal-box checkout-box">
+            <span class="close" onclick="closeModal('modal-checkout')">&times;</span>
+            <h2>Finalizar Compra</h2>
+            <form id="form-checkout">
+                <input type="text" id="check-name" placeholder="Nombre completo" required>
+                <input type="text" id="check-address" placeholder="Ubicación de entrega" required>
+                <input type="tel" id="check-phone" placeholder="Teléfono" required>
+                <select id="check-payment" required onchange="togglePaymentInfo()">
+                    <option value="efectivo">Efectivo</option>
+                    <option value="yappy">Yappy (Panamá)</option>
+                    <option value="ach">Transferencia ACH</option>
+                </select>
+                <div id="payment-instructions" class="payment-note"></div>
+                <button type="submit" class="btn-block btn-success">Confirmar y Pagar</button>
+            </form>
+        </div>
     </div>
 
-    <div id="products" class="grid"></div>
-
-    <h2 class="section-title">Mis Pedidos</h2>
-    <div id="orders" class="orders-container"></div>
-  </div>
-</section>
-
-<section id="admin" class="view">
-  <header class="app-header">
-    <div class="user-pill">
-      <i class="fas fa-user-shield"></i> <span>Administrador</span>
-    </div>
-    <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Salir</button>
-  </header>
-
-  <div class="container">
-    <h2>Panel Administrativo</h2>
-    
-    <div class="admin-card">
-      <h3>Subir Nuevo Producto</h3>
-      <form id="product-form">
-        <input type="file" id="product-image" accept="image/*" required>
-        <input type="text" id="product-name" placeholder="Nombre del producto" required>
-        <input type="number" id="product-price" placeholder="Precio ($)" step="0.01" required>
-        <select id="product-cat">
-          <option value="tech">Tecnología</option>
-          <option value="ropa">Ropa</option>
-          <option value="oficina">Oficina</option>
-        </select>
-        <button type="submit" id="btn-upload">Publicar Producto</button>
-      </form>
+    <div id="modal-profile" class="modal">
+        <div class="modal-box">
+            <span class="close" onclick="closeModal('modal-profile')">&times;</span>
+            <h2>Mi Perfil</h2>
+            <form id="form-profile">
+                <label>Actualizar Correo</label>
+                <input type="email" id="profile-email">
+                <label>Nombre</label>
+                <input type="text" id="profile-name">
+                <button type="submit" class="btn-block">Guardar Cambios</button>
+            </form>
+        </div>
     </div>
 
-    <h3 class="section-title">Gestión de Pedidos</h3>
-    <div id="admin-orders" class="grid"></div>
-  </div>
-</section>
+    <div id="modal-add-product" class="modal">
+        <div class="modal-box">
+            <span class="close" onclick="closeModal('modal-add-product')">&times;</span>
+            <h2>Nuevo Suministro</h2>
+            <form id="form-add-product">
+                <input type="file" id="prod-file" accept="image/*" required>
+                <input type="text" id="prod-name" placeholder="Nombre" required>
+                <textarea id="prod-desc" placeholder="Descripción detallada" required></textarea>
+                <input type="number" id="prod-price" placeholder="Precio ($)" step="0.01" required>
+                <select id="prod-cat">
+                    <option value="tech">Tecnología</option>
+                    <option value="oficina">Oficina</option>
+                </select>
+                <button type="submit" class="btn-block">Subir Producto</button>
+            </form>
+        </div>
+    </div>
 
-<script type="module" src="main.js"></script>
+    <script type="module" src="main.js"></script>
 </body>
 </html>
