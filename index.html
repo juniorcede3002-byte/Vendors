@@ -3,20 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendors - Mobile First</title>
+    <title>Vendors - Sistema de Compras</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-content">
             <h1 class="logo">Vendors</h1>
-            <button id="open-upload-modal" class="btn-primary">Subir Producto</button>
+            <div class="nav-actions">
+                <button id="view-orders-btn" class="btn-secondary"><i class="fas fa-clipboard-list"></i> Mis Pedidos</button>
+                <button id="cart-btn" class="btn-cart">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span id="cart-count">0</span>
+                </button>
+                <button id="open-upload-modal" class="btn-primary">Subir Producto</button>
+            </div>
         </div>
     </nav>
 
+    <div id="cart-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" data-target="cart-modal">&times;</span>
+            <h2>Tu Carrito</h2>
+            <div id="cart-items"></div>
+            <div class="cart-footer">
+                <div class="total-section">
+                    <strong>Total:</strong> <span id="cart-total">$0.00</span>
+                </div>
+                <button id="checkout-btn" class="btn-submit">Siguiente: Datos de entrega</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="checkout-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" data-target="checkout-modal">&times;</span>
+            <h2>Confirmar Pedido</h2>
+            <form id="order-form">
+                <div class="form-group">
+                    <label>Ubicación de entrega</label>
+                    <textarea id="order-location" placeholder="Dirección exacta, punto de referencia..." required></textarea>
+                </div>
+                <div id="order-summary"></div>
+                <button type="submit" class="btn-buy">Confirmar y Enviar Pedido</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="orders-modal" class="modal">
+        <div class="modal-content orders-view">
+            <span class="close-modal" data-target="orders-modal">&times;</span>
+            <h2>Estado de mis Pedidos</h2>
+            <div id="orders-list"></div>
+        </div>
+    </div>
+
     <div id="upload-modal" class="modal">
         <div class="modal-content">
-            <span class="close-modal">&times;</span>
+            <span class="close-modal" data-target="upload-modal">&times;</span>
             <h2>Agregar Suministro</h2>
             <form id="product-form">
                 <input type="file" id="media-file" accept="image/*,video/*" required>
@@ -28,24 +73,8 @@
         </div>
     </div>
 
-    <div id="details-modal" class="modal">
-        <div class="modal-content detail-view">
-            <span class="close-details">&times;</span>
-            <div id="detail-media"></div>
-            <div class="detail-info">
-                <h2 id="detail-title"></h2>
-                <p id="detail-description"></p>
-                <div class="detail-footer">
-                    <span id="detail-price" class="price-large"></span>
-                    <button id="btn-buy" class="btn-buy">Comprar ahora</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <main class="container">
-        <div id="product-list" class="product-grid">
-            </div>
+        <div id="product-list" class="product-grid"></div>
     </main>
 
     <script type="module" src="script.js"></script>
