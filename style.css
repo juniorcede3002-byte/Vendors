@@ -1,16 +1,17 @@
-/* --- VARIABLES Y CONFIGURACIÓN BASE --- */
+/* --- CONFIGURACIÓN DE COLORES Y VARIABLES --- */
 :root {
     --bg: #0b0f1a;
-    --card-bg: rgba(30, 41, 59, 0.45);
-    --primary: #6366f1;
-    --primary-hover: #4f46e5;
-    --accent-orange: #f97316;
-    --accent-emerald: #10b981;
+    --glass-bg: rgba(30, 41, 59, 0.45);
+    --border: rgba(255, 255, 255, 0.08);
+    --primary: #6366f1; /* Índigo para Usuario */
+    --admin-accent: #f97316; /* Naranja para Admin */
+    --success: #10b981; /* Esmeralda para Aprobados */
+    --warning: #fbbf24; /* Ámbar para Pendientes */
     --text-main: #f8fafc;
     --text-dim: #94a3b8;
-    --border: rgba(255, 255, 255, 0.08);
 }
 
+/* --- RESET Y BASE --- */
 * {
     margin: 0;
     padding: 0;
@@ -21,10 +22,11 @@ body {
     background-color: var(--bg);
     color: var(--text-main);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    line-height: 1.5;
     overflow-x: hidden;
 }
 
-/* --- VISTAS (DISPLAY CONTROL) --- */
+/* --- ESTRUCTURA DE VISTAS --- */
 .view-section {
     display: none;
     min-height: 100vh;
@@ -35,21 +37,21 @@ body {
 }
 
 #view-auth.active {
-    display: flex;
+    display: flex; /* Para centrar el selector de roles */
     align-items: center;
     justify-content: center;
 }
 
-/* --- ESTILO GLASSMORPHISM --- */
+/* --- COMPONENTES GLASSMORPHISM --- */
 .glass {
-    background: var(--card-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 }
 
-/* --- INPUTS Y FORMULARIOS --- */
+/* --- FORMULARIOS E INPUTS --- */
 input, select {
     background: #0f172a;
     border: 1px solid #1e293b;
@@ -59,6 +61,7 @@ input, select {
     width: 100%;
     outline: none;
     transition: all 0.3s ease;
+    font-size: 0.9rem;
 }
 
 input:focus {
@@ -76,57 +79,59 @@ input[type="file"] {
 /* --- BOTONES --- */
 button {
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     border: none;
     outline: none;
+    border-radius: 12px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 button:active {
     transform: scale(0.96);
 }
 
-/* --- BARRA DE NAVEGACIÓN --- */
+/* --- NAVEGACIÓN --- */
 header {
     background: rgba(11, 15, 26, 0.8);
     backdrop-filter: blur(10px);
 }
 
-header nav button {
+#nav-links button {
     background: transparent;
-    color: var(--text-dim);
-    font-size: 0.75rem;
     transition: color 0.3s;
 }
 
-header nav button:hover {
-    color: white;
-}
-
-/* --- CARDS DE ARTÍCULOS --- */
+/* --- TARJETAS DE PRODUCTO --- */
 #product-list > div {
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, border-color 0.3s ease;
 }
 
 #product-list > div:hover {
     transform: translateY(-8px);
+    border-color: var(--primary);
 }
 
-/* --- ESTADOS DE COMPRA --- */
+/* --- ESTADOS DE LAS ÓRDENES --- */
 .status-pendiente {
-    color: #fbbf24;
+    color: var(--warning);
     background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.2);
     padding: 4px 10px;
-    border-radius: 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 800;
 }
 
 .status-aprobado {
-    color: var(--accent-emerald);
+    color: var(--success);
     background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
     padding: 4px 10px;
-    border-radius: 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 800;
 }
 
-/* --- PERSONALIZACIÓN DEL SCROLL --- */
+/* --- DISEÑO DE SCROLLBAR --- */
 .custom-scroll::-webkit-scrollbar {
     width: 6px;
 }
@@ -144,23 +149,42 @@ header nav button:hover {
     background: #334155;
 }
 
-/* --- ANIMACIONES --- */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
+/* --- ANIMACIONES DE ENTRADA --- */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 main > div:not(.hidden) {
-    animation: fadeIn 0.5s ease forwards;
+    animation: fadeInUp 0.5s ease forwards;
 }
 
-/* --- MOBILE RESPONSIVE --- */
-@media (max-width: 640px) {
+/* --- RESPONSIVIDAD --- */
+@media (max-width: 768px) {
     header {
         padding: 1rem;
     }
     
-    .glass {
-        padding: 1.5rem;
+    .grid {
+        gap: 1rem;
     }
+    
+    #nav-links {
+        display: none; /* Se ocultan links en móvil por simplicidad */
+    }
+}
+
+/* --- ESTILOS ESPECÍFICOS PARA EL SELECTOR DE ROLES --- */
+#view-auth button i {
+    transition: transform 0.3s ease;
+}
+
+#view-auth button:hover i {
+    transform: scale(1.2);
 }
