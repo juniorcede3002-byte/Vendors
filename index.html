@@ -2,681 +2,102 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Vendors Pro | Sistema Avanzado</title>
+    <title>Vendors Pro | Gestión Integral</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Librerías Externas -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- ==========================================
-         SECCIÓN 1: ESTILOS (CSS)
-         ========================================== -->
-    <style>
-        :root {
-            --primary: #38bdf8;
-            --primary-dark: #0ea5e9;
-            --bg-main: #0f172a;
-            --bg-card: #1e293b;
-            --border: #334155;
-            --text: #f1f5f9;
-        }
-
-        body { 
-            background: var(--bg-main); 
-            color: var(--text); 
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            margin: 0;
-            overflow-x: hidden;
-        }
-
-        /* Utilidades de Diseño Glassmorphism */
-        .glass { 
-            background: rgba(30, 41, 59, 0.7); 
-            backdrop-filter: blur(12px); 
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--border); 
-        }
-
-        /* Componentes de Interfaz */
-        .btn-primary { 
-            background: var(--primary); 
-            color: #000; 
-            font-weight: 600; 
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn-primary:hover { 
-            background: var(--primary-dark); 
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
-        }
-
-        .input-field { 
-            background: #0f172a; 
-            border: 1px solid var(--border); 
-            color: white; 
-            padding: 0.75rem; 
-            border-radius: 0.5rem; 
-            width: 100%;
-            transition: border-color 0.2s;
-        }
-
-        .input-field:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        /* Navegación Lateral */
-        .sidebar-item { 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            padding: 12px 16px; 
-            border-radius: 12px; 
-            cursor: pointer; 
-            color: #94a3b8; 
-            transition: all 0.2s; 
-        }
-
-        .sidebar-item:hover { 
-            background: rgba(51, 65, 85, 0.5); 
-            color: white; 
-        }
-
-        .sidebar-item.active { 
-            background: var(--primary); 
-            color: #000; 
-            font-weight: 600;
-        }
-
-        /* Estados y Badges */
-        .status-badge { 
-            padding: 4px 12px; 
-            border-radius: 99px; 
-            font-size: 0.7rem; 
-            font-weight: 800; 
-            text-transform: uppercase; 
-            letter-spacing: 0.05em;
-        }
-        .pending { background: #fef08a; color: #854d0e; }
-        .approved { background: #bbf7d0; color: #166534; }
-        .rejected { background: #fecaca; color: #991b1b; }
-
-        /* Animaciones */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .animate-fade-in {
-            animation: fadeIn 0.4s ease forwards;
-        }
-
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body class="min-h-screen">
+<body>
 
-    <!-- ==========================================
-         SECCIÓN 2: ESTRUCTURA (HTML)
-         ========================================== -->
+    <!-- 1. LANDING PAGE -->
+    <section id="view-landing" class="view-section active flex-col items-center justify-center text-center px-6">
+        <div class="decor"></div>
+        <div class="relative z-10 max-w-4xl">
+            <div class="mb-8 inline-flex items-center gap-3 bg-slate-900/50 p-2 pr-6 rounded-full border border-slate-800">
+                <div class="w-10 h-10 bg-sky-500 rounded-full flex items-center justify-center text-slate-950 font-black">V</div>
+                <span class="text-xs font-bold tracking-widest uppercase">Sistema de Suministros Pro</span>
+            </div>
+            <h1 class="title">Toda tu tienda en <br><span class="accent">un solo lugar.</span></h1>
+            <p class="sub">Gestiona inventarios, aprueba solicitudes y controla el flujo de materiales de tu empresa con precisión quirúrgica.</p>
+            <button onclick="navigateTo('auth')" class="cta">
+                IR A COMPRAR
+                <i class="fas fa-arrow-right ml-3"></i>
+            </button>
+        </div>
+    </section>
 
-    <!-- Pantalla de Carga (Overlay) -->
-    <div id="loading" class="fixed inset-0 z-[100] bg-slate-950 flex flex-col items-center justify-center gap-4">
-        <div class="relative">
-            <div class="animate-spin rounded-full h-20 w-20 border-t-4 border-sky-500 border-opacity-50"></div>
-            <div class="absolute inset-0 flex items-center justify-center">
-                <i class="fas fa-box-open text-sky-500 animate-bounce"></i>
+    <!-- 2. AUTHENTICATION -->
+    <section id="view-auth" class="view-section flex-col items-center justify-center">
+        <div class="w-full max-w-md relative p-6">
+            <button onclick="navigateTo('landing')" class="back-btn">
+                <i class="fas fa-chevron-left"></i> Volver al inicio
+            </button>
+            <div class="glass p-10 rounded-[2.5rem] shadow-2xl">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl font-black mb-2" id="auth-title">Acceso Seguro</h2>
+                    <p class="text-slate-500 text-sm" id="auth-subtitle">Ingresa para gestionar tus pedidos</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="label">Email Corporativo</label>
+                        <input id="auth-email" type="email" class="input" placeholder="admin@empresa.com">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="label">Contraseña</label>
+                        <input id="auth-pass" type="password" class="input" placeholder="••••••••">
+                    </div>
+                    <div id="register-fields" class="hidden space-y-2">
+                        <label class="label">Nombre Completo</label>
+                        <input id="auth-name" type="text" class="input" placeholder="Nombre de usuario">
+                    </div>
+
+                    <button id="btn-auth-action" class="primary-btn">INICIAR SESIÓN</button>
+
+                    <button id="btn-switch-auth" class="switch-link">¿No tienes cuenta? Regístrate aquí</button>
+                </div>
             </div>
         </div>
-        <p class="text-slate-400 font-medium animate-pulse">Iniciando sistema...</p>
-    </div>
+    </section>
 
-    <!-- Pantalla de Autenticación -->
-    <div id="auth-screen" class="hidden flex items-center justify-center min-h-screen p-4">
-        <div class="glass p-10 rounded-3xl w-full max-w-md shadow-2xl animate-fade-in">
-            <div class="text-center mb-10">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-sky-500 rounded-2xl mb-4 shadow-lg shadow-sky-500/20">
-                    <i class="fas fa-shield-alt text-2xl text-slate-900"></i>
-                </div>
-                <h1 class="text-4xl font-black text-white tracking-tight">VENDORS <span class="text-sky-400">PRO</span></h1>
-                <p class="text-slate-400 mt-2">Acceso a Suministros Corporativos</p>
-            </div>
-            
-            <div class="space-y-4">
+    <!-- 3. INTERFAZ PRINCIPAL -->
+    <section id="view-app" class="view-section flex flex-col md:flex-row">
+        <!-- Sidebar -->
+        <aside class="sidebar glass">
+            <div class="flex items-center gap-3 mb-12">
+                <div class="w-10 h-10 bg-sky-500 rounded-xl flex items-center justify-center text-slate-950 font-black">V</div>
                 <div>
-                    <label class="text-xs font-bold text-slate-500 uppercase ml-1">Email</label>
-                    <input id="email" type="email" placeholder="usuario@empresa.com" class="input-field mt-1">
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-slate-500 uppercase ml-1">Contraseña</label>
-                    <input id="password" type="password" placeholder="••••••••" class="input-field mt-1">
-                </div>
-                
-                <button id="btn-login" class="btn-primary w-full py-4 rounded-xl shadow-lg mt-2">
-                    Ingresar al Portal
-                </button>
-                
-                <div class="flex flex-col gap-3 pt-2">
-                    <button id="btn-forgot" class="text-sky-400 hover:text-white text-sm transition text-center">
-                        ¿Problemas para acceder? Recuperar cuenta
-                    </button>
-                    <button id="btn-show-register" class="text-slate-500 hover:text-white text-xs text-center border-t border-slate-800 pt-4">
-                        ¿No tienes cuenta? Solicita registro aquí
-                    </button>
+                    <span class="text-xl font-black block leading-none">VENDORS</span>
+                    <span class="text-[10px] font-bold text-sky-500 uppercase tracking-tighter">Shop & Management</span>
                 </div>
             </div>
 
-            <!-- Campos de Registro (Ocultos por defecto) -->
-            <div id="register-fields" class="hidden mt-6 pt-6 border-t border-slate-700 space-y-4 animate-fade-in">
-                <input id="reg-name" type="text" placeholder="Nombre completo" class="input-field">
-                <button id="btn-register" class="w-full bg-slate-700 py-3 rounded-xl hover:bg-slate-600 transition font-bold">
-                    Enviar Solicitud de Registro
-                </button>
-            </div>
-        </div>
-    </div>
+            <nav id="sidebar-nav" class="flex-grow space-y-2"></nav>
 
-    <!-- Layout Principal de la Aplicación -->
-    <div id="app-screen" class="hidden flex flex-col md:flex-row min-h-screen">
-        
-        <!-- Sidebar de Navegación -->
-        <aside class="w-full md:w-72 glass p-6 flex flex-col gap-8 z-10">
-            <div class="flex items-center gap-3 px-2">
-                <div class="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center font-bold text-black">V</div>
-                <div class="text-xl font-black tracking-tighter">PRO PANEL</div>
-            </div>
-            
-            <nav class="flex flex-col gap-1.5 flex-grow" id="nav-menu">
-                <!-- Los items del menú se inyectan dinámicamente mediante JS -->
-            </nav>
-
-            <!-- Perfil de Usuario en Sidebar -->
-            <div class="pt-6 border-t border-slate-700">
-                <div class="flex items-center gap-3 px-2 mb-6">
-                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center font-bold text-slate-900 shadow-lg" id="user-avatar">?</div>
-                    <div class="overflow-hidden">
-                        <p class="text-sm font-bold truncate text-white" id="user-display-name">Usuario</p>
-                        <div class="flex items-center gap-1.5">
-                            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                            <p class="text-[10px] uppercase tracking-widest text-slate-500 font-black" id="user-display-role">Cargando...</p>
-                        </div>
+            <div class="mt-auto pt-6 border-t border-slate-800">
+                <div class="flex items-center gap-4 bg-slate-900/80 p-4 rounded-2xl mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-sky-500 flex items-center justify-center font-black text-slate-950 text-xl" id="user-avatar">?</div>
+                    <div class="flex-grow overflow-hidden">
+                        <p class="text-sm font-black truncate text-white" id="user-display-name">...</p>
+                        <p class="text-[9px] text-sky-400 font-black uppercase" id="user-role-tag">CARGANDO</p>
                     </div>
                 </div>
-                <button id="btn-logout" class="w-full bg-red-500/10 text-red-500 py-3 rounded-xl hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2 font-bold text-sm">
-                    <i class="fas fa-power-off"></i> Salir del Sistema
-                </button>
+                <button id="btn-logout" class="logout-btn">Cerrar Sesión <i class="fas fa-power-off ml-2"></i></button>
             </div>
         </aside>
 
-        <!-- Área de Contenido Dinámico -->
-        <main class="flex-grow p-4 md:p-10 overflow-y-auto max-h-screen bg-slate-950/30">
-            <div id="content-area" class="max-w-7xl mx-auto">
-                <!-- Se inyectan las vistas de las pestañas aquí -->
-            </div>
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div id="app-dynamic-view" class="max-w-6xl mx-auto w-full"></div>
         </main>
+    </section>
+
+    <!-- MODAL GLOBAL -->
+    <div id="modal-container" class="modal hidden">
+        <div class="glass p-10 rounded-[3rem] w-full max-w-lg shadow-2xl relative" id="modal-body"></div>
     </div>
 
-    <!-- Contenedor para Modales -->
-    <div id="modal" class="fixed inset-0 z-[60] bg-slate-950/90 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="glass p-8 rounded-3xl w-full max-w-2xl shadow-2xl relative overflow-hidden" id="modal-body">
-            <!-- Contenido dinámico del modal -->
-        </div>
-    </div>
-
-    <!-- ==========================================
-         SECCIÓN 3: LÓGICA (JAVASCRIPT)
-         ========================================== -->
-    <script type="module">
-        // Importaciones de Firebase (CDN)
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
-
-        // Configuración y Variables Globales
-        const firebaseConfig = JSON.parse('{"apiKey":"AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY","authDomain":"proyectovendor.firebaseapp.com","projectId":"proyectovendor"}');
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'vendors-pro-advanced-v1';
-
-        let userProfile = null;
-        let activeUnsubscribes = [];
-
-        // --- Gestión de Vistas (Switcher) ---
-        const setViewState = (viewName) => {
-            // Ocultar cargador siempre que se cambie de estado
-            document.getElementById('loading').classList.add('hidden');
-            
-            if(viewName === 'auth') {
-                document.getElementById('auth-screen').classList.remove('hidden');
-                document.getElementById('app-screen').classList.add('hidden');
-            } else {
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('app-screen').classList.remove('hidden');
-            }
-        };
-
-        // --- Lógica de Autenticación y Perfiles ---
-        const handleUserAuth = async (user) => {
-            if (user) {
-                try {
-                    // Ruta estricta de Firestore según manual
-                    const profilePath = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile');
-                    const snap = await getDoc(profilePath);
-                    
-                    if (snap.exists()) {
-                        userProfile = snap.data();
-                    } else {
-                        // Creación de perfil inicial si es nuevo
-                        userProfile = { 
-                            uid: user.uid, 
-                            email: user.email, 
-                            name: user.displayName || user.email.split('@')[0], 
-                            role: user.email === 'admin@vendors.com' ? 'admin' : 'applicant',
-                            createdAt: Date.now()
-                        };
-                        await setDoc(profilePath, userProfile);
-                    }
-                    
-                    renderMainNavigation();
-                    setViewState('app');
-                } catch (error) {
-                    console.error("Error cargando perfil:", error);
-                    alert("Error crítico al cargar perfil. Intenta de nuevo.");
-                }
-            } else {
-                setViewState('auth');
-            }
-        };
-
-        // Escuchar cambios de estado de autenticación
-        onAuthStateChanged(auth, handleUserAuth);
-
-        // --- Acciones de Botones de Auth ---
-        document.getElementById('btn-login').onclick = async () => {
-            const email = document.getElementById('email').value.trim();
-            const pass = document.getElementById('password').value;
-            
-            if(!email || !pass) return alert("Por favor, ingresa tus credenciales.");
-            
-            try {
-                await signInWithEmailAndPassword(auth, email, pass);
-            } catch (err) {
-                let msg = "Error al iniciar sesión.";
-                if(err.code === 'auth/user-not-found') msg = "Usuario no registrado.";
-                if(err.code === 'auth/wrong-password') msg = "Contraseña incorrecta.";
-                alert(msg);
-            }
-        };
-
-        document.getElementById('btn-show-register').onclick = () => {
-            document.getElementById('register-fields').classList.toggle('hidden');
-        };
-
-        document.getElementById('btn-register').onclick = async () => {
-            const email = document.getElementById('email').value.trim();
-            const pass = document.getElementById('password').value;
-            const name = document.getElementById('reg-name').value.trim();
-            
-            if(!email || !pass || !name) return alert("Completa todos los campos para el registro.");
-            
-            try {
-                await createUserWithEmailAndPassword(auth, email, pass);
-                // El observador onAuthStateChanged manejará la creación del perfil en DB
-            } catch (err) { alert("Error de registro: " + err.message); }
-        };
-
-        document.getElementById('btn-forgot').onclick = () => {
-            const email = document.getElementById('email').value.trim();
-            if(!email) return alert("Escribe tu correo primero para enviarte el enlace.");
-            sendPasswordResetEmail(auth, email)
-                .then(() => alert("Se ha enviado un correo de recuperación a " + email))
-                .catch(err => alert("Error: " + err.message));
-        };
-
-        document.getElementById('btn-logout').onclick = () => {
-            activeUnsubscribes.forEach(unsub => unsub());
-            signOut(auth);
-        };
-
-        // --- Renderizado de UI Principal ---
-        function renderMainNavigation() {
-            const menu = document.getElementById('nav-menu');
-            const isAdmin = userProfile.role === 'admin';
-            
-            document.getElementById('user-display-name').innerText = userProfile.name;
-            document.getElementById('user-display-role').innerText = isAdmin ? 'Administrador' : 'Solicitante';
-            document.getElementById('user-avatar').innerText = userProfile.name[0].toUpperCase();
-
-            // Configuración del menú por rol
-            const navItems = isAdmin ? [
-                { id: 'dashboard', icon: 'fa-chart-line', label: 'Tablero' },
-                { id: 'inventory', icon: 'fa-boxes-stacked', label: 'Inventario' },
-                { id: 'orders', icon: 'fa-clipboard-check', label: 'Solicitudes' },
-                { id: 'users', icon: 'fa-user-gear', label: 'Usuarios' }
-            ] : [
-                { id: 'stock', icon: 'fa-cart-flatbed', label: 'Catálogo' },
-                { id: 'my-orders', icon: 'fa-clock-rotate-left', label: 'Mis Pedidos' }
-            ];
-
-            menu.innerHTML = navItems.map(item => `
-                <div class="sidebar-item" onclick="loadTab('${item.id}')" id="nav-${item.id}">
-                    <i class="fas ${item.icon} w-5 text-center"></i> 
-                    <span>${item.label}</span>
-                </div>
-            `).join('');
-
-            loadTab(isAdmin ? 'dashboard' : 'stock');
-        }
-
-        // --- Manejador de Pestañas ---
-        window.loadTab = (id) => {
-            // Limpiar listeners antiguos para ahorrar memoria
-            activeUnsubscribes.forEach(unsub => unsub());
-            activeUnsubscribes = [];
-
-            // UI Feedback
-            document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
-            const activeNav = document.getElementById(`nav-${id}`);
-            if(activeNav) activeNav.classList.add('active');
-
-            const area = document.getElementById('content-area');
-            area.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-64 text-slate-500 gap-4">
-                    <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-sky-500"></div>
-                    <p class="text-sm font-medium">Sincronizando sección...</p>
-                </div>
-            `;
-
-            // Cargar Componente
-            setTimeout(() => {
-                switch(id) {
-                    case 'dashboard': renderDashboard(); break;
-                    case 'inventory': renderInventory(); break;
-                    case 'orders': renderOrders(); break;
-                    case 'stock': renderStock(); break;
-                    case 'my-orders': renderMyOrders(); break;
-                    case 'users': renderUsers(); break;
-                }
-            }, 100);
-        };
-
-        // --- Vistas: Dashboard ---
-        async function renderDashboard() {
-            const area = document.getElementById('content-area');
-            area.innerHTML = `
-                <div class="animate-fade-in">
-                    <h2 class="text-3xl font-black mb-2">Resumen de Operaciones</h2>
-                    <p class="text-slate-500 mb-8 font-medium">Estadísticas en tiempo real del almacén.</p>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                        <div class="glass p-8 rounded-3xl relative overflow-hidden group">
-                            <div class="absolute -right-4 -top-4 w-24 h-24 bg-sky-500/10 rounded-full group-hover:scale-150 transition duration-700"></div>
-                            <p class="text-slate-400 text-xs font-black uppercase tracking-widest">Total Suministros</p>
-                            <h3 class="text-5xl font-black mt-3 text-white" id="stat-stock">0</h3>
-                        </div>
-                        <div class="glass p-8 rounded-3xl relative overflow-hidden group">
-                            <div class="absolute -right-4 -top-4 w-24 h-24 bg-yellow-500/10 rounded-full group-hover:scale-150 transition duration-700"></div>
-                            <p class="text-slate-400 text-xs font-black uppercase tracking-widest">Pendientes</p>
-                            <h3 class="text-5xl font-black mt-3 text-yellow-500" id="stat-pending">0</h3>
-                        </div>
-                        <div class="glass p-8 rounded-3xl relative overflow-hidden group">
-                            <div class="absolute -right-4 -top-4 w-24 h-24 bg-green-500/10 rounded-full group-hover:scale-150 transition duration-700"></div>
-                            <p class="text-slate-400 text-xs font-black uppercase tracking-widest">Aprobados Mes</p>
-                            <h3 class="text-5xl font-black mt-3 text-green-500" id="stat-approved">0</h3>
-                        </div>
-                    </div>
-
-                    <div class="glass p-8 rounded-3xl">
-                        <h4 class="font-bold text-lg mb-6">Actividad Reciente</h4>
-                        <div class="space-y-4" id="recent-activity">
-                            <p class="text-slate-600 text-sm">No hay actividad registrada en las últimas 24h.</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            // Listeners de Estadísticas
-            const qStock = collection(db, 'artifacts', appId, 'public', 'data', 'inventory');
-            const qOrders = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
-            
-            activeUnsubscribes.push(onSnapshot(qStock, s => document.getElementById('stat-stock').innerText = s.size));
-            activeUnsubscribes.push(onSnapshot(qOrders, s => {
-                const docs = s.docs.map(d => d.data());
-                document.getElementById('stat-pending').innerText = docs.filter(o => o.status === 'pending').length;
-                document.getElementById('stat-approved').innerText = docs.filter(o => o.status === 'approved').length;
-            }));
-        }
-
-        // --- Vistas: Inventario (Admin) ---
-        async function renderInventory() {
-            const area = document.getElementById('content-area');
-            area.innerHTML = `
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 animate-fade-in">
-                    <div>
-                        <h2 class="text-3xl font-black">Control de Inventario</h2>
-                        <p class="text-slate-500 font-medium">Gestiona el stock de suministros corporativos.</p>
-                    </div>
-                    <button onclick="openModal('add-product')" class="btn-primary px-6 py-3 rounded-2xl">
-                        <i class="fas fa-plus"></i> Nuevo Suministro
-                    </button>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="inventory-list"></div>
-            `;
-            
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory'), orderBy('createdAt', 'desc'));
-            activeUnsubscribes.push(onSnapshot(q, snap => {
-                const list = document.getElementById('inventory-list');
-                if(snap.empty) {
-                    list.innerHTML = `<div class="col-span-full py-20 text-center glass rounded-3xl text-slate-500">No hay productos en el inventario. Empieza agregando uno.</div>`;
-                    return;
-                }
-                list.innerHTML = snap.docs.map(doc => {
-                    const p = doc.data();
-                    return `
-                        <div class="glass p-6 rounded-3xl flex items-center gap-5 hover:border-sky-500/50 transition">
-                            <div class="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center text-2xl shadow-inner">📦</div>
-                            <div class="flex-grow">
-                                <p class="font-bold text-lg text-white">${p.name}</p>
-                                <p class="text-sm font-black text-sky-500 uppercase">Stock: ${p.qty}</p>
-                            </div>
-                            <button onclick="deleteProduct('${doc.id}')" class="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition flex items-center justify-center">
-                                <i class="fas fa-trash-alt text-sm"></i>
-                            </button>
-                        </div>
-                    `;
-                }).join('');
-            }));
-        }
-
-        // --- Vistas: Catálogo (Usuario) ---
-        async function renderStock() {
-            const area = document.getElementById('content-area');
-            area.innerHTML = `
-                <div class="mb-10 animate-fade-in">
-                    <h2 class="text-3xl font-black">Catálogo de Suministros</h2>
-                    <p class="text-slate-500 font-medium">Selecciona los productos que necesites para tu oficina.</p>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="stock-grid"></div>
-            `;
-
-            activeUnsubscribes.push(onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'inventory'), snap => {
-                const grid = document.getElementById('stock-grid');
-                if(snap.empty) {
-                    grid.innerHTML = `<div class="col-span-full py-20 text-center glass rounded-3xl text-slate-500">No hay suministros disponibles en este momento.</div>`;
-                    return;
-                }
-                grid.innerHTML = snap.docs.map(d => {
-                    const p = d.data();
-                    const noStock = p.qty <= 0;
-                    return `
-                        <div class="glass rounded-3xl overflow-hidden group hover:shadow-2xl hover:shadow-sky-500/10 transition-all duration-300">
-                            <div class="h-40 bg-slate-800 flex items-center justify-center text-5xl relative">
-                                <i class="fas fa-box-open text-slate-700"></i>
-                                ${noStock ? '<div class="absolute inset-0 bg-slate-950/80 flex items-center justify-center font-black text-red-500 uppercase tracking-widest text-xs">Agotado</div>' : ''}
-                            </div>
-                            <div class="p-6">
-                                <h3 class="font-bold text-lg text-white mb-1">${p.name}</h3>
-                                <p class="text-xs font-black text-slate-500 uppercase mb-5">Disponibles: ${p.qty}</p>
-                                <button onclick="requestItem('${d.id}', '${p.name}')" class="w-full btn-primary py-3 rounded-xl ${noStock ? 'opacity-20 grayscale pointer-events-none' : ''}">
-                                    <i class="fas fa-plus"></i> Solicitar
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }));
-        }
-
-        // --- Lógica de Pedidos y Solicitudes ---
-        window.requestItem = async (pid, name) => {
-            const qty = prompt(`¿Cuántas unidades de "${name}" requieres?`, "1");
-            if(!qty || isNaN(qty) || qty <= 0) return;
-
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), {
-                    pid,
-                    productName: name,
-                    qty: parseInt(qty),
-                    uid: auth.currentUser.uid,
-                    userName: userProfile.name,
-                    userEmail: auth.currentUser.email,
-                    status: 'pending',
-                    date: Date.now()
-                });
-                alert("✓ Solicitud enviada al administrador.");
-            } catch (e) { alert("Error al enviar pedido."); }
-        };
-
-        async function renderOrders() {
-            const area = document.getElementById('content-area');
-            area.innerHTML = `
-                <h2 class="text-3xl font-black mb-8 animate-fade-in">Bandeja de Solicitudes</h2>
-                <div class="space-y-4" id="orders-list"></div>
-            `;
-            
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), orderBy('date', 'desc'));
-            activeUnsubscribes.push(onSnapshot(q, snap => {
-                const list = document.getElementById('orders-list');
-                if(snap.empty) {
-                    list.innerHTML = `<div class="py-20 text-center glass rounded-3xl text-slate-500">No hay solicitudes pendientes.</div>`;
-                    return;
-                }
-                list.innerHTML = snap.docs.map(d => {
-                    const o = d.data();
-                    const isPending = o.status === 'pending';
-                    return `
-                        <div class="glass p-8 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 animate-fade-in">
-                            <div class="flex gap-6 items-center">
-                                <div class="w-14 h-14 bg-slate-800 rounded-2xl flex items-center justify-center text-xl text-sky-500">
-                                    <i class="fas fa-file-invoice"></i>
-                                </div>
-                                <div>
-                                    <div class="flex items-center gap-3 mb-1">
-                                        <h4 class="text-xl font-bold text-white">${o.productName}</h4>
-                                        <span class="text-sky-500 font-black text-sm">x${o.qty}</span>
-                                    </div>
-                                    <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">${o.userName} • ${o.userEmail}</p>
-                                    <div class="mt-3"><span class="status-badge ${o.status}">${o.status}</span></div>
-                                </div>
-                            </div>
-                            ${isPending ? `
-                                <div class="flex gap-3 w-full md:w-auto">
-                                    <button onclick="handleOrderAction('${d.id}', 'rejected')" class="flex-grow md:flex-none px-6 py-3 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition font-bold text-sm">Rechazar</button>
-                                    <button onclick="handleOrderAction('${d.id}', 'approved', '${o.pid}', ${o.qty})" class="flex-grow md:flex-none px-6 py-3 rounded-xl bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white transition font-bold text-sm">Aprobar</button>
-                                </div>
-                            ` : ''}
-                        </div>
-                    `;
-                }).join('');
-            }));
-        }
-
-        window.handleOrderAction = async (oid, status, pid, qty) => {
-            try {
-                if(status === 'approved') {
-                    const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory', pid);
-                    const pSnap = await getDoc(pRef);
-                    if(pSnap.exists() && pSnap.data().qty >= qty) {
-                        await updateDoc(pRef, { qty: pSnap.data().qty - qty });
-                    } else {
-                        return alert("Error: No hay suficiente stock físico para aprobar esta cantidad.");
-                    }
-                }
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', oid), { status });
-            } catch (e) { alert("Error al procesar acción."); }
-        };
-
-        // --- Modales ---
-        window.openModal = (type) => {
-            const modal = document.getElementById('modal');
-            const body = document.getElementById('modal-body');
-            modal.classList.remove('hidden');
-
-            if(type === 'add-product') {
-                body.innerHTML = `
-                    <button onclick="closeModal()" class="absolute top-6 right-6 text-slate-500 hover:text-white"><i class="fas fa-times"></i></button>
-                    <h3 class="text-2xl font-black mb-2">Nuevo Suministro</h3>
-                    <p class="text-slate-500 mb-8 font-medium">Define los detalles del producto para el catálogo.</p>
-                    
-                    <div class="space-y-6">
-                        <div>
-                            <label class="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Nombre Comercial</label>
-                            <input id="new-p-name" placeholder="Ej: Papel Bond Carta" class="input-field mt-2">
-                        </div>
-                        <div>
-                            <label class="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Cantidad Inicial</label>
-                            <input id="new-p-qty" type="number" placeholder="100" class="input-field mt-2">
-                        </div>
-                        <div class="flex gap-4 pt-4">
-                            <button onclick="closeModal()" class="w-full bg-slate-800 py-4 rounded-2xl font-bold hover:bg-slate-700 transition">Descartar</button>
-                            <button onclick="saveNewProduct()" class="w-full btn-primary py-4 rounded-2xl shadow-xl">Guardar en Almacén</button>
-                        </div>
-                    </div>
-                `;
-            }
-        };
-
-        window.closeModal = () => document.getElementById('modal').classList.add('hidden');
-
-        window.saveNewProduct = async () => {
-            const name = document.getElementById('new-p-name').value.trim();
-            const qty = parseInt(document.getElementById('new-p-qty').value);
-            
-            if(!name || isNaN(qty)) return alert("Revisa los campos.");
-            
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'inventory'), {
-                    name,
-                    qty,
-                    createdAt: Date.now()
-                });
-                closeModal();
-            } catch (e) { alert("Error al guardar."); }
-        };
-
-        window.deleteProduct = async (id) => {
-            if(confirm("¿Estás seguro de eliminar este producto? Esta acción no se puede deshacer.")) {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id));
-            }
-        };
-
-        // Prevención de pantalla blanca (Timeout de seguridad para el loader)
-        setTimeout(() => {
-            if(!document.getElementById('loading').classList.contains('hidden')) {
-                console.warn("Forzando carga por timeout de red...");
-                document.getElementById('loading').classList.add('hidden');
-                if(!auth.currentUser) setViewState('auth');
-            }
-        }, 3500);
-
-    </script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
