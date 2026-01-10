@@ -1,84 +1,110 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
+// Configuración de tu Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
-  authDomain: "proyectovendor.firebaseapp.com",
-  projectId: "proyectovendor",
-  storageBucket: "proyectovendor.firebasestorage.app",
-  messagingSenderId: "1038115164902",
-  appId: "1:1038115164902:web:3d72bd44f3e5da487c2127"
+    apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
+    authDomain: "proyectovendor.firebaseapp.com",
+    projectId: "proyectovendor",
+    storageBucket: "proyectovendor.firebasestorage.app",
+    messagingSenderId: "1038115164902",
+    appId: "1:1038115164902:web:3d72bd44f3e5da487c2127"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
-// Manejo del Modal
+// Configuración de tu Cloudinary
+const CLOUD_NAME = "df79cjklp";
+const UPLOAD_PRESET = "vendors_preset";
+
+// Elementos de la Interfaz
 const modal = document.getElementById("modal");
 const btnOpen = document.getElementById("open-modal");
-const spanClose = document.querySelector(".close");
+const btnClose = document.querySelector(".close-btn");
+const productForm = document.getElementById("product-form");
+const productList = document.getElementById("product-list");
 
+// Manejo del Modal
 btnOpen.onclick = () => modal.style.display = "block";
-spanClose.onclick = () => modal.style.display = "none";
-window.onclick = (event) => { if (event.target == modal) modal.style.display = "none"; };
+btnClose.onclick = () => modal.style.display = "none";
+window.onclick = (event) => { if (event.target == modal) modal.style.display = "none"; }
 
-// Subida de datos
-const form = document.getElementById('product-form');
-form.addEventListener('submit', async (e) => {
+// FUNCIÓN: Subir a Cloudinary y guardar en Firebase
+productForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const btn = document.getElementById('btn-save');
-    const file = document.getElementById('media-file').files[0];
-    const desc = document.getElementById('product-desc').value;
+    const btnSubmit = document.getElementById("btn-save");
+    
+    const file = document.getElementById("media-file").files[0];
+    const name = document.getElementById("product-name").value;
+    const desc = document.getElementById("product-desc").value;
+    const price = document.getElementById("product-price").value;
 
     try {
-        btn.innerText = "Subiendo...";
-        btn.disabled = true;
+        btnSubmit.disabled = true;
+        btnSubmit.innerText = "Subiendo archivo...";
 
-        const isVideo = file.type.includes('video');
-        const storageRef = ref(storage, `content/${Date.now()}_${file.name}`);
-        
-        // 1. Subir a Storage
-        const snapshot = await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(snapshot.ref);
+        // 1. Preparar el envío a Cloudinary
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", UPLOAD_PRESET);
 
-        // 2. Guardar en Firestore
-        await addDoc(collection(db, "productos"), {
-            descripcion: desc,
-            mediaUrl: url,
-            tipo: isVideo ? 'video' : 'foto',
-            timestamp: new Date()
+        // 2. Ejecutar la subida (Unsigned)
+        const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, {
+            method: "POST",
+            body: formData
         });
 
-        form.reset();
+        const cloudData = await cloudRes.json();
+        if (!cloudRes.ok) throw new Error(cloudData.error.message);
+
+        // 3. Guardar metadatos en Firebase Firestore
+        // El administrador añade suministros y los usuarios pueden ver el stock
+        await addDoc(collection(db, "productos"), {
+            nombre: name,
+            descripcion: desc,
+            precio: parseFloat(price),
+            mediaUrl: cloudData.secure_url,
+            tipo: cloudData.resource_type, // 'image' o 'video'
+            fecha: new Date()
+        });
+
+        alert("¡Producto publicado en el inventario de Vendors!");
+        productForm.reset();
         modal.style.display = "none";
-        alert("Publicado con éxito");
+
     } catch (error) {
-        console.error(error);
-        alert("Error al subir archivo");
+        console.error("Error en la operación:", error);
+        alert("Error al subir: " + error.message);
     } finally {
-        btn.innerText = "Publicar en Inventario";
-        btn.disabled = false;
+        btnSubmit.disabled = false;
+        btnSubmit.innerText = "Publicar en Stock";
     }
 });
 
-// Cargar inventario en tiempo real
-const q = query(collection(db, "productos"), orderBy("timestamp", "desc"));
+// FUNCIÓN: Escuchar el Stock en Tiempo Real
+const q = query(collection(db, "productos"), orderBy("fecha", "desc"));
 onSnapshot(q, (snapshot) => {
-    const feed = document.getElementById('feed');
-    feed.innerHTML = '';
+    productList.innerHTML = '';
+    
+    if (snapshot.empty) {
+        productList.innerHTML = '<p>No hay productos en el stock actualmente.</p>';
+        return;
+    }
+
     snapshot.forEach((doc) => {
-        const p = doc.data();
-        const mediaTag = p.tipo === 'video' 
-            ? `<video src="${p.mediaUrl}" controls></video>` 
-            : `<img src="${p.mediaUrl}">`;
-        
-        feed.innerHTML += `
+        const item = doc.data();
+        const mediaElement = item.tipo === 'video' 
+            ? `<video src="${item.mediaUrl}" controls></video>` 
+            : `<img src="${item.mediaUrl}" alt="${item.nombre}" loading="lazy">`;
+
+        productList.innerHTML += `
             <div class="product-card">
-                ${mediaTag}
-                <div class="info">
-                    <p>${p.descripcion}</p>
+                ${mediaElement}
+                <div class="card-content">
+                    <h3>${item.nombre}</h3>
+                    <p>${item.descripcion}</p>
+                    <div class="price-tag">$${item.precio.toFixed(2)}</div>
                 </div>
             </div>
         `;
