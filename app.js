@@ -1,163 +1,169 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, query, where, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, query, where, updateDoc, deleteDoc, orderBy } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-// Configuración de Firebase
-const firebaseConfig = {
-    apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
-    authDomain: "proyectovendor.firebaseapp.com",
-    projectId: "proyectovendor"
-};
-
+const firebaseConfig = { /* TUS CREDENCIALES */ };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
 let currentUser = null;
-let isRegister = false;
+let selectedProduct = null;
 
-// --- NAVEGACIÓN ENTRE VISTAS ---
-const setView = (viewId) => {
+// --- NAVEGACIÓN ---
+const setView = (v) => {
     document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-    document.getElementById(viewId).classList.add('active');
+    document.getElementById(v).classList.add('active');
     lucide.createIcons();
 };
 
-window.showSection = (sectionId) => {
-    document.getElementById('section-shop').classList.toggle('hidden', sectionId !== 'shop');
-    document.getElementById('section-admin').classList.toggle('hidden', sectionId !== 'admin');
+window.showSection = (id) => {
+    const sections = ['section-shop', 'section-orders', 'section-profile', 'section-admin'];
+    sections.forEach(s => document.getElementById(s).classList.add('hidden'));
+    document.getElementById(`section-${id}`).classList.remove('hidden');
+    lucide.createIcons();
 };
 
-// --- AUTENTICACIÓN ---
-document.getElementById('toggle-auth').onclick = () => {
-    isRegister = !isRegister;
-    document.getElementById('register-only').classList.toggle('hidden', !isRegister);
-    document.getElementById('btn-text').innerText = isRegister ? 'Crear Cuenta' : 'Iniciar Sesión';
-    document.getElementById('toggle-auth').innerText = isRegister ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate aquí';
-};
-
-document.getElementById('btn-auth-action').onclick = async () => {
-    const email = document.getElementById('auth-email').value.trim();
-    const pass = document.getElementById('auth-pass').value.trim();
-    const name = document.getElementById('auth-name').value.trim();
-
-    if (!email || !pass) return alert("Por favor rellena los campos.");
-
-    try {
-        if (isRegister) {
-            const res = await createUserWithEmailAndPassword(auth, email, pass);
-            await setDoc(doc(db, "users", res.user.uid), {
-                uid: res.user.uid,
-                name: name || email.split('@')[0],
-                email,
-                role: "user" // Rol por defecto (Solicitante)
-            });
-        } else {
-            await signInWithEmailAndPassword(auth, email, pass);
-        }
-    } catch (err) { alert("Error: " + err.message); }
-};
-
-document.getElementById('btn-logout').onclick = () => signOut(auth);
-
-// --- MONITOR DE ESTADO DEL USUARIO ---
+// --- AUTH ---
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        const docSnap = await getDoc(doc(db, "users", user.uid));
-        currentUser = docSnap.exists() ? docSnap.data() : { name: user.email, role: 'user' };
-        
-        document.getElementById('display-name').innerText = currentUser.name;
-        document.getElementById('display-role').innerText = currentUser.role;
-        
-        renderNavLinks();
-        loadInventory();
+        const snap = await getDoc(doc(db, "users", user.uid));
+        currentUser = snap.data();
+        updateUI();
+        loadShop();
+        loadMyOrders();
+        if (currentUser.role === 'admin') loadAdminOrders();
         setView('view-app');
     } else {
         setView('view-auth');
     }
 });
 
-function renderNavLinks() {
+function updateUI() {
+    document.getElementById('display-name').innerText = currentUser.name;
+    document.getElementById('display-role').innerText = currentUser.role;
+    document.getElementById('profile-name').value = currentUser.name;
+    document.getElementById('profile-email').value = currentUser.email;
+
     const nav = document.getElementById('nav-links');
     nav.classList.remove('hidden');
-    let links = `<button onclick="showSection('shop')" class="hover:text-white">Tienda</button>`;
-    if (currentUser.role === 'admin') {
-        links += `<button onclick="showSection('admin')" class="text-orange-500 font-bold">Panel Admin</button>`;
+    if (currentUser.role === 'admin' && !document.getElementById('nav-admin')) {
+        nav.innerHTML += `<button id="nav-admin" onclick="showSection('admin')" class="text-orange-500">Panel Admin</button>`;
     }
-    nav.innerHTML = links;
 }
 
-// --- GESTIÓN DE INVENTARIO ---
+// --- GESTIÓN DE PRODUCTOS (ADMIN) ---
 document.getElementById('btn-save-product').onclick = async () => {
     const name = document.getElementById('p-name').value;
     const price = document.getElementById('p-price').value;
-    const img = document.getElementById('p-img-url').value;
+    const img = document.getElementById('p-img').value;
 
-    if (!name || !price) return alert("Nombre y precio son obligatorios.");
+    if (!name || !price) return alert("Datos requeridos");
 
-    try {
-        await addDoc(collection(db, "products"), {
-            name,
-            price: parseFloat(price),
-            img: img || "https://via.placeholder.com/200",
-            createdAt: Date.now()
-        });
-        alert("Producto añadido exitosamente.");
-        document.getElementById('p-name').value = "";
-        document.getElementById('p-price').value = "";
-    } catch (e) { alert("Error al guardar: " + e.message); }
+    await addDoc(collection(db, "products"), { name, price: parseFloat(price), img: img || "https://via.placeholder.com/150" });
+    alert("Producto publicado");
 };
 
-function loadInventory() {
-    onSnapshot(collection(db, "products"), (snapshot) => {
+// --- COMPRAS (USUARIO) ---
+window.openPayment = (id, name, price) => {
+    selectedProduct = { id, name, price };
+    document.getElementById('pay-product-name').innerText = `Producto: ${name} ($${price})`;
+    document.getElementById('modal-payment').classList.replace('hidden', 'flex');
+};
+
+window.closeModal = () => document.getElementById('modal-payment').classList.replace('flex', 'hidden');
+
+document.getElementById('btn-confirm-order').onclick = async () => {
+    const method = document.getElementById('pay-method').value;
+    const receipt = document.getElementById('pay-receipt').value;
+
+    if (!receipt) return alert("Sube el comprobante (Link)");
+
+    await addDoc(collection(db, "orders"), {
+        userId: auth.currentUser.uid,
+        userName: currentUser.name,
+        productName: selectedProduct.name,
+        price: selectedProduct.price,
+        method,
+        receipt,
+        status: 'pendiente',
+        timestamp: Date.now()
+    });
+
+    alert("Solicitud enviada. Espera aprobación del Admin.");
+    closeModal();
+};
+
+// --- CARGA DE DATOS (REALTIME) ---
+function loadShop() {
+    onSnapshot(collection(db, "products"), snap => {
         const list = document.getElementById('product-list');
         list.innerHTML = "";
-        snapshot.forEach(docItem => {
-            const p = docItem.data();
-            const card = document.createElement('div');
-            card.className = "product-card glass rounded-2xl overflow-hidden border border-white/5";
-            card.innerHTML = `
-                <div class="h-44 bg-slate-800 relative">
-                    <img src="${p.img}" class="w-full h-full object-cover">
-                    ${currentUser.role === 'admin' ? `
-                        <button onclick="deleteProduct('${docItem.id}')" class="absolute top-2 right-2 bg-red-500 p-1.5 rounded-lg text-white">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
-                    ` : ''}
-                </div>
-                <div class="p-5">
-                    <h4 class="font-bold text-white truncate">${p.name}</h4>
-                    <p class="text-indigo-400 font-black text-xl mt-1">$${p.price}</p>
-                    <button onclick="alert('Solicitud enviada')" class="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 py-2 rounded-xl text-xs font-bold transition-all">
-                        SOLICITAR
-                    </button>
-                </div>
-            `;
-            list.appendChild(card);
+        snap.forEach(d => {
+            const p = d.data();
+            list.innerHTML += `
+                <div class="glass rounded-xl overflow-hidden p-4">
+                    <img src="${p.img}" class="w-full h-32 object-cover rounded-lg mb-4">
+                    <h4 class="font-bold">${p.name}</h4>
+                    <p class="text-indigo-400 font-black">$${p.price}</p>
+                    <button onclick="openPayment('${d.id}', '${p.name}', ${p.price})" class="w-full mt-3 bg-indigo-600 py-2 rounded-lg text-xs font-bold">COMPRAR</button>
+                    ${currentUser.role === 'admin' ? `<button onclick="deleteDoc(doc(db, 'products', '${d.id}'))" class="text-red-500 text-[10px] mt-2 underline">Eliminar</button>` : ''}
+                </div>`;
         });
-        lucide.createIcons();
     });
 }
 
-// Función global para borrar
-window.deleteProduct = async (id) => {
-    if (confirm("¿Eliminar este suministro definitivamente?")) {
-        await deleteDoc(doc(db, "products", id));
-    }
+function loadMyOrders() {
+    const q = query(collection(db, "orders"), where("userId", "==", auth.currentUser.uid), orderBy("timestamp", "desc"));
+    onSnapshot(q, snap => {
+        const container = document.getElementById('my-orders-list');
+        container.innerHTML = snap.empty ? '<p class="text-slate-500">No tienes pedidos aún.</p>' : '';
+        snap.forEach(d => {
+            const o = d.data();
+            container.innerHTML += `
+                <div class="glass p-4 rounded-xl flex justify-between items-center">
+                    <div>
+                        <p class="font-bold">${o.productName}</p>
+                        <p class="text-xs text-slate-400">${new Date(o.timestamp).toLocaleDateString()}</p>
+                    </div>
+                    <span class="status-${o.status} text-xs font-bold uppercase">${o.status}</span>
+                </div>`;
+        });
+    });
+}
+
+function loadAdminOrders() {
+    onSnapshot(query(collection(db, "orders"), orderBy("timestamp", "desc")), snap => {
+        const container = document.getElementById('admin-orders-list');
+        container.innerHTML = "";
+        snap.forEach(d => {
+            const o = d.data();
+            container.innerHTML += `
+                <div class="p-4 bg-slate-800/50 rounded-lg space-y-2 border border-white/5">
+                    <div class="flex justify-between">
+                        <span class="text-xs font-bold text-indigo-400">${o.userName}</span>
+                        <span class="status-${o.status} text-[10px]">${o.status}</span>
+                    </div>
+                    <p class="text-sm font-bold">${o.productName} - $${o.price}</p>
+                    <a href="${o.receipt}" target="_blank" class="text-xs text-blue-400 underline">Ver Comprobante</a>
+                    ${o.status === 'pendiente' ? `
+                        <div class="flex gap-2 mt-2">
+                            <button onclick="updateOrder('${d.id}', 'aprobado')" class="bg-emerald-600 text-[10px] px-3 py-1 rounded">Aprobar</button>
+                            <button onclick="updateOrder('${d.id}', 'rechazado')" class="bg-red-600 text-[10px] px-3 py-1 rounded">Rechazar</button>
+                        </div>
+                    ` : ''}
+                </div>`;
+        });
+    });
+}
+
+window.updateOrder = async (id, status) => {
+    await updateDoc(doc(db, "orders", id), { status });
 };
 
-// --- GESTIÓN DE ROLES ---
-document.getElementById('btn-promote-user').onclick = async () => {
-    const email = document.getElementById('admin-target-email').value.trim();
-    if (!email) return;
-
-    const q = query(collection(db, "users"), where("email", "==", email));
-    const snap = await getDocs(q);
-    
-    if (!snap.empty) {
-        await updateDoc(doc(db, "users", snap.docs[0].id), { role: "admin" });
-        alert(`Usuario ${email} ahora es Administrador.`);
-    } else {
-        alert("Usuario no encontrado.");
-    }
+// --- ACTUALIZAR PERFIL ---
+document.getElementById('btn-update-profile').onclick = async () => {
+    const newName = document.getElementById('profile-name').value;
+    await updateDoc(doc(db, "users", auth.currentUser.uid), { name: newName });
+    alert("Perfil actualizado");
 };
