@@ -15,159 +15,230 @@ const db = getFirestore(app);
 const CLOUD_NAME = "df79cjklp";
 const UPLOAD_PRESET = "vendors_preset";
 
-// --- ESTADO GLOBAL ---
+// ESTADO GLOBAL
+let products = [];
 let cart = [];
-let selectedProduct = null;
+let currentRole = 'user';
+let currentCategory = 'todos';
+let searchTerm = '';
 
-// --- GESTIÓN DE MODALES ---
-const showModal = (id) => document.getElementById(id).style.display = "flex";
-const hideModal = (id) => document.getElementById(id).style.display = "none";
-
-document.querySelectorAll('.close-modal').forEach(btn => {
-    btn.onclick = () => hideModal(btn.dataset.target);
+// --- INICIALIZACIÓN ---
+document.addEventListener('DOMContentLoaded', () => {
+    initRealtimeData();
+    setupEventListeners();
 });
 
-document.getElementById("cart-btn").onclick = () => { renderCart(); showModal("cart-modal"); };
-document.getElementById("view-orders-btn").onclick = () => showModal("user-orders-modal");
-document.getElementById("admin-panel-btn").onclick = () => showModal("admin-orders-modal");
-document.getElementById("open-upload-modal").onclick = () => showModal("upload-modal");
-
-// --- LÓGICA DE PRODUCTOS (ADMIN) ---
-document.getElementById("product-form").onsubmit = async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById("btn-publish");
-    const file = document.getElementById("media-file").files[0];
-    try {
-        btn.disabled = true; btn.innerText = "Subiendo...";
-        const formData = new FormData();
-        formData.append("file", file); formData.append("upload_preset", UPLOAD_PRESET);
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, { method: "POST", body: formData });
-        const data = await res.json();
-
-        await addDoc(collection(db, "productos"), {
-            nombre: document.getElementById("p-name").value,
-            descripcion: document.getElementById("p-desc").value,
-            precio: parseFloat(document.getElementById("p-price").value),
-            mediaUrl: data.secure_url,
-            tipo: data.resource_type,
-            fecha: new Date()
-        });
-        hideModal("upload-modal"); document.getElementById("product-form").reset();
-    } catch (err) { alert(err.message); } finally { btn.disabled = false; btn.innerText = "Publicar"; }
+// --- ROLES ---
+window.setRole = (role) => {
+    currentRole = role;
+    document.body.className = `role-${role}`;
+    document.getElementById('current-role-text').innerText = role === 'admin' ? 'Admin' : 'Usuario';
+    closeAllModals();
 };
 
-// --- RENDERIZADO DEL FEED ---
-onSnapshot(query(collection(db, "productos"), orderBy("fecha", "desc")), (snap) => {
-    const feed = document.getElementById("main-feed");
-    feed.innerHTML = "";
-    snap.forEach(documento => {
-        const p = documento.data();
-        const id = documento.id;
-        const media = p.tipo === "video" ? `<video src="${p.mediaUrl}"></video>` : `<img src="${p.mediaUrl}">`;
-        
-        const card = document.createElement("div");
-        card.className = "product-card";
-        card.innerHTML = `
-            <div class="media-box">${media}</div>
-            <div class="card-info">
-                <h3>${p.nombre}</h3>
-                <span class="price-tag">$${p.precio.toFixed(2)}</span>
-                <button class="btn-danger-sm" onclick="event.stopPropagation(); deleteProduct('${id}')">Eliminar</button>
-            </div>
-        `;
-        card.onclick = () => openDetails(p);
-        feed.appendChild(card);
+// --- ESCUCHA DE DATOS ---
+function initRealtimeData() {
+    // Escuchar Productos
+    onSnapshot(query(collection(db, "productos"), orderBy("fecha", "desc")), (snap) => {
+        products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderGrid();
     });
-});
 
-window.deleteProduct = async (id) => { if(confirm("¿Eliminar producto?")) await deleteDoc(doc(db, "productos", id)); };
-
-// --- DETALLES Y CARRITO ---
-function openDetails(p) {
-    selectedProduct = p;
-    const box = document.getElementById("detail-media-box");
-    box.innerHTML = p.tipo === "video" ? `<video src="${p.mediaUrl}" controls autoplay></video>` : `<img src="${p.mediaUrl}">`;
-    document.getElementById("detail-name").innerText = p.nombre;
-    document.getElementById("detail-description").innerText = p.descripcion;
-    document.getElementById("detail-price").innerText = `$${p.precio.toFixed(2)}`;
-    showModal("details-modal");
+    // Escuchar Pedidos
+    onSnapshot(query(collection(db, "pedidos"), orderBy("fecha", "desc")), (snap) => {
+        const pedidos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderOrders(pedidos);
+    });
 }
 
-document.getElementById("add-from-detail").onclick = () => {
-    cart.push(selectedProduct);
-    updateCartCounter();
-    hideModal("details-modal");
-};
+// --- RENDERIZADO INTELIGENTE (BÚSQUEDA Y FILTRO) ---
+function renderGrid() {
+    const grid = document.getElementById('product-grid');
+    grid.innerHTML = "";
 
-const updateCartCounter = () => document.getElementById("cart-count").innerText = cart.length;
+    const filtered = products.filter(p => {
+        const matchesCat = currentCategory === 'todos' || p.categoria === currentCategory;
+        const matchesSearch = p.nombre.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesCat && matchesSearch;
+    });
+
+    filtered.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+            <div class="card-media">
+                ${p.tipo === 'video' ? `<video src="${p.mediaUrl}"></video>` : `<img src="${p.mediaUrl}">`}
+            </div>
+            <div class="card-body">
+                <h3>${p.nombre}</h3>
+                <div style="display:flex; justify-content:space-between; align-items:center">
+                    <span class="price">$${p.precio.toFixed(2)}</span>
+                    <div class="admin-only">
+                        <button class="btn-danger-sm" onclick="event.stopPropagation(); deleteProd('${p.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        card.onclick = () => openDetail(p);
+        grid.appendChild(card);
+    });
+}
+
+// --- BUSCADOR Y FILTROS ---
+function setupEventListeners() {
+    // Buscador
+    document.getElementById('search-input').oninput = (e) => {
+        searchTerm = e.target.value;
+        renderGrid();
+    };
+
+    // Filtros
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.onclick = () => {
+            document.querySelector('.filter-chip.active').classList.remove('active');
+            chip.classList.add('active');
+            currentCategory = chip.dataset.category;
+            renderGrid();
+        };
+    });
+
+    // Modales disparadores
+    document.getElementById('profile-trigger').onclick = () => showModal('modal-role');
+    document.getElementById('cart-trigger').onclick = () => { renderCart(); showModal('modal-cart'); };
+    document.getElementById('btn-open-upload').onclick = () => showModal('modal-upload');
+    document.getElementById('btn-open-admin-orders').onclick = () => showModal('modal-orders');
+    document.getElementById('view-orders-btn')?.addEventListener('click', () => showModal('modal-orders'));
+
+    // Cerrar modales
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.onclick = () => closeAllModals();
+    });
+}
+
+// --- FUNCIONES CORE ---
+async function deleteProd(id) {
+    if(confirm("¿Eliminar del stock?")) await deleteDoc(doc(db, "productos", id));
+}
+
+function openDetail(p) {
+    const box = document.getElementById('detail-media');
+    box.innerHTML = p.tipo === 'video' ? `<video src="${p.mediaUrl}" controls autoplay></video>` : `<img src="${p.mediaUrl}">`;
+    document.getElementById('detail-title').innerText = p.nombre;
+    document.getElementById('detail-desc').innerText = p.descripcion;
+    document.getElementById('detail-price').innerText = `$${p.precio.toFixed(2)}`;
+    document.getElementById('detail-cat').innerText = p.categoria;
+    
+    document.getElementById('btn-add-to-cart').onclick = () => {
+        cart.push(p);
+        updateCartCount();
+        closeAllModals();
+    };
+    showModal('modal-detail');
+}
+
+// --- GESTIÓN DE CARRITO Y CHECKOUT ---
+function updateCartCount() {
+    document.getElementById('cart-count').innerText = cart.length;
+}
 
 function renderCart() {
-    const list = document.getElementById("cart-items");
-    let total = 0; list.innerHTML = "";
+    const list = document.getElementById('cart-items-list');
+    let total = 0;
+    list.innerHTML = cart.length ? "" : "<p>Bolsa vacía</p>";
     cart.forEach((item, i) => {
         total += item.precio;
-        list.innerHTML += `<div class="cart-item"><span>${item.nombre}</span> <strong>$${item.precio}</strong></div>`;
-    });
-    document.getElementById("cart-total").innerText = `$${total.toFixed(2)}`;
-}
-
-document.getElementById("go-to-checkout").onclick = () => {
-    if(cart.length === 0) return alert("Carrito vacío");
-    hideModal("cart-modal"); showModal("checkout-modal");
-    document.getElementById("order-summary-list").innerHTML = `Resumen: ${cart.length} productos.`;
-};
-
-// --- LÓGICA DE PEDIDOS ---
-document.getElementById("order-form").onsubmit = async (e) => {
-    e.preventDefault();
-    const locValue = document.getElementById("order-location").value;
-    await addDoc(collection(db, "pedidos"), {
-        items: cart,
-        ubicacion: locValue,
-        total: cart.reduce((a, b) => a + b.precio, 0),
-        estado: "pendiente",
-        fecha: new Date()
-    });
-    alert("Pedido enviado. Estado: PENDIENTE");
-    cart = []; updateCartCounter(); hideModal("checkout-modal");
-};
-
-// --- PANEL USUARIO Y ADMIN ---
-onSnapshot(query(collection(db, "pedidos"), orderBy("fecha", "desc")), (snap) => {
-    const userList = document.getElementById("user-orders-list");
-    const adminList = document.getElementById("admin-orders-list");
-    userList.innerHTML = ""; adminList.innerHTML = "";
-
-    snap.forEach(dSnap => {
-        const o = dSnap.data();
-        const id = dSnap.id;
-        const html = `
-            <div class="order-card">
-                <strong>Pedido: ${o.items.map(i => i.nombre).join(", ")}</strong>
-                <p>Ubicación: ${o.ubicacion}</p>
-                <p>Total: $${o.total.toFixed(2)}</p>
-                <span class="status-badge status-${o.estado}">${o.estado}</span>
+        list.innerHTML += `
+            <div class="cart-item">
+                <div><strong>${item.nombre}</strong><br><small>$${item.precio}</small></div>
+                <button onclick="removeFromCart(${i})" class="btn-remove">Quitar</button>
             </div>
         `;
-        userList.innerHTML += html;
-
-        // Vista Admin con botones
-        if(o.estado === "pendiente") {
-            const adminCard = document.createElement("div");
-            adminCard.className = "order-card";
-            adminCard.innerHTML = html + `
-                <div style="margin-top:10px">
-                    <button class="btn-approve" onclick="updateStatus('${id}', 'aprobado')">Aprobar</button>
-                    <button class="btn-reject" onclick="updateStatus('${id}', 'rechazado')">Rechazar</button>
-                </div>
-            `;
-            adminList.appendChild(adminCard);
-        } else {
-            adminList.innerHTML += html;
-        }
     });
-});
+    document.getElementById('cart-total-amount').innerText = `$${total.toFixed(2)}`;
+}
 
-window.updateStatus = async (id, nuevoEstado) => {
-    await updateDoc(doc(db, "pedidos", id), { estado: nuevoEstado });
+window.removeFromCart = (i) => { cart.splice(i,1); renderCart(); updateCartCount(); };
+
+document.getElementById('btn-checkout').onclick = () => {
+    if(!cart.length) return;
+    hideModal('modal-cart');
+    showModal('modal-checkout');
 };
+
+document.getElementById('checkout-form').onsubmit = async (e) => {
+    e.preventDefault();
+    await addDoc(collection(db, "pedidos"), {
+        productos: cart,
+        total: cart.reduce((a,b) => a + b.precio, 0),
+        ubicacion: document.getElementById('check-location').value,
+        estado: 'pendiente',
+        fecha: new Date(),
+        rol: currentRole
+    });
+    alert("Pedido enviado. Pendiente de aprobación.");
+    cart = []; updateCartCount(); closeAllModals();
+};
+
+// --- GESTIÓN DE PEDIDOS (ADMIN) ---
+function renderOrders(pedidos) {
+    const container = document.getElementById('orders-container');
+    container.innerHTML = "";
+    pedidos.forEach(o => {
+        const card = document.createElement('div');
+        card.className = 'order-card';
+        card.innerHTML = `
+            <div style="display:flex; justify-content:space-between">
+                <strong>Pedido: ${o.productos.map(p => p.nombre).join(', ')}</strong>
+                <span class="status-badge status-${o.estado}">${o.estado}</span>
+            </div>
+            <p>Ubicación: ${o.ubicacion}</p>
+            <div class="admin-only" style="margin-top:10px">
+                <button class="btn-approve" onclick="changeStatus('${o.id}', 'aprobado')">Aprobar</button>
+                <button class="btn-reject" onclick="changeStatus('${o.id}', 'rechazado')">Rechazar</button>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+window.changeStatus = async (id, status) => {
+    await updateDoc(doc(db, "pedidos", id), { estado: status });
+};
+
+// --- SUBIDA (ADMIN) ---
+document.getElementById('upload-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-publish');
+    btn.disabled = true; btn.innerText = "Subiendo...";
+    
+    const file = document.getElementById('up-file').files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', UPLOAD_PRESET);
+
+    try {
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, { method: "POST", body: formData });
+        const cloud = await res.json();
+
+        await addDoc(collection(db, "productos"), {
+            nombre: document.getElementById('up-name').value,
+            categoria: document.getElementById('up-cat').value,
+            descripcion: document.getElementById('up-desc').value,
+            precio: parseFloat(document.getElementById('up-price').value),
+            mediaUrl: cloud.secure_url,
+            tipo: cloud.resource_type,
+            fecha: new Date()
+        });
+        closeAllModals();
+        document.getElementById('upload-form').reset();
+    } catch (err) { alert(err.message); }
+    finally { btn.disabled = false; btn.innerText = "Publicar"; }
+};
+
+// --- HELPERS MODALES ---
+function showModal(id) { document.getElementById(id).style.display = 'flex'; }
+function hideModal(id) { document.getElementById(id).style.display = 'none'; }
+function closeAllModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
+function closeAllModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }

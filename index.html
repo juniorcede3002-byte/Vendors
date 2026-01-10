@@ -3,99 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendors - Sistema Integral</title>
+    <title>Vendors | Market & Management</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
-    <nav class="navbar">
-        <div class="nav-content">
-            <h1 class="logo">Vendors</h1>
-            <div class="nav-actions">
-                <button id="admin-panel-btn" class="btn-secondary"><i class="fas fa-tasks"></i> Gestionar Pedidos</button>
-                <button id="view-orders-btn" class="btn-secondary"><i class="fas fa-box"></i> Mis Estados</button>
-                <button id="cart-btn" class="btn-cart">
-                    <i class="fas fa-shopping-cart"></i>
+<body class="role-user"> <nav class="glass-nav">
+        <div class="nav-container">
+            <div class="logo-section">
+                <h1 class="logo">V<span>ENDORS</span></h1>
+            </div>
+
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-input" placeholder="Buscar suministros...">
+            </div>
+
+            <div class="nav-btns">
+                <button id="cart-trigger" class="icon-btn">
+                    <i class="fas fa-shopping-bag"></i>
                     <span id="cart-count">0</span>
                 </button>
-                <button id="open-upload-modal" class="btn-primary">Subir Producto</button>
+                <button id="profile-trigger" class="profile-btn">
+                    <i class="fas fa-user-circle"></i>
+                    <span id="current-role-text">Usuario</span>
+                </button>
             </div>
         </div>
     </nav>
 
-    <div id="cart-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal" data-target="cart-modal">&times;</span>
-            <h2><i class="fas fa-shopping-cart"></i> Tu Carrito</h2>
-            <div id="cart-items"></div>
-            <div class="cart-footer">
-                <div class="total-display">Total: <span id="cart-total">$0.00</span></div>
-                <button id="go-to-checkout" class="btn-submit">Confirmar Compra</button>
+    <div class="filter-section">
+        <div class="filter-container" id="category-filters">
+            <button class="filter-chip active" data-category="todos">Todos</button>
+            <button class="filter-chip" data-category="electronica">Electrónica</button>
+            <button class="filter-chip" data-category="oficina">Oficina</button>
+            <button class="filter-chip" data-category="muebles">Muebles</button>
+            <button class="filter-chip" data-category="otros">Otros</button>
+        </div>
+    </div>
+
+    <main class="app-content">
+        <div class="admin-only admin-header">
+            <button id="btn-open-upload" class="btn-gradient">
+                <i class="fas fa-plus"></i> Nuevo Producto
+            </button>
+            <button id="btn-open-admin-orders" class="btn-outline">
+                <i class="fas fa-tasks"></i> Gestionar Pedidos
+            </button>
+        </div>
+
+        <div id="product-grid" class="grid">
             </div>
-        </div>
-    </div>
-
-    <div id="checkout-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal" data-target="checkout-modal">&times;</span>
-            <h2>Detalles de Entrega</h2>
-            <form id="order-form">
-                <div class="form-group">
-                    <label>Dirección de Envío</label>
-                    <textarea id="order-location" placeholder="Escribe tu ubicación detallada..." required></textarea>
-                </div>
-                <div id="order-summary-list"></div>
-                <button type="submit" class="btn-buy">Enviar Pedido para Validación</button>
-            </form>
-        </div>
-    </div>
-
-    <div id="details-modal" class="modal">
-        <div class="modal-content detail-layout">
-            <span class="close-modal" data-target="details-modal">&times;</span>
-            <div id="detail-media-box"></div>
-            <div class="detail-text">
-                <h2 id="detail-name"></h2>
-                <p id="detail-description"></p>
-                <span id="detail-price" class="price-big"></span>
-                <button id="add-from-detail" class="btn-submit">Agregar al Carrito</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="admin-orders-modal" class="modal">
-        <div class="modal-content wide">
-            <span class="close-modal" data-target="admin-orders-modal">&times;</span>
-            <h2>Panel de Administración: Pedidos</h2>
-            <div id="admin-orders-list"></div>
-        </div>
-    </div>
-
-    <div id="user-orders-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal" data-target="user-orders-modal">&times;</span>
-            <h2>Mis Compras</h2>
-            <div id="user-orders-list"></div>
-        </div>
-    </div>
-
-    <div id="upload-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal" data-target="upload-modal">&times;</span>
-            <h2>Nuevo Suministro</h2>
-            <form id="product-form">
-                <input type="file" id="media-file" accept="image/*,video/*" required>
-                <input type="text" id="p-name" placeholder="Nombre" required>
-                <textarea id="p-desc" placeholder="Descripción" required></textarea>
-                <input type="number" id="p-price" step="0.01" placeholder="Precio" required>
-                <button type="submit" id="btn-publish" class="btn-submit">Publicar</button>
-            </form>
-        </div>
-    </div>
-
-    <main class="container">
-        <div id="main-feed" class="product-grid"></div>
     </main>
+
+    <div id="modal-detail" class="modal-overlay">
+        <div class="modal-card detail-card">
+            <button class="close-modal">&times;</button>
+            <div class="detail-grid">
+                <div id="detail-media"></div>
+                <div class="detail-info">
+                    <span id="detail-cat" class="badge">Categoría</span>
+                    <h2 id="detail-title">Nombre del Producto</h2>
+                    <p id="detail-desc">Descripción detallada aquí...</p>
+                    <div class="price-action">
+                        <span id="detail-price" class="price">$0.00</span>
+                        <button id="btn-add-to-cart" class="btn-gradient">Añadir al Carrito</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-cart" class="modal-overlay">
+        <div class="modal-card side-modal">
+            <button class="close-modal">&times;</button>
+            <h2>Tu Bolsa</h2>
+            <div id="cart-items-list" class="scroll-area"></div>
+            <div class="cart-summary">
+                <div class="total-row">
+                    <span>Total estimado</span>
+                    <span id="cart-total-amount">$0.00</span>
+                </div>
+                <button id="btn-checkout" class="btn-gradient w-100">Continuar pedido</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-role" class="modal-overlay">
+        <div class="modal-card mini-card">
+            <h2>Cambiar de Rol</h2>
+            <p>Selecciona cómo quieres usar Vendors:</p>
+            <div class="role-options">
+                <button class="role-opt" onclick="setRole('user')">
+                    <i class="fas fa-shopping-basket"></i> Soy Usuario
+                </button>
+                <button class="role-opt admin-opt" onclick="setRole('admin')">
+                    <i class="fas fa-user-shield"></i> Soy Administrador
+                </button>
+            </div>
+            <button class="close-modal">&times;</button>
+        </div>
+    </div>
+
+    <div id="modal-upload" class="modal-overlay">
+        <div class="modal-card">
+            <button class="close-modal">&times;</button>
+            <h2>Nuevo Suministro</h2>
+            <form id="upload-form">
+                <div class="drop-zone">
+                    <input type="file" id="up-file" accept="image/*,video/*" required>
+                    <p><i class="fas fa-cloud-upload-alt"></i> Arrastra imagen o video</p>
+                </div>
+                <input type="text" id="up-name" placeholder="Nombre" required>
+                <select id="up-cat">
+                    <option value="electronica">Electrónica</option>
+                    <option value="oficina">Oficina</option>
+                    <option value="muebles">Muebles</option>
+                    <option value="otros">Otros</option>
+                </select>
+                <textarea id="up-desc" placeholder="Descripción" required></textarea>
+                <input type="number" id="up-price" placeholder="Precio ($)" step="0.01" required>
+                <button type="submit" id="btn-publish" class="btn-gradient w-100">Publicar en Stock</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-orders" class="modal-overlay">
+        <div class="modal-card wide-modal">
+            <button class="close-modal">&times;</button>
+            <h2 id="orders-title">Estado de Solicitudes</h2>
+            <div id="orders-container" class="scroll-area"></div>
+        </div>
+    </div>
+
+    <div id="modal-checkout" class="modal-overlay">
+        <div class="modal-card">
+            <button class="close-modal">&times;</button>
+            <h2>Finalizar Pedido</h2>
+            <p>Confirma tu ubicación para recibir los productos.</p>
+            <form id="checkout-form">
+                <textarea id="check-location" placeholder="Dirección detallada..." required></textarea>
+                <button type="submit" class="btn-gradient w-100">Confirmar Compra</button>
+            </form>
+        </div>
+    </div>
 
     <script type="module" src="script.js"></script>
 </body>
