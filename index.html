@@ -182,7 +182,7 @@ async function updateConfig(){
   if(name) user.updateProfile({displayName:name});
   if(email) user.updateEmail(email).catch(e=>alert(e.message));
   if(pass) user.updatePassword(pass).catch(e=>alert(e.message));
-  showModalMessage("Configuración actualizada"); closeModal();
+  showModalMessage("Configuración actualizada");
 }
 
 // --- Tabs ---
@@ -250,16 +250,8 @@ function renderCart(){
   cartList.innerHTML=html;
 }
 
-function removeFromCart(index){
-  cart.splice(index,1);
-  localStorage.setItem("cart",JSON.stringify(cart));
-  renderCart();
-}
-
-function emptyCart(){
-  cart=[]; localStorage.setItem("cart",JSON.stringify(cart));
-  renderCart();
-}
+function removeFromCart(index){ cart.splice(index,1); localStorage.setItem("cart",JSON.stringify(cart)); renderCart(); }
+function emptyCart(){ cart=[]; localStorage.setItem("cart",JSON.stringify(cart)); renderCart(); }
 
 // --- Checkout ---
 function openCheckoutForm(){
@@ -299,11 +291,140 @@ async function finalizePurchase(){
 
   const order={user:auth.currentUser.uid,userEmail:email,buyerName:name,phone,whatsapp,address,email,products:cart,payment,status:"pendiente",createdAt:firebase.firestore.FieldValue.serverTimestamp()};
   await db.collection("orders").add(order);
-  cart = [];
-  localStorage.setItem("cart", JSON.stringify(cart));
+  cart = []; localStorage.setItem("cart", JSON.stringify(cart));
   renderCart();
   closeModal();
   showModalMessage("Compra realizada correctamente");
+}
+
+// --- Historial, Admin, Firma, etc. ---
+async function loadOrdersHistory(){
+  const history = document.getElementById("purchaseHistory");
+  const userId = auth.currentUser.uid;
+
+  db.collection("orders")
+    .orderBy("createdAt","desc")
+    .onSnapshot(snapshot=>{
+      let html = "";
+      snapshot.forEach(doc=>{
+        const o = doc.data();
+        const total = o.products.reduce((sum,p)=>sum+p.price,0);
+        if(role !== "admin" && o.user !== userId) return;
+
+        html += `<div class="order">
+          <strong>Compra #${doc.id}</strong> - Estado: <span class="status-${o.status.replace(/\s/g,'-')}">${o.status}</span>
+          ${role==="admin"?`<select onchange="updateOrderStatus('${doc.id}',this.value)">
+            <option value="pendiente" ${o.status==="pendiente"?'selected':''}>Pendiente</option>
+            <option value="revision de pago" ${o.status==="revision de pago"?'selected':''}>Revisión de pago</option>
+            <option value="pago verificado" ${o.status==="pago verificado"?'selected':''}>Pago verificado</option>
+            <option value="en camino" ${o.status==="en camino"?'selected':''}>En camino</option>
+            <option value="entregado" ${o.status==="entregado"?'selected':''}>Entregado</option>
+            <option value="cancelada" ${o.status==="cancelada"?'selected':''}>Cancelada</option>
+          </select>`:''}
+          <button onclick="toggleDetails('${doc.id}')">Ver/ocultar detalles</button>
+          <div id="details-${doc.id}" style="display:none; padding:5px 10px;">
+            <ul>
+              <li>Nombre: ${o.buyerName}</li>
+              <li>Teléfono: ${o.phone}</li>
+              <li>WhatsApp: ${o.whatsapp}</li>
+              <li>Dirección: ${o.address}</li>
+              <li>Email: ${o.email}</li>
+              <li>Productos: <ul>${o.products.map(p=>`<li>${p.name} - $${p.price}</li>`).join('')}</ul></li>
+              <li>Total: $${total.toFixed(2)}</li>
+              <li>Pago: ${o.payment}</li>
+              ${o.comprobante ? `<li>Comprobante: <img src="${o.comprobante}" width="200"></li>` : `<li>Subir comprobante: <input type="file" onchange="uploadComprobante('${doc.id}',this.files[0])"></li>`}
+              ${o.signature ? `<li>Firma de entrega: <img src="${o.signature}" width="200"></li>` : `<li>Firma de entrega: <canvas id="sign-${doc.id}" width="250" height="100"></canvas><button onclick="saveSignature('${doc.id}')">Guardar Firma</button></li>`}
+            </ul>
+          </div>
+        </div>`;
+      });
+      history.innerHTML = html || "<i>No hay compras</i>";
+      setTimeout(initCanvasSignatures,300);
+    });
+}
+
+function toggleDetails(id){
+  const el = document.getElementById("details-" + id);
+  el.style.display = (el.style.display === "none") ? "block" : "none";
+}
+
+async function uploadComprobante(orderId,file){
+  if(!file) return;
+  const data = new FormData();
+  data.append("file", file);
+  data.append("upload_preset", "vendors_preset");
+  const res = await fetch("https://api.cloudinary.com/v1_1/df79cjklp/upload", { method: "POST", body: data });
+  const json = await res.json();
+  await db.collection("orders").doc(orderId).update({ comprobante: json.secure_url, status:"revision de pago" });
+  showModalMessage("Comprobante subido correctamente");
+}
+
+function initCanvasSignatures(){
+  document.querySelectorAll("canvas").forEach(canvas=>{
+    const ctx=canvas.getContext("2d");
+    let drawing=false;
+    canvas.onmousedown=()=>drawing=true;
+    canvas.onmouseup=()=>{drawing=false; ctx.beginPath();};
+    canvas.onmouseleave=()=>{drawing=false; ctx.beginPath();};
+    canvas.onmousemove=e=>{
+      if(!drawing) return;
+      ctx.lineWidth=2; ctx.lineCap="round"; ctx.strokeStyle="#000";
+      ctx.lineTo(e.offsetX,e.offsetY);
+      ctx.stroke(); ctx.beginPath(); ctx.moveTo(e.offsetX,e.offsetY);
+    };
+  });
+}
+
+async function saveSignature(orderId){
+  const canvas=document.getElementById(`sign-${orderId}`);
+  if(!canvas) return;
+  const dataURL=canvas.toDataURL("image/png");
+  await db.collection("orders").doc(orderId).update({signature:dataURL});
+  showModalMessage("Firma guardada");
+}
+
+function updateOrderStatus(id,status){ db.collection("orders").doc(id).update({status}); }
+
+function loadOrders(){
+  const ordersList=document.getElementById("ordersList");
+  db.collection("orders")
+  .orderBy("createdAt","desc")
+  .onSnapshot(snapshot=>{
+    let html="";
+    snapshot.forEach(doc=>{
+      const o=doc.data();
+      html+=`
+      <div class="order">
+        <strong>ID:</strong> ${doc.id}<br>
+        <strong>Cliente:</strong> ${o.buyerName}<br>
+        <strong>Email:</strong> ${o.email}<br>
+        <strong>Pago:</strong> ${o.payment}<br>
+        <strong>Estado:</strong> ${o.status}<br>
+        ${o.comprobante?`<a href="${o.comprobante}" target="_blank">Ver comprobante</a><br>`:""}
+        ${o.signature?`<img src="${o.signature}" width="150"><br>`:""}
+        <select onchange="updateOrderStatus('${doc.id}',this.value)">
+          <option value="pendiente" ${o.status==="pendiente"?'selected':''}>Pendiente</option>
+          <option value="revision de pago" ${o.status==="revision de pago"?'selected':''}>Revisión de pago</option>
+          <option value="pago verificado" ${o.status==="pago verificado"?'selected':''}>Pago verificado</option>
+          <option value="en camino" ${o.status==="en camino"?'selected':''}>En camino</option>
+          <option value="entregado" ${o.status==="entregado"?'selected':''}>Entregado</option>
+          <option value="cancelada" ${o.status==="cancelada"?'selected':''}>Cancelada</option>
+        </select>
+      </div>`;
+    });
+    ordersList.innerHTML = html || "<i>No hay pedidos</i>";
+  });
+}
+
+function filterProducts(){
+  const search=document.getElementById("search").value.toLowerCase();
+  const maxPrice=parseFloat(document.getElementById("maxPrice").value||Infinity);
+  document.querySelectorAll("#productsList .product").forEach(p=>{
+    const name=p.innerText.toLowerCase();
+    const price=parseFloat(p.innerText.match(/\$(\d+(\.\d+)?)/)?.[1]||0);
+    p.style.display=(name.includes(search)&&price<=maxPrice)?"block":"none";
+}
+);
 }
 </script>
 </body>
