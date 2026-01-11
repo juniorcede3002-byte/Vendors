@@ -226,7 +226,7 @@ async function loadProducts(){
   }, err=>console.log(err));
 }
 
-// --- Cloudinary Integration ---
+// --- Subir Producto Cloudinary ---
 async function uploadProduct(){
   const name=document.getElementById("name").value.trim();
   const desc=document.getElementById("description").value.trim();
@@ -238,7 +238,7 @@ async function uploadProduct(){
   if(mediaFile){
     const data = new FormData();
     data.append("file", mediaFile);
-    data.append("upload_preset","vendors_preset"); // tu preset en Cloudinary
+    data.append("upload_preset","vendors_preset"); 
     const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`, {method:"POST", body:data});
     const json = await res.json();
     mediaUrl = json.secure_url;
@@ -249,7 +249,7 @@ async function uploadProduct(){
     .catch(e=>alert(e.message));
 }
 
-// --- Editar y Eliminar Producto ---
+// --- Editar / Eliminar Producto ---
 function editProduct(id,name,desc,price){
   const newName = prompt("Nombre", name);
   const newDesc = prompt("Descripción", desc);
@@ -266,44 +266,20 @@ function deleteProduct(id){
 }
 
 // --- Carrito ---
-function addToCart(id,name,price,media){
-  cart.push({id,name,price,media});
-  localStorage.setItem("cart",JSON.stringify(cart));
-  renderCart();
-  showModalMessage("Añadido al carrito");
-}
-
-function renderCart(){
-  const list = document.getElementById("cartList");
-  if(cart.length===0) { list.innerHTML="<i>Carrito vacío</i>"; return; }
-  let html="";
-  cart.forEach((p,i)=> html+=`<div>${p.name} - $${p.price} <button onclick="removeFromCart(${i})">Eliminar</button></div>`);
-  list.innerHTML = html;
-}
-
-function removeFromCart(index){
-  cart.splice(index,1);
-  localStorage.setItem("cart",JSON.stringify(cart));
-  renderCart();
-}
-
+function addToCart(id,name,price,media){ cart.push({id,name,price,media}); localStorage.setItem("cart",JSON.stringify(cart)); renderCart(); showModalMessage("Añadido al carrito"); }
+function renderCart(){ const list=document.getElementById("cartList"); if(cart.length===0){ list.innerHTML="<i>Carrito vacío</i>"; return; } let html=""; cart.forEach((p,i)=> html+=`<div>${p.name} - $${p.price} <button onclick="removeFromCart(${i})">Eliminar</button></div>`); list.innerHTML=html; }
+function removeFromCart(index){ cart.splice(index,1); localStorage.setItem("cart",JSON.stringify(cart)); renderCart(); }
 function emptyCart(){ if(confirm("Vaciar carrito?")){ cart=[]; localStorage.setItem("cart","[]"); renderCart(); } }
-
 function viewCart(){ renderCart(); showModalMessage("Carrito actualizado"); }
 
 // --- Compra ---
-function openPurchaseForm(){
-  if(cart.length===0) return alert("Carrito vacío");
-  openModal(`
-    <h3>Formulario de Compra</h3>
-    <input id="buyerName" placeholder="Nombre completo">
-    <input id="buyerPhone" placeholder="Teléfono">
-    <input id="buyerWhats" placeholder="WhatsApp">
-    <input id="buyerAddress" placeholder="Dirección">
-    <input id="buyerEmail" placeholder="Email">
-    <button onclick="submitPurchase()">Enviar Compra</button>
-  `);
-}
+function openPurchaseForm(){ if(cart.length===0) return alert("Carrito vacío"); openModal(`<h3>Formulario de Compra</h3>
+<input id="buyerName" placeholder="Nombre completo">
+<input id="buyerPhone" placeholder="Teléfono">
+<input id="buyerWhats" placeholder="WhatsApp">
+<input id="buyerAddress" placeholder="Dirección">
+<input id="buyerEmail" placeholder="Email">
+<button onclick="submitPurchase()">Enviar Compra</button>`); }
 
 function submitPurchase(){
   const name=document.getElementById("buyerName").value.trim();
@@ -311,99 +287,83 @@ function submitPurchase(){
   const whatsapp=document.getElementById("buyerWhats").value.trim();
   const address=document.getElementById("buyerAddress").value.trim();
   const email=document.getElementById("buyerEmail").value.trim();
-
   if(!name||!phone||!whatsapp||!address||!email) return alert("Completa todos los campos");
-
-  db.collection("orders").add({
-    user:auth.currentUser.uid,
-    userEmail:auth.currentUser.email,
-    buyerName:name,
-    phone, whatsapp, address, email,
-    products:cart,
-    status:"pendiente",
-    comprobante:""
-  }).then(()=>{
-    cart=[];
-    localStorage.setItem("cart","[]");
-    renderCart();
-    showModalMessage("Compra enviada");
-    closeModal();
-  }).catch(e=>alert(e.message));
+  db.collection("orders").add({ user:auth.currentUser.uid, userEmail:auth.currentUser.email, buyerName:name, phone, whatsapp, address, email, products:cart, status:"pendiente", comprobante:"" })
+    .then(()=>{ cart=[]; localStorage.setItem("cart","[]"); renderCart(); showModalMessage("Compra enviada"); closeModal(); })
+    .catch(e=>alert(e.message));
 }
 
-// --- Historial de Compras del Usuario ---
+// --- Histórico Usuario ---
 function loadUserOrders(){
-  const history = document.getElementById("purchaseHistory");
+  const history=document.getElementById("purchaseHistory");
   db.collection("orders").where("user","==",auth.currentUser.uid)
     .onSnapshot(snapshot=>{
       let html="";
       snapshot.forEach(doc=>{
-        const o = doc.data();
-        html+=`<div class="order">
-          <strong>Compra #${doc.id}</strong> - Estado: <span class="status-${o.status}">${o.status}</span><br>
-          Productos: ${o.products.map(p=>p.name).join(", ")}<br>
-          ${o.comprobante?`Comprobante: <a href="${o.comprobante}" target="_blank">Ver</a>`:'Sin comprobante'}
-          ${o.status!=="finalizado"?`<button onclick="uploadComprobante('${doc.id}')">Añadir Comprobante</button>`:''}
-        </div>`;
+        const o=doc.data();
+        html+=`<div class="order"><strong>Compra #${doc.id}</strong> - Estado: <span class="status-${o.status}">${o.status}</span><br>Productos: ${o.products.map(p=>p.name).join(", ")}<br>${o.comprobante?`Comprobante: <a href="${o.comprobante}" target="_blank">Ver</a>`:'Sin comprobante'}${o.status!=="finalizado"?`<button onclick="uploadComprobante('${doc.id}')">Añadir Comprobante</button>`:''}</div>`;
       });
-      history.innerHTML = html || "<i>No hay compras</i>";
+      history.innerHTML=html || "<i>No hay compras</i>";
     });
 }
 
 // --- Subir Comprobante ---
 function uploadComprobante(orderId){
-  const fileInput = document.createElement("input");
-  fileInput.type="file";
-  fileInput.accept="image/*";
-  fileInput.onchange = async ()=>{
-    const file = fileInput.files[0];
-    if(!file) return;
-    const data = new FormData();
+  const fileInput=document.createElement("input");
+  fileInput.type="file"; fileInput.accept="image/*"; 
+  fileInput.onchange=async ()=>{
+    const file=fileInput.files[0]; if(!file) return;
+    const data=new FormData();
     data.append("file",file);
     data.append("upload_preset","vendors_preset");
-    const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`,{method:"POST",body:data});
-    const json = await res.json();
+    const res=await fetch("https://api.cloudinary.com/v1_1/df79cjklp/upload",{method:"POST",body:data});
+    const json=await res.json();
     db.collection("orders").doc(orderId).update({comprobante:json.secure_url}).then(()=>showModalMessage("Comprobante subido"));
   };
   fileInput.click();
 }
 
-// --- Admin: Solicitudes de Compra ---
+// --- Admin: Solicitudes ---
 function loadOrders(){
   if(role!=="admin") return;
-  const ordersList = document.getElementById("ordersList");
+  const ordersList=document.getElementById("ordersList");
   db.collection("orders").onSnapshot(snapshot=>{
     let html="";
     snapshot.forEach(doc=>{
-      const o = doc.data();
-      html+=`<div class="order">
-        <strong>Compra #${doc.id}</strong> - Estado: <span class="status-${o.status}">${o.status}</span><br>
-        Usuario: ${o.userEmail}<br>
-        Productos: ${o.products.map(p=>p.name).join(", ")}<br>
-        ${o.comprobante?`Comprobante: <a href="${o.comprobante}" target="_blank">Ver</a>`:'Sin comprobante'}
-        <div class="actions">
-          ${o.status!=="cancelada"?`<button onclick="changeStatus('${doc.id}')">Cambiar Estado</button>`:''}
-          <button onclick="cancelOrder('${doc.id}')">Cancelar Compra</button>
-        </div>
-      </div>`;
+      const o=doc.data();
+      html+=`<div class="order"><strong>Compra #${doc.id}</strong> - Estado: <span class="status-${o.status}">${o.status}</span><br>Usuario: ${o.userEmail}<br>Productos: ${o.products.map(p=>p.name).join(", ")}<br>${o.comprobante?`Comprobante: <a href="${o.comprobante}" target="_blank">Ver</a>`:'Sin comprobante'}<div class="actions">${o.status!=="cancelada"?`<button onclick="changeStatus('${doc.id}')">Cambiar Estado</button>`:''}<button onclick="cancelOrder('${doc.id}')">Cancelar Compra</button></div></div>`;
     });
-    ordersList.innerHTML = html || "<i>No hay solicitudes</i>";
+    ordersList.innerHTML=html || "<i>No hay solicitudes</i>";
   });
 }
 
 function changeStatus(id){
-  const newStatus = prompt("Nuevo estado: pendiente, revision, verificado, en-camino, finalizado");
+  const newStatus=prompt("Nuevo estado: pendiente, revision, verificado, en-camino, finalizado");
   if(!newStatus) return;
   db.collection("orders").doc(id).update({status:newStatus}).then(()=>showModalMessage("Estado actualizado"));
 }
 
 function cancelOrder(id){
-  const reason = prompt("Razón de cancelación:");
+  const reason=prompt("Razón de cancelación:");
   if(!reason) return;
   db.collection("orders").doc(id).update({status:"cancelada", cancelReason:reason}).then(()=>showModalMessage("Compra cancelada"));
 }
 
-
+// --- Filtro Productos ---
+function filterProducts(){
+  const nameFilter=document.getElementById("search").value.toLowerCase();
+  const maxPrice=parseFloat(document.getElementById("maxPrice").value);
+  db.collection("products").get().then(snapshot=>{
+    let html="";
+    snapshot.forEach(doc=>{
+      const p=doc.data();
+      if(p.name.toLowerCase().includes(nameFilter) && (!maxPrice || p.price<=maxPrice)){
+        html+=`<div class="product"><strong>${p.name}</strong> - $${p.price}<br>${p.description}<br>${p.media?`<img src="${p.media}" width="100">`:''}<div class="actions"><button onclick="addToCart('${doc.id}','${p.name}',${p.price},'${p.media||''}')"><i class="fa fa-cart-plus"></i> Añadir al carrito</button>${role==='admin'?`<button onclick="editProduct('${doc.id}','${p.name}','${p.description}',${p.price})"><i class="fa fa-edit"></i> Editar</button><button onclick="deleteProduct('${doc.id}')"><i class="fa fa-trash"></i> Eliminar</button>`:''}</div></div>`;
+      }
+    });
+    document.getElementById("productsList").innerHTML=html || "<i>No hay productos</i>";
+  });
+}
 </script>
 
 </body>
