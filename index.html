@@ -1,132 +1,254 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendor | Dashboard Premium</title>
-
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-
-    <!-- TailwindCSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- FontAwesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vendor Dashboard Simplificado</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 </head>
-<body class="pb-10">
+<body>
+<h1>Vendor Dashboard</h1>
 
-<header class="fixed top-0 w-full z-50 text-white p-4 shadow-lg">
-    <div class="max-w-6xl mx-auto flex justify-between items-center">
-        <div class="flex items-center gap-2">
-            <div class="bg-indigo-600 p-2 rounded-lg">
-                <i class="fas fa-store"></i>
-            </div>
-            <span class="font-bold text-xl tracking-tight">VENDOR</span>
-        </div>
-        
-        <div id="authButtons" class="flex gap-2">
-            <button onclick="showLoginForm()" class="text-sm font-medium hover:text-indigo-400 transition">Iniciar Sesión</button>
-            <button onclick="showRegisterForm()" class="bg-white text-black px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-500 hover:text-white transition">Registrar</button>
-            <button onclick="loginWithGoogle()" class="bg-zinc-800 p-2 rounded-lg hover:bg-zinc-700 transition"><i class="fab fa-google"></i></button>
-        </div>
-
-        <div id="userInfo" style="display:none;" class="flex items-center gap-4">
-            <span id="userEmail" class="text-sm text-zinc-400 hidden md:block"></span>
-            <button onclick="openConfig()" class="hover:text-indigo-400 transition"><i class="fas fa-user-cog"></i></button>
-            <button onclick="logout()" class="bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-500 hover:text-white transition">Salir</button>
-        </div>
-    </div>
-</header>
-
-<div class="max-w-6xl mx-auto mt-24 px-4">
-    <div class="container" id="dashboard" style="display:none;">
-        <div class="tabs flex p-1 bg-zinc-200 rounded-xl mb-8 overflow-x-auto">
-            <button class="tab-btn active flex-1 py-2.5 text-sm font-bold rounded-lg transition" data-tab="productsTab">Productos</button>
-            <button class="tab-btn flex-1 py-2.5 text-sm font-bold rounded-lg transition" data-tab="cartTab">Carrito</button>
-            <button class="tab-btn flex-1 py-2.5 text-sm font-bold rounded-lg transition" data-tab="ordersTab">Compras</button>
-            <button class="tab-btn flex-1 py-2.5 text-sm font-bold rounded-lg transition hidden" data-tab="adminTab">Admin</button>
-        </div>
-
-        <!-- TAB PRODUCTOS -->
-        <div id="productsTab" class="tab-content active">
-            <div class="flex flex-wrap gap-4 mb-8 items-center justify-between">
-                <h2 class="text-3xl font-black text-zinc-800">Catálogo</h2>
-                <div class="flex gap-2 w-full md:w-auto">
-                    <div class="relative flex-1">
-                        <i class="fas fa-search absolute left-3 top-4 text-zinc-400"></i>
-                        <input id="search" placeholder="Buscar..." oninput="filterProducts()" class="pl-10 w-full rounded-xl py-3 shadow-sm bg-white">
-                    </div>
-                    <input id="maxPrice" type="number" placeholder="Precio Máx." oninput="filterProducts()" class="w-32 rounded-xl py-3 shadow-sm bg-white">
-                </div>
-            </div>
-            <div id="productsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-        </div>
-
-        <!-- TAB CARRITO -->
-        <div id="cartTab" class="tab-content">
-            <div class="bg-white rounded-2xl p-6 shadow-xl max-w-2xl mx-auto">
-                <h2 class="text-2xl font-bold mb-6 flex items-center gap-2 border-b pb-4">
-                    <i class="fas fa-shopping-cart text-indigo-600"></i> Mi Carrito
-                </h2>
-                <div id="cartList" class="space-y-4 mb-6"><i>Carrito vacío</i></div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    <button onclick="viewCart()" class="bg-zinc-100 text-zinc-600 font-bold py-3 rounded-xl hover:bg-zinc-200 transition">Actualizar</button>
-                    <button onclick="emptyCart()" class="bg-red-50 text-red-500 font-bold py-3 rounded-xl hover:bg-red-100 transition">Vaciar</button>
-                    <button onclick="openPurchaseForm()" class="bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">Comprar</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB MIS COMPRAS -->
-        <div id="ordersTab" class="tab-content">
-            <h2 class="text-2xl font-bold mb-6">Mis Pedidos</h2>
-            <div id="purchaseHistory" class="grid grid-cols-1 gap-4"></div>
-        </div>
-
-        <!-- TAB ADMIN -->
-        <div id="adminTab" class="tab-content">
-            <div id="adminPanel" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-1 bg-white p-6 rounded-2xl shadow-lg h-fit">
-                    <h3 class="text-xl font-bold mb-4">Gestionar Inventario</h3>
-                    <div class="space-y-3">
-                        <input id="name" placeholder="Nombre del producto" class="w-full rounded-lg p-3">
-                        <textarea id="description" placeholder="Descripción detallada" class="w-full rounded-lg p-3 h-24"></textarea>
-                        <input id="price" type="number" placeholder="Precio venta" class="w-full rounded-lg p-3">
-                        <div class="relative border-2 border-dashed border-zinc-200 p-4 rounded-lg text-center hover:border-indigo-400 transition cursor-pointer">
-                            <input id="media" type="file" accept="image/*,video/*" class="absolute inset-0 opacity-0 cursor-pointer">
-                            <p class="text-zinc-500 text-sm"><i class="fas fa-cloud-upload-alt block text-2xl mb-1"></i> Subir imagen o video</p>
-                        </div>
-                        <button onclick="uploadProduct()" class="w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-indigo-600 transition">Subir Producto</button>
-                    </div>
-                </div>
-                <div class="lg:col-span-2">
-                    <h3 class="text-xl font-bold mb-4">Solicitudes Recientes</h3>
-                    <div id="ordersList" class="space-y-4"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+<!-- AUTH -->
+<div id="authButtons">
+  <button onclick="showLoginForm()">Login</button>
+  <button onclick="showRegisterForm()">Registrar</button>
 </div>
 
-<!-- MODAL -->
-<div id="modal" class="modal fixed inset-0 z-[1000] hidden items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-    <div class="modal-content relative bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-[fadeIn_0.2s_ease-out]">
-        <button class="close absolute top-4 right-4 text-zinc-400 hover:text-black transition text-2xl" onclick="closeModal()">&times;</button>
-        <div id="modalBody" class="p-8"></div>
-    </div>
+<div id="userInfo" style="display:none">
+  <span id="userEmail"></span>
+  <button onclick="logout()">Salir</button>
 </div>
 
-<!-- JS -->
-<script src="app.js"></script>
+<hr>
+
+<!-- Productos -->
+<h2>Productos</h2>
+<div id="productsList"></div>
+
+<!-- Admin subir producto -->
+<div id="adminPanel" style="display:none">
+  <h3>Subir Producto</h3>
+  <input id="name" placeholder="Nombre"><br>
+  <input id="price" placeholder="Precio"><br>
+  <textarea id="description" placeholder="Descripción"></textarea><br>
+  <input type="file" id="media" accept="image/*,video/*"><br>
+  <button onclick="uploadProduct()">Subir Producto</button>
+</div>
+
+<hr>
+
+<!-- Carrito -->
+<h2>Carrito</h2>
+<div id="cartList"></div>
+<input type="file" id="paymentProof">
+<button onclick="submitPurchase()">Comprar</button>
+
+<hr>
+
+<!-- Admin Ordenes -->
+<div id="ordersListContainer" style="display:none">
+<h2>Ordenes Recientes</h2>
+<div id="ordersList"></div>
+</div>
+
+<!-- Modal simple -->
+<div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#0007; justify-content:center; align-items:center;">
+  <div id="modalBody" style="background:#fff; padding:20px;"></div>
+</div>
+
+<script>
+// --- FIREBASE ---
+firebase.initializeApp({
+  apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
+  authDomain: "proyectovendor.firebaseapp.com",
+  projectId: "proyectovendor"
+});
+const db = firebase.firestore();
+const auth = firebase.auth();
+const provider = new firebase.auth.GoogleAuthProvider();
+
+// Variables
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+let role = "user";
+
+// --- MODAL ---
+function openModal(content){ document.getElementById("modal").style.display="flex"; document.getElementById("modalBody").innerHTML=content; }
+function closeModal(){ document.getElementById("modal").style.display="none"; }
+function showMessage(msg){ alert(msg); }
+
+// --- LOGIN / REGISTRO ---
+function showLoginForm(){ openModal(`
+<h3>Login</h3>
+<input id="loginEmail" placeholder="Email"><br>
+<input id="loginPass" type="password" placeholder="Contraseña"><br>
+<button onclick="login()">Entrar</button>
+<button onclick="showRegisterForm()">Registrar</button>
+`); }
+
+function showRegisterForm(){ openModal(`
+<h3>Registrar</h3>
+<input id="regEmail" placeholder="Email"><br>
+<input id="regPass" type="password" placeholder="Contraseña"><br>
+<button onclick="register()">Registrar</button>
+<button onclick="showLoginForm()">Login</button>
+`); }
+
+function login(){
+  const email = document.getElementById("loginEmail").value;
+  const pass = document.getElementById("loginPass").value;
+  auth.signInWithEmailAndPassword(email, pass)
+      .then(res => { closeModal(); initUser(res.user); })
+      .catch(e => showMessage(e.message));
+}
+
+function register(){
+  const email = document.getElementById("regEmail").value;
+  const pass = document.getElementById("regPass").value;
+  auth.createUserWithEmailAndPassword(email, pass)
+      .then(res => { closeModal(); initUser(res.user); })
+      .catch(e => showMessage(e.message));
+}
+
+function logout(){ auth.signOut().then(()=>location.reload()); }
+
+// --- INIT USER ---
+async function initUser(user){
+  role = (user.email==="admin@vendors.com") ? "admin" : "user";
+  document.getElementById("authButtons").style.display="none";
+  document.getElementById("userInfo").style.display="block";
+  document.getElementById("userEmail").innerText = user.email;
+  if(role==="admin"){
+    document.getElementById("adminPanel").style.display="block";
+    document.getElementById("ordersListContainer").style.display="block";
+    loadOrders();
+  }
+  loadProducts();
+  renderCart();
+}
+
+// --- PRODUCTOS ---
+async function loadProducts(){
+  const productsList = document.getElementById("productsList");
+  productsList.innerHTML="";
+  const snapshot = await db.collection("products").get();
+  snapshot.forEach(doc=>{
+    const p = doc.data();
+    const div = document.createElement("div");
+    div.innerHTML = `${p.name} - $${p.price} <button onclick="addToCart('${doc.id}','${p.name}',${p.price},'${p.media||''}')">Añadir</button>
+    ${role==='admin'?`<button onclick="editProductForm('${doc.id}')">Editar</button><button onclick="deleteProduct('${doc.id}')">Eliminar</button>`:''}`;
+    productsList.appendChild(div);
+  });
+}
+
+// --- SUBIR PRODUCTO ---
+async function uploadProduct(){
+  const name=document.getElementById("name").value;
+  const price=parseFloat(document.getElementById("price").value);
+  const desc=document.getElementById("description").value;
+  const mediaFile=document.getElementById("media").files[0];
+  if(!name||!price||!desc) return showMessage("Completa todos los campos");
+  let mediaUrl="";
+  if(mediaFile){
+    const data=new FormData();
+    data.append("file",mediaFile);
+    data.append("upload_preset","vendors_preset");
+    const res = await fetch("https://api.cloudinary.com/v1_1/df79cjklp/upload",{method:"POST",body:data});
+    const json = await res.json();
+    mediaUrl=json.secure_url;
+  }
+  db.collection("products").add({name,price,description:desc,media:mediaUrl})
+    .then(()=>{ showMessage("Producto subido"); document.getElementById("name").value=""; document.getElementById("price").value=""; document.getElementById("description").value=""; document.getElementById("media").value=""; loadProducts(); });
+}
+
+// --- EDITAR PRODUCTO ---
+async function editProductForm(id){
+  const doc = await db.collection("products").doc(id).get();
+  const p = doc.data();
+  openModal(`
+    <h3>Editar Producto</h3>
+    <input id="editName" value="${p.name}"><br>
+    <input id="editPrice" value="${p.price}"><br>
+    <textarea id="editDesc">${p.description}</textarea><br>
+    <button onclick="updateProduct('${id}')">Actualizar</button>
+  `);
+}
+
+function updateProduct(id){
+  const name = document.getElementById("editName").value;
+  const price = parseFloat(document.getElementById("editPrice").value);
+  const desc = document.getElementById("editDesc").value;
+  db.collection("products").doc(id).update({name,price,description:desc}).then(()=>{ closeModal(); loadProducts(); });
+}
+
+// --- ELIMINAR PRODUCTO ---
+function deleteProduct(id){ if(confirm("Eliminar producto?")) db.collection("products").doc(id).delete().then(()=>loadProducts()); }
+
+// --- CARRITO ---
+function addToCart(id,name,price,media){ cart.push({id,name,price,media,qty:1}); localStorage.setItem("cart",JSON.stringify(cart)); renderCart(); }
+
+function renderCart(){
+  const cartList = document.getElementById("cartList");
+  cartList.innerHTML="";
+  let total=0;
+  cart.forEach((item,i)=>{
+    total += item.price*item.qty;
+    const div = document.createElement("div");
+    div.innerHTML = `${item.name} x${item.qty} - $${item.price*item.qty} <button onclick="changeQty(${i},1)">+</button> <button onclick="changeQty(${i},-1)">-</button> <button onclick="removeFromCart(${i})">Eliminar</button>`;
+    cartList.appendChild(div);
+  });
+  const t = document.createElement("p"); t.innerText="Total: $"+total; cartList.appendChild(t);
+}
+
+function changeQty(i,d){ cart[i].qty += d; if(cart[i].qty<1) cart[i].qty=1; localStorage.setItem("cart",JSON.stringify(cart)); renderCart(); }
+function removeFromCart(i){ cart.splice(i,1); localStorage.setItem("cart",JSON.stringify(cart)); renderCart(); }
+
+// --- COMPRAS ---
+async function submitPurchase(){
+  if(cart.length===0) return showMessage("Carrito vacío");
+  const proofFile = document.getElementById("paymentProof").files[0];
+  if(!proofFile) return showMessage("Adjunta comprobante");
+  const data = new FormData();
+  data.append("file", proofFile);
+  data.append("upload_preset","vendors_preset");
+  const res = await fetch("https://api.cloudinary.com/v1_1/df79cjklp/upload",{method:"POST",body:data});
+  const json = await res.json();
+  const user = auth.currentUser;
+  await db.collection("orders").add({
+    user:user.uid,
+    email:user.email,
+    items:cart,
+    total: cart.reduce((a,b)=>a+b.price*b.qty,0),
+    proof:json.secure_url,
+    status:"revision",
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  });
+  cart=[]; localStorage.setItem("cart",JSON.stringify(cart)); renderCart();
+  showMessage("Compra enviada");
+}
+
+// --- ORDENES ADMIN ---
+async function loadOrders(){
+  const ordersList = document.getElementById("ordersList");
+  ordersList.innerHTML="";
+  const snapshot = await db.collection("orders").orderBy("createdAt","desc").get();
+  snapshot.forEach(doc=>{
+    const o = doc.data();
+    const div = document.createElement("div");
+    div.innerHTML = `${o.email} - $${o.total} - ${o.status} 
+    <button onclick="updateOrderStatus('${doc.id}','revision')">Revision</button>
+    <button onclick="updateOrderStatus('${doc.id}','verificado')">Pago Confirmado</button>
+    <button onclick="updateOrderStatus('${doc.id}','en camino')">En Camino</button>
+    <button onclick="updateOrderStatus('${doc.id}','finalizado')">Finalizado</button>
+    <button onclick="updateOrderStatus('${doc.id}','cancelada')">Cancelar</button>`;
+    ordersList.appendChild(div);
+  });
+}
+
+function updateOrderStatus(id,status){ db.collection("orders").doc(id).update({status}).then(()=>loadOrders()); }
+
+</script>
 </body>
 </html>
