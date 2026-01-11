@@ -2,214 +2,121 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Vendor System</title>
+<title>Subir Producto</title>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <style>
-body { font-family: Arial; background:#f4f4f4; margin:0; }
-.hidden { display:none }
-.container { padding:20px }
-.card { background:#fff; padding:15px; margin:10px 0; border-radius:8px }
-button { padding:8px 12px; cursor:pointer }
-input, select { width:100%; padding:8px; margin:5px 0 }
-nav { background:#111; color:#fff; padding:10px }
+body {
+  font-family: Arial, sans-serif;
+  background: #f2f2f2;
+  margin: 0;
+}
+
+.container {
+  max-width: 500px;
+  margin: 50px auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+h2 { text-align: center }
+
+input, textarea, button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+}
+
+button {
+  background: #111;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+.preview {
+  margin-top: 15px;
+  text-align: center;
+}
 </style>
 </head>
 
 <body>
 
-<nav>
-  <span id="userEmail"></span>
-  <button onclick="logout()">Salir</button>
-</nav>
+<div class="container">
+  <h2>Subir Producto</h2>
 
-<!-- LOGIN -->
-<div id="auth" class="container">
-  <h2>Login / Registro</h2>
-  <input id="email" placeholder="Email">
-  <input id="password" type="password" placeholder="Contraseña">
-  <button onclick="login()">Login</button>
-  <button onclick="register()">Registrar</button>
-</div>
+  <input id="name" placeholder="Nombre del producto">
+  <textarea id="description" placeholder="Descripción"></textarea>
+  <input id="price" type="number" placeholder="Precio">
 
-<!-- ADMIN -->
-<div id="admin" class="container hidden">
-  <h2>Panel Admin</h2>
+  <input type="file" id="media" accept="image/*,video/*">
 
-  <div class="card">
-    <h3>Agregar producto</h3>
-    <input id="pname" placeholder="Nombre">
-    <input id="pprice" type="number" placeholder="Precio">
-    <input type="file" id="pimage">
-    <button onclick="addProduct()">Subir</button>
-  </div>
+  <button onclick="uploadProduct()">Subir producto</button>
 
-  <h3>Productos</h3>
-  <div id="adminProducts"></div>
-</div>
-
-<!-- USER -->
-<div id="user" class="container hidden">
-  <h2>Tienda</h2>
-  <div id="products"></div>
-
-  <h3>Carrito</h3>
-  <div id="cart"></div>
-
-  <select id="payment">
-    <option value="yappy">Yappy</option>
-    <option value="ach">ACH</option>
-    <option value="cash">Efectivo</option>
-  </select>
-
-  <button onclick="checkout()">Finalizar compra</button>
+  <div class="preview" id="preview"></div>
 </div>
 
 <script>
-// 🔥 FIREBASE
+/* 🔥 FIREBASE CONFIG */
 firebase.initializeApp({
   apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
   authDomain: "proyectovendor.firebaseapp.com",
   projectId: "proyectovendor"
 });
 
-const auth = firebase.auth();
 const db = firebase.firestore();
 
-let currentUser = null;
-let cart = [];
+/* ☁️ CLOUDINARY */
+const CLOUD_NAME = "demo"; // ⚠️ CAMBIAR por el tuyo
+const UPLOAD_PRESET = "vendors_preset";
 
-// AUTH
-function login(){
-  auth.signInWithEmailAndPassword(
-    email.value, password.value
-  );
-}
+/* 🚀 SUBIR PRODUCTO */
+async function uploadProduct() {
+  const file = media.files[0];
+  if (!file) return alert("Selecciona una imagen o video");
 
-function register(){
-  auth.createUserWithEmailAndPassword(
-    email.value, password.value
-  ).then(cred=>{
-    db.collection("users").doc(cred.user.uid).set({
-      email: cred.user.email,
-      role: "user",
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-  });
-}
-
-function logout(){ auth.signOut(); }
-
-// STATE
-auth.onAuthStateChanged(async user=>{
-  if(!user){
-    authDiv(true); return;
-  }
-
-  currentUser = user;
-  userEmail.innerText = user.email;
-
-  const doc = await db.collection("users").doc(user.uid).get();
-  const role = doc.data().role;
-
-  authDiv(false);
-
-  role === "admin" ? showAdmin() : showUser();
-});
-
-function authDiv(show){
-  auth.classList.toggle("hidden", !show);
-  admin.classList.add("hidden");
-  user.classList.add("hidden");
-}
-
-function showAdmin(){
-  admin.classList.remove("hidden");
-  loadAdminProducts();
-}
-
-function showUser(){
-  user.classList.remove("hidden");
-  loadProducts();
-}
-
-// ADMIN
-async function addProduct(){
-  const file = pimage.files[0];
   const form = new FormData();
   form.append("file", file);
-  form.append("upload_preset", "vendors_preset");
+  form.append("upload_preset", UPLOAD_PRESET);
+
+  const isVideo = file.type.startsWith("video");
+  const endpoint = isVideo ? "video" : "image";
 
   const res = await fetch(
-    "https://api.cloudinary.com/v1_1/demo/image/upload",
-    { method:"POST", body:form }
+    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${endpoint}/upload`,
+    { method: "POST", body: form }
   );
+
   const data = await res.json();
 
   await db.collection("products").add({
-    name: pname.value,
-    price: Number(pprice.value),
-    image: data.secure_url,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-}
-
-async function loadAdminProducts(){
-  const snap = await db.collection("products").get();
-  adminProducts.innerHTML = "";
-  snap.forEach(d=>{
-    adminProducts.innerHTML += `
-      <div class="card">${d.data().name} - $${d.data().price}</div>
-    `;
-  });
-}
-
-// USER
-async function loadProducts(){
-  const snap = await db.collection("products").get();
-  products.innerHTML = "";
-  snap.forEach(d=>{
-    const p = d.data();
-    products.innerHTML += `
-      <div class="card">
-        <img src="${p.image}" width="100"><br>
-        ${p.name} - $${p.price}
-        <button onclick="addCart('${d.id}',${p.price})">Agregar</button>
-      </div>
-    `;
-  });
-}
-
-function addCart(id, price){
-  cart.push({id, price});
-  renderCart();
-}
-
-function renderCart(){
-  cartDiv = document.getElementById("cart");
-  cartDiv.innerHTML = cart.map(c=>`$${c.price}`).join("<br>");
-}
-
-async function checkout(){
-  if(cart.length === 0) return alert("Carrito vacío");
-
-  const total = cart.reduce((a,b)=>a+b.price,0);
-
-  await db.collection("orders").add({
-    userId: currentUser.uid,
-    items: cart,
-    total,
-    payment: payment.value,
-    status: "pending",
+    name: name.value,
+    description: description.value,
+    price: Number(price.value),
+    mediaUrl: data.secure_url,
+    mediaType: isVideo ? "video" : "image",
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 
-  alert("Pedido creado. Pagar por Yappy: 6389-2022 (Emanuel Cedeño)");
-  cart = [];
-  renderCart();
+  showPreview(data.secure_url, isVideo);
+  alert("Producto subido correctamente");
+
+  name.value = "";
+  description.value = "";
+  price.value = "";
+  media.value = "";
+}
+
+/* 👀 PREVIEW */
+function showPreview(url, isVideo) {
+  preview.innerHTML = isVideo
+    ? `<video src="${url}" controls width="100%"></video>`
+    : `<img src="${url}" width="100%">`;
 }
 </script>
 
