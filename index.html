@@ -348,4 +348,192 @@ async function submitEditProduct(id){
   }
   const updateData = {name, description:desc, price};
   if(mediaUrl) updateData.media = mediaUrl;
-  db.collection("products").doc(id).update(updateData).then(()=>{ showModalMessa
+  db.collection("products").doc(id).update(updateData).then(()=>{ showModalMessage("Producto actualizado"); closeModal(); }).catch(e=>alert(e.message));
+}
+
+function deleteProduct(id){
+  if(!confirm("¿Eliminar producto de forma permanente?")) return;
+  db.collection("products").doc(id).delete().then(()=>showModalMessage("Producto eliminado")).catch(e=>alert(e.message));
+}
+
+function addToCart(id,name,price,media){
+  cart.push({id,name,price,media});
+  localStorage.setItem("cart",JSON.stringify(cart));
+  renderCart();
+  showModalMessage("🛒 Añadido al carrito");
+}
+
+function renderCart(){
+  const list = document.getElementById("cartList");
+  if(cart.length===0) { list.innerHTML="<div class='text-center text-zinc-400 py-10'><i class='fas fa-ghost text-4xl block mb-2'></i>El carrito está vacío</div>"; return; }
+  let html="";
+  cart.forEach((p,i)=> html+=`
+  <div class="flex items-center gap-4 bg-zinc-50 p-3 rounded-xl border border-zinc-100">
+    <div class="w-16 h-16 rounded-lg bg-white overflow-hidden flex-shrink-0">
+        <img src="${p.media}" class="w-full h-full object-cover">
+    </div>
+    <div class="flex-grow">
+        <h5 class="font-bold text-zinc-800">${p.name}</h5>
+        <span class="text-indigo-600 font-bold">$${p.price}</span>
+    </div>
+    <button onclick="removeFromCart(${i})" class="text-red-400 p-2 hover:bg-red-50 rounded-lg transition"><i class="fas fa-trash"></i></button>
+  </div>`);
+  list.innerHTML = html;
+}
+
+function removeFromCart(index){
+  cart.splice(index,1);
+  localStorage.setItem("cart",JSON.stringify(cart));
+  renderCart();
+}
+
+function emptyCart(){ if(confirm("¿Vaciar todo el carrito?")){ cart=[]; localStorage.setItem("cart","[]"); renderCart(); } }
+function viewCart(){ renderCart(); }
+
+function openPurchaseForm(){
+  if(cart.length===0) return alert("El carrito está vacío");
+  openModal(`<h3 class="text-xl font-bold mb-4">Información de Envío</h3>
+    <div class="space-y-3">
+        <input id="buyerName" placeholder="Nombre completo" class="w-full p-3 rounded-lg">
+        <input id="buyerPhone" placeholder="Teléfono" class="w-full p-3 rounded-lg">
+        <input id="buyerWhats" placeholder="WhatsApp" class="w-full p-3 rounded-lg">
+        <input id="buyerAddress" placeholder="Dirección exacta" class="w-full p-3 rounded-lg">
+        <input id="buyerEmail" placeholder="Email de contacto" class="w-full p-3 rounded-lg">
+        <button onclick="submitPurchase()" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg mt-2">Enviar Orden de Compra</button>
+    </div>`);
+}
+
+function submitPurchase(){
+  const name=document.getElementById("buyerName").value.trim();
+  const phone=document.getElementById("buyerPhone").value.trim();
+  const whatsapp=document.getElementById("buyerWhats").value.trim();
+  const address=document.getElementById("buyerAddress").value.trim();
+  const email=document.getElementById("buyerEmail").value.trim();
+  if(!name||!phone||!whatsapp||!address||!email) return alert("Completa todos los campos");
+  db.collection("orders").add({
+    user:auth.currentUser.uid,
+    userEmail:auth.currentUser.email,
+    buyerName:name,
+    phone, whatsapp, address, email,
+    products:cart,
+    status:"pendiente",
+    comprobante:""
+  }).then(()=>{
+    cart=[];
+    localStorage.setItem("cart","[]");
+    renderCart();
+    showModalMessage("📦 ¡Compra enviada con éxito!");
+    closeModal();
+  }).catch(e=>alert(e.message));
+}
+
+function loadUserOrders(){
+  const history = document.getElementById("purchaseHistory");
+  db.collection("orders").where("user","==",auth.currentUser.uid)
+    .onSnapshot(snapshot=>{
+      let html="";
+      snapshot.forEach(doc=>{
+        const o = doc.data();
+        html+=`
+        <div class="bg-white rounded-2xl p-6 border border-zinc-100 shadow-sm">
+          <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+              <h4 class="font-bold text-zinc-800">Orden #${doc.id.slice(0,8)}</h4>
+              <span class="status-badge status-${o.status}">${o.status}</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 text-sm gap-y-1 mb-4 text-zinc-600">
+              <p><i class="fas fa-user w-6"></i> ${o.buyerName}</p>
+              <p><i class="fas fa-map-marker-alt w-6"></i> ${o.address}</p>
+              <p><i class="fas fa-box w-6"></i> ${o.products.map(p=>p.name).join(", ")}</p>
+          </div>
+          <div class="flex items-center gap-3">
+            ${o.comprobante?`<a href="${o.comprobante}" target="_blank" class="text-xs font-bold text-indigo-600 underline">Ver Comprobante</a>`:'<span class="text-xs text-zinc-400">Sin comprobante</span>'}
+            ${o.status!=="finalizado"?`<button onclick="uploadComprobante('${doc.id}')" class="ml-auto bg-zinc-100 text-zinc-700 px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-600 hover:text-white transition">Adjuntar Comprobante</button>`:''}
+          </div>
+        </div>`;
+      });
+      history.innerHTML = html || "<div class='text-center py-10 text-zinc-400'>No tienes historial de compras</div>";
+    });
+}
+
+function uploadComprobante(orderId){
+  const fileInput = document.createElement("input");
+  fileInput.type="file";
+  fileInput.accept="image/*";
+  fileInput.onchange = async ()=>{
+    const file = fileInput.files[0];
+    if(!file) return;
+    const data = new FormData();
+    data.append("file",file);
+    data.append("upload_preset","vendors_preset");
+    const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`,{method:"POST",body:data});
+    const json = await res.json();
+    db.collection("orders").doc(orderId).update({comprobante:json.secure_url}).then(()=>showModalMessage("Comprobante subido"));
+  };
+  fileInput.click();
+}
+
+function loadOrders(){
+  if(role!=="admin") return;
+  const ordersList = document.getElementById("ordersList");
+  db.collection("orders").onSnapshot(snapshot=>{
+    let html="";
+    snapshot.forEach(doc=>{
+      const o = doc.data();
+      html+=`
+      <div class="bg-white rounded-2xl p-6 shadow-sm border-l-4 border-indigo-500">
+        <div class="flex justify-between mb-4">
+            <span class="text-xs font-bold text-zinc-400 uppercase">Solicitud #${doc.id.slice(0,10)}</span>
+            <span class="status-badge status-${o.status}">${o.status}</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-6">
+            <div>
+                <p class="font-bold text-zinc-800 underline mb-2">Cliente:</p>
+                <p>${o.buyerName} (${o.userEmail})</p>
+                <p>Telf: ${o.phone} / WA: ${o.whatsapp}</p>
+                <p>Dirección: ${o.address}</p>
+            </div>
+            <div>
+                <p class="font-bold text-zinc-800 underline mb-2">Detalle:</p>
+                <p>${o.products.map(p=>p.name).join(", ")}</p>
+                ${o.comprobante?`<a href="${o.comprobante}" target="_blank" class="text-indigo-600 font-bold">📄 Ver Comprobante de Pago</a>`:'<p class="text-red-400">Sin pago adjunto</p>'}
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          ${o.status!=="cancelada"?`<button onclick="changeStatus('${doc.id}')" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold">Cambiar Estado</button>`:''}
+          <button onclick="cancelOrder('${doc.id}')" class="bg-red-50 text-red-500 px-4 py-2 rounded-lg text-xs font-bold hover:bg-red-500 hover:text-white transition">Cancelar Orden</button>
+        </div>
+      </div>`;
+    });
+    ordersList.innerHTML = html || "<p class='text-zinc-400'>No hay solicitudes pendientes</p>";
+  });
+}
+
+function changeStatus(id){
+  const newStatus = prompt("Ingresa el nuevo estado:\npendiente, revision, verificado, en-camino, finalizado");
+  if(!newStatus) return;
+  db.collection("orders").doc(id).update({status:newStatus}).then(()=>showModalMessage("Estado actualizado"));
+}
+
+function cancelOrder(id){
+  const reason = prompt("Indique el motivo de la cancelación:");
+  if(!reason) return;
+  db.collection("orders").doc(id).update({status:"cancelada", cancelReason:reason}).then(()=>showModalMessage("Orden cancelada"));
+}
+
+function filterProducts() {
+    const term = document.getElementById('search').value.toLowerCase();
+    const max = parseFloat(document.getElementById('maxPrice').value) || Infinity;
+    const cards = document.querySelectorAll('.product-card');
+    cards.forEach(card => {
+        const name = card.querySelector('h4').innerText.toLowerCase();
+        const price = parseFloat(card.querySelector('.absolute').innerText.replace('$', ''));
+        if (name.includes(term) && price <= max) {
+            card.style.display = 'flex';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+</script>
+</body>
+</html>
