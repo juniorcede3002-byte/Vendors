@@ -9,283 +9,158 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
 <style>
-/* --- Sistema de Diseño Moderno --- */
 :root {
     --primary: #2563eb;
     --primary-dark: #1d4ed8;
-    --bg-body: #f8fafc;
+    --bg-body: #f1f5f9;
     --bg-card: #ffffff;
-    --text-main: #1e293b;
+    --text-main: #0f172a;
     --text-muted: #64748b;
     --border: #e2e8f0;
     --radius: 12px;
-    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-body { 
-    font-family: 'Inter', system-ui, -apple-system, sans-serif; 
-    background: var(--bg-body); 
-    color: var(--text-main);
-    margin: 0; 
-    padding: 0; 
-    line-height: 1.5;
-}
+body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-main); margin: 0; padding: 0; }
 
-/* --- Header & Navegación --- */
+/* --- Header --- */
 header { 
-    background: #ffffff; 
-    color: var(--text-main); 
-    padding: 0.75rem 1.5rem; 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    position: fixed; 
-    top: 0; 
-    width: 100%; 
-    z-index: 1000; 
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    background: #ffffff; padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; 
+    align-items: center; position: fixed; top: 0; width: 100%; z-index: 1000; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     box-sizing: border-box;
 }
+.logo { font-weight: 800; font-size: 1.2rem; color: var(--primary); display: flex; align-items: center; gap: 8px; }
 
-.logo { font-weight: 800; font-size: 1.25rem; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+/* --- Layout --- */
+.container { max-width: 1000px; margin: 90px auto 40px; padding: 0 20px; display: none; }
 
-header button { 
-    background: var(--primary); 
-    color: white; 
-    border: none; 
-    padding: 8px 16px; 
-    border-radius: var(--radius); 
-    cursor: pointer; 
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: all 0.2s;
-}
+/* --- Tabs --- */
+.tabs { display: flex; background: #fff; padding: 5px; border-radius: 14px; gap: 4px; margin-bottom: 25px; box-shadow: var(--shadow); overflow-x: auto; }
+.tab-btn { flex: 1; padding: 12px; cursor: pointer; border: none; border-radius: 10px; background: transparent; color: var(--text-muted); font-weight: 600; white-space: nowrap; transition: 0.2s; }
+.tab-btn.active { background: var(--primary); color: #fff; }
 
-header button:hover { background: var(--primary-dark); transform: translateY(-1px); }
-
-/* --- Layout Principal --- */
-.container { 
-    max-width: 1200px; 
-    margin: 80px auto 40px; 
-    padding: 0 20px; 
-    display: none; 
-}
-
-/* --- Tabs Estilo Dashboard --- */
-.tabs { 
-    display: flex; 
-    background: #fff;
-    padding: 6px;
-    border-radius: 16px;
-    gap: 4px; 
-    margin-bottom: 2rem; 
-    box-shadow: var(--shadow);
-    overflow-x: auto;
-    white-space: nowrap;
-}
-
-.tab-btn { 
-    flex: 1; 
-    padding: 12px 20px; 
-    cursor: pointer; 
-    border: none; 
-    border-radius: 12px; 
-    background: transparent; 
-    color: var(--text-muted);
-    font-weight: 600;
-    transition: 0.3s; 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.tab-btn.active { 
-    background: var(--primary); 
-    color: #fff; 
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-}
-
-.tab-content { 
-    display: none; 
-    animation: fadeIn 0.4s ease;
-}
-
+/* --- Dashboard Cards --- */
+.card { background: var(--bg-card); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; border: 1px solid var(--border); }
+.tab-content { display: none; }
 .tab-content.active { display: block; }
 
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+/* --- Forms --- */
+.form-group { margin-bottom: 15px; text-align: left; }
+.form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+input, textarea, select { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.95rem; box-sizing: border-box; outline: none; transition: border 0.2s; }
+input:focus { border-color: var(--primary); }
 
-/* --- UI de Formularios y Busqueda --- */
-.search-box {
-    display: grid;
-    grid-template-columns: 1fr 200px;
-    gap: 15px;
-    margin-bottom: 25px;
-}
+/* --- Buttons --- */
+.btn { padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+.btn-danger { background: #fee2e2; color: #dc2626; }
 
-input, textarea, select { 
-    width: 100%; 
-    padding: 12px 16px; 
-    margin-top: 8px; 
-    border-radius: var(--radius); 
-    border: 1px solid var(--border); 
-    box-sizing: border-box;
-    font-size: 1rem;
-    outline: none;
-}
-
-input:focus { border-color: var(--primary); ring: 2px solid #bfdbfe; }
-
-/* --- Grid de Productos --- */
-#productsList {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 24px;
-}
-
-.product { 
-    background: var(--bg-card); 
-    border-radius: var(--radius); 
-    overflow: hidden;
-    transition: transform 0.3s, box-shadow 0.3s;
-    border: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-}
-
-.product:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-
-.product img { width: 100%; height: 200px; object-fit: cover; }
-
-.product-info { padding: 1.25rem; flex-grow: 1; }
-
-.product-price { font-size: 1.5rem; font-weight: 700; color: var(--primary); margin: 8px 0; }
-
-.actions { display: flex; gap: 8px; padding: 1.25rem; background: #f8fafc; border-top: 1px solid var(--border); }
-
-/* --- Botones --- */
-.btn-main { background: var(--primary); color: white; border: none; padding: 12px; border-radius: var(--radius); cursor: pointer; font-weight: 600; width: 100%; }
-.btn-outline { background: white; border: 1px solid var(--border); color: var(--text-main); padding: 10px; border-radius: var(--radius); cursor: pointer; }
-
-/* --- Estados de Pedido --- */
-.status-badge {
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    font-weight: 700;
-}
+/* --- Orders & Products --- */
+.order-item { border: 1px solid var(--border); border-radius: 10px; padding: 15px; margin-bottom: 15px; background: #f8fafc; }
+.status-badge { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
 .status-pendiente { background: #fef3c7; color: #92400e; }
 .status-entregado { background: #dcfce7; color: #166534; }
-.status-cancelada { background: #fee2e2; color: #991b1b; }
+.status-revision { background: #dbeafe; color: #1e40af; }
 
-/* --- Modal Estilizado --- */
-.modal { 
-    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-    background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
-    justify-content: center; align-items: center; z-index: 2000;
-}
-.modal-content { 
-    background: #fff; padding: 2rem; border-radius: 20px; 
-    max-width: 500px; width: 90%; position: relative; 
-    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
-}
+.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+.product-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+.product-card img { width: 100%; height: 160px; object-fit: cover; }
+.product-body { padding: 15px; }
 
-/* --- Responsive Adaptability --- */
-@media (max-width: 768px) {
-    .search-box { grid-template-columns: 1fr; }
-    .tabs { padding: 4px; }
-    .tab-btn { padding: 10px 5px; font-size: 0.8rem; }
-    header { padding: 10px; }
-    .logo span { display: none; }
-}
+/* --- Modal --- */
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
+.modal-content { background: white; padding: 25px; border-radius: 16px; width: 100%; max-width: 500px; position: relative; max-height: 90vh; overflow-y: auto; }
+
+canvas { border: 1px solid var(--border); border-radius: 8px; background: #fff; width: 100%; height: 120px; cursor: crosshair; }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo"><i class="fa-solid fa-rocket"></i> <span>Vendor Dashboard</span></div>
-  
+  <div class="logo"><i class="fa-solid fa-bag-shopping"></i> VENDORS</div>
   <div id="authButtons">
-    <button onclick="showLoginForm()"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
-    <button onclick="loginWithGoogle()" style="background:#db4437"><i class="fa-brands fa-google"></i></button>
+    <button class="btn btn-outline" onclick="showLoginForm()">Iniciar Sesión</button>
   </div>
-
-  <div id="userInfo" style="display:none; display: flex; align-items:center; gap: 10px;">
-    <span id="userEmail" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);"></span>
-    <button onclick="openConfig()" class="btn-outline" style="padding: 8px 12px;"><i class="fa-solid fa-gear"></i></button>
-    <button onclick="logout()" style="background:#ef4444; padding: 8px 12px;"><i class="fa-solid fa-power-off"></i></button>
+  <div id="userInfo" style="display:none; gap: 10px;">
+    <button class="btn btn-outline" onclick="openConfig()"><i class="fa-solid fa-user-gear"></i></button>
+    <button class="btn btn-danger" onclick="logout()"><i class="fa-solid fa-power-off"></i></button>
   </div>
 </header>
 
 <div class="container" id="dashboard">
   <div class="tabs">
-    <button class="tab-btn active" data-tab="productsTab"><i class="fa-solid fa-store"></i> Productos</button>
-    <button class="tab-btn" data-tab="cartTab"><i class="fa-solid fa-cart-shopping"></i> Carrito</button>
-    <button class="tab-btn" data-tab="ordersTab"><i class="fa-solid fa-box"></i> Mis Compras</button>
-    <button class="tab-btn" data-tab="adminTab" id="adminTabBtn" style="display:none;"><i class="fa-solid fa-lock"></i> Admin</button>
+    <button class="tab-btn active" data-tab="productsTab">Tienda</button>
+    <button class="tab-btn" data-tab="cartTab">Carrito</button>
+    <button class="tab-btn" data-tab="ordersTab">Mis Compras</button>
+    <button class="tab-btn" id="adminTabBtn" data-tab="adminTab" style="display:none;">Panel Admin</button>
   </div>
 
   <div id="productsTab" class="tab-content active">
-    <div class="search-box">
-        <input id="search" placeholder="🔍 Buscar productos..." oninput="filterProducts()">
-        <input id="maxPrice" type="number" placeholder="💰 Precio máx" oninput="filterProducts()">
+    <div class="card" style="display: flex; gap: 10px;">
+        <input id="search" placeholder="Buscar producto..." oninput="filterProducts()">
+        <input id="maxPrice" type="number" style="width: 150px" placeholder="Precio Máx" oninput="filterProducts()">
     </div>
-    <div id="productsList"></div>
+    <div id="productsList" class="product-grid"></div>
   </div>
 
   <div id="cartTab" class="tab-content">
-    <div style="background:#fff; padding: 2rem; border-radius: var(--radius); box-shadow: var(--shadow);">
-        <h2>Tu Carrito</h2>
-        <div id="cartList"><i>El carrito está esperando tus compras.</i></div>
+    <div class="card">
+        <h3><i class="fa-solid fa-cart-shopping"></i> Tu Pedido</h3>
+        <div id="cartList"><i>El carrito está vacío</i></div>
         <div style="margin-top: 20px; display: flex; gap: 10px;">
-            <button class="btn-main" onclick="openCheckoutForm()">Finalizar Pedido</button>
-            <button class="btn-outline" onclick="emptyCart()">Vaciar</button>
+            <button class="btn btn-primary" onclick="openCheckoutForm()">Proceder al Pago</button>
+            <button class="btn btn-outline" onclick="emptyCart()">Vaciar</button>
         </div>
     </div>
   </div>
 
   <div id="ordersTab" class="tab-content">
-    <h2>Historial de Compras</h2>
-    <div id="purchaseHistory"></div>
+    <div class="card">
+        <h3><i class="fa-solid fa-clock-rotate-left"></i> Historial</h3>
+        <div id="purchaseHistory">Cargando tus órdenes...</div>
+    </div>
   </div>
 
   <div id="adminTab" class="tab-content">
-    <div id="adminPanel">
-      <div style="background:#fff; padding: 2rem; border-radius: var(--radius); margin-bottom: 2rem; box-shadow: var(--shadow);">
-          <h3><i class="fa-solid fa-plus-circle"></i> Nuevo Producto</h3>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-              <input id="name" placeholder="Nombre del producto">
-              <input id="price" type="number" placeholder="Precio ($)">
-          </div>
-          <textarea id="description" placeholder="Descripción detallada" rows="3"></textarea>
-          <div style="margin-top:10px">
-              <label style="font-size:0.8rem; color:var(--text-muted)">Imagen del producto:</label>
-              <input id="media" type="file" accept="image/*,video/*">
-          </div>
-          <button class="btn-main" style="margin-top:15px" onclick="uploadProduct()">Publicar Producto</button>
-      </div>
+    <div class="card">
+        <h3><i class="fa-solid fa-upload"></i> Subir Producto</h3>
+        <div class="form-group">
+            <label>Nombre del Producto</label>
+            <input id="name" placeholder="Ej: Camiseta Original">
+        </div>
+        <div class="form-group">
+            <label>Descripción</label>
+            <textarea id="description" placeholder="Detalles del producto..."></textarea>
+        </div>
+        <div class="form-group">
+            <label>Precio ($)</label>
+            <input id="price" type="number" placeholder="0.00">
+        </div>
+        <div class="form-group">
+            <label>Imagen</label>
+            <input id="media" type="file">
+        </div>
+        <button class="btn btn-primary" onclick="uploadProduct()">Publicar Producto</button>
+    </div>
 
-      <h3><i class="fa-solid fa-list-check"></i> Gestión de Pedidos</h3>
-      <div id="ordersList"></div>
+    <div class="card">
+        <h3><i class="fa-solid fa-list-check"></i> Todas las Órdenes (Admin)</h3>
+        <div id="adminOrdersList"></div>
     </div>
   </div>
 </div>
 
 <div id="modal" class="modal">
   <div class="modal-content">
-    <button onclick="closeModal()" style="position:absolute; top:15px; right:15px; border:none; background:none; cursor:pointer; font-size:1.2rem;">&times;</button>
+    <button onclick="closeModal()" style="position:absolute; top:15px; right:15px; border:none; background:none; font-size:1.5rem; cursor:pointer;">&times;</button>
     <div id="modalBody"></div>
   </div>
 </div>
 
 <script>
-/* TODA LA LÓGICA DE FIREBASE SE MANTIENE IGUAL. 
-   He añadido una pequeña modificación en renderizado de HTML 
-   dentro de las funciones para que coincidan con las nuevas clases CSS.
-*/
-
-// --- Firebase Config ---
+// --- CONFIGURACIÓN FIREBASE ---
 firebase.initializeApp({
   apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
   authDomain: "proyectovendor.firebaseapp.com",
@@ -297,14 +172,8 @@ const provider = new firebase.auth.GoogleAuthProvider();
 
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 let role = "usuario";
-const modal = document.getElementById("modal");
-const modalBody = document.getElementById("modalBody");
 
-// --- Funciones de UI mejoradas ---
-function openModal(content){ modal.style.display="flex"; modalBody.innerHTML=content; }
-function closeModal(){ modal.style.display="none"; }
-function showModalMessage(msg){ openModal(`<div style="text-align:center; padding:20px;"><i class="fa-solid fa-circle-check" style="color:var(--primary); font-size:3rem;"></i><p style="margin-top:15px; font-weight:600;">${msg}</p></div>`); setTimeout(closeModal,2000); }
-
+// --- AUTHENTICATION ---
 auth.onAuthStateChanged(user => {
   if(user){ initUser(user); }
   else { 
@@ -314,155 +183,291 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-// Modificación estética en loadProducts
-async function loadProducts(){
-  const productsList = document.getElementById("productsList");
-  productsList.innerHTML = "Cargando catálogo...";
-  db.collection("products").onSnapshot(snapshot=>{
-    let html=""; 
-    snapshot.forEach(doc=>{ 
-      const p=doc.data();
-      html+=`
-      <div class="product">
-        ${p.media?`<img src="${p.media}">`:`<div style="height:200px; background:#e2e8f0; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-image fa-3x" style="color:#cbd5e1"></i></div>`}
-        <div class="product-info">
-          <div style="font-weight:700; font-size:1.1rem;">${p.name}</div>
-          <div style="color:var(--text-muted); font-size:0.85rem; height:40px; overflow:hidden;">${p.description}</div>
-          <div class="product-price">$${p.price}</div>
-        </div>
-        <div class="actions">
-          <button class="btn-main" onclick="addToCart('${doc.id}','${p.name}',${p.price},'${p.media||''}')"><i class="fa-solid fa-cart-plus"></i></button>
-          ${role==='admin'?`
-            <button class="btn-outline" onclick="deleteProduct('${doc.id}')"><i class="fa-solid fa-trash"></i></button>
-          `:''}
-        </div>
-      </div>`;
-    });
-    productsList.innerHTML = html || "<p>No hay productos disponibles.</p>";
-  });
-}
-
-// Se mantiene el resto de la lógica original (login, register, checkout, etc.)
-// ... (He pegado a continuación las funciones originales para asegurar el funcionamiento)
-
-function showLoginForm(){ openModal(`<h3>Bienvenido</h3><input id="loginEmail" placeholder="Email"><input id="loginPass" type="password" placeholder="Contraseña"><button class="btn-main" style="margin-top:15px" onclick="login()">Entrar</button>`);}
-function showRegisterForm(){ openModal(`<h3>Crear Cuenta</h3><input id="regEmail" placeholder="Email"><input id="regPass" type="password" placeholder="Contraseña"><button class="btn-main" style="margin-top:15px" onclick="register()">Registrar</button>`);}
-function login(){ const email=document.getElementById("loginEmail").value; const pass=document.getElementById("loginPass").value; auth.signInWithEmailAndPassword(email,pass).then(u=>{closeModal(); initUser(u.user);}).catch(e=>alert(e.message));}
-function register(){ const email=document.getElementById("regEmail").value; const pass=document.getElementById("regPass").value; auth.createUserWithEmailAndPassword(email,pass).then(u=>{closeModal(); initUser(u.user);}).catch(e=>alert(e.message));}
-function loginWithGoogle(){ auth.signInWithPopup(provider).then(r=>{closeModal(); initUser(r.user);}).catch(e=>alert(e.message));}
-function logout(){ auth.signOut().then(()=>location.reload());}
-
 async function initUser(user){
   document.getElementById("authButtons").style.display="none";
   document.getElementById("userInfo").style.display="flex";
-  document.getElementById("userEmail").innerText=user.email;
-  const docRef = db.collection("users").doc(user.uid);
-  const docSnap = await docRef.get();
-  if(!docSnap.exists) await docRef.set({pais:'',residencia:'',name:user.displayName||'',email:user.email}); 
-  role = (user.email==="admin@vendors.com") ? "admin" : "usuario";
+  role = (user.email === "admin@vendors.com") ? "admin" : "usuario";
   document.getElementById("dashboard").style.display="block";
-  if(role==="admin") document.getElementById("adminTabBtn").style.display="flex";
-  setUpTabs(); loadProducts(); renderCart(); loadOrdersHistory();
+  
+  if(role === "admin") document.getElementById("adminTabBtn").style.display="block";
+  
+  setUpTabs();
+  loadProducts();
+  renderCart();
+  loadOrders(); // Carga unificada de órdenes
 }
 
-function setUpTabs(){ document.querySelectorAll(".tab-btn").forEach(btn=>{ btn.addEventListener("click",()=>{ document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active")); btn.classList.add("active"); document.querySelectorAll(".tab-content").forEach(tab=>tab.classList.remove("active")); document.getElementById(btn.dataset.tab).classList.add("active"); });});}
-
-function addToCart(id,name,price,media){ cart.push({id,name,price,media}); localStorage.setItem("cart",JSON.stringify(cart)); renderCart(); showModalMessage("Añadido al carrito");}
-
-function renderCart(){
-  const cartList=document.getElementById("cartList");
-  if(cart.length===0){ cartList.innerHTML="<i>Carrito vacío</i>"; return; }
-  let html=""; let total=0;
-  cart.forEach((item,i)=>{
-    html+=`<div style="display:flex; align-items:center; gap:15px; padding:10px 0; border-bottom:1px solid #eee;">
-      <img src="${item.media}" width="50" height="50" style="border-radius:8px; object-fit:cover;">
-      <div style="flex-grow:1"><b>${item.name}</b><br>$${item.price}</div>
-      <button onclick="removeFromCart(${i})" style="color:red; border:none; background:none; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
-    </div>`;
-    total+=item.price;
-  });
-  html+=`<div style="font-size:1.2rem; font-weight:700; margin-top:15px; text-align:right;">Total: $${total.toFixed(2)}</div>`;
-  cartList.innerHTML=html;
+function showLoginForm(){
+  openModal(`
+    <h3>Iniciar Sesión</h3>
+    <div class="form-group"><label>Email</label><input id="loginEmail" type="email"></div>
+    <div class="form-group"><label>Contraseña</label><input id="loginPass" type="password"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="login()">Entrar</button>
+    <button class="btn btn-outline" style="width:100%; margin-top:10px;" onclick="loginWithGoogle()"><i class="fa-brands fa-google"></i> Google</button>
+  `);
 }
 
-function removeFromCart(index){ cart.splice(index,1); localStorage.setItem("cart",JSON.stringify(cart)); renderCart(); }
-function emptyCart(){ cart=[]; localStorage.setItem("cart",JSON.stringify(cart)); renderCart(); }
+function login(){
+  const email = document.getElementById("loginEmail").value;
+  const pass = document.getElementById("loginPass").value;
+  auth.signInWithEmailAndPassword(email, pass).then(() => closeModal()).catch(e => alert(e.message));
+}
+function loginWithGoogle(){ auth.signInWithPopup(provider).then(()=>closeModal()); }
+function logout(){ auth.signOut().then(()=>location.reload()); }
 
-function openCheckoutForm(){
-  if(cart.length===0) return alert("Carrito vacío");
-  openModal(`<h3>Finalizar Compra</h3><input id="checkoutName" placeholder="Nombre completo"><input id="checkoutAddress" placeholder="Dirección de entrega"><select id="checkoutPayment" onchange="updatePaymentInstructions(this.value)"><option value="yappy">Yappy</option><option value="ach">ACH</option><option value="efectivo">Efectivo</option></select><div id="paymentInstructions" style="margin-top:10px; font-size:0.8rem; color:var(--primary); font-weight:600;">Enviar Yappy a: +507 63892022</div><button class="btn-main" style="margin-top:20px" onclick="finalizePurchase()">Confirmar Orden</button>`);
+// --- CONFIGURACIÓN PERFIL ---
+async function openConfig(){
+  const user = auth.currentUser;
+  const snap = await db.collection("users").doc(user.uid).get();
+  const data = snap.data() || {};
+  
+  openModal(`
+    <h3>Mi Perfil</h3>
+    <div class="form-group"><label>Nombre Completo</label><input id="cfgName" value="${data.name || ''}"></div>
+    <div class="form-group"><label>País</label><input id="cfgCountry" value="${data.pais || ''}"></div>
+    <div class="form-group"><label>Residencia</label><input id="cfgRes" value="${data.residencia || ''}"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="saveConfig()">Actualizar Datos</button>
+  `);
 }
 
-function updatePaymentInstructions(method){
-  const instr=document.getElementById("paymentInstructions");
-  if(method==="yappy") instr.innerText="Enviar Yappy a: +507 63892022 Emanuel Cedeño";
-  else if(method==="ach") instr.innerText="ACH: Banco General - Ahorros - 0454966165208";
-  else instr.innerText="Pagar al recibir";
+async function saveConfig(){
+  const user = auth.currentUser;
+  const data = {
+    name: document.getElementById("cfgName").value,
+    pais: document.getElementById("cfgCountry").value,
+    residencia: document.getElementById("cfgRes").value
+  };
+  await db.collection("users").doc(user.uid).set(data, {merge:true});
+  showModalMessage("Perfil actualizado correctamente");
 }
 
-async function finalizePurchase(){
-  const name=document.getElementById("checkoutName").value;
-  const address=document.getElementById("checkoutAddress").value;
-  if(!name || !address) return alert("Llena los campos");
-  const order={user:auth.currentUser.uid, buyerName:name, address, products:cart, status:"pendiente", createdAt:firebase.firestore.FieldValue.serverTimestamp()};
-  await db.collection("orders").add(order);
-  cart = []; localStorage.setItem("cart", JSON.stringify(cart));
-  renderCart(); closeModal(); showModalMessage("Pedido enviado con éxito");
-}
-
-async function loadOrdersHistory() {
-  const history = document.getElementById("purchaseHistory");
-  db.collection("orders").orderBy("createdAt","desc").onSnapshot(snapshot=>{
-    let html="";
-    snapshot.forEach(doc=>{
-      const o = doc.data();
-      if(role !== "admin" && o.user !== auth.currentUser.uid) return;
-      html+=`<div style="background:#fff; padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid var(--border);">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <strong>Orden #${doc.id.substring(0,6)}</strong>
-            <span class="status-badge status-${o.status}">${o.status}</span>
-        </div>
-        <div style="font-size:0.85rem; color:var(--text-muted); margin-top:5px;">Para: ${o.buyerName} - ${o.address}</div>
-        ${role==='admin' ? `<select onchange="updateOrderStatus('${doc.id}',this.value)" style="margin-top:10px; padding:5px;"><option value="pendiente">Pendiente</option><option value="entregado">Entregado</option><option value="cancelada">Cancelada</option></select>` : ''}
-      </div>`;
+// --- GESTIÓN DE PRODUCTOS ---
+async function loadProducts(){
+  db.collection("products").onSnapshot(snap => {
+    let html = "";
+    snap.forEach(doc => {
+      const p = doc.data();
+      html += `
+        <div class="product-card">
+          <img src="${p.media || 'https://via.placeholder.com/150'}">
+          <div class="product-body">
+            <div style="font-weight:700;">${p.name}</div>
+            <div style="color:var(--primary); font-weight:800; margin: 5px 0;">$${p.price}</div>
+            <button class="btn btn-primary" style="width:100%; font-size:0.8rem" onclick="addToCart('${doc.id}','${p.name}',${p.price},'${p.media}')">Añadir al Carrito</button>
+            ${role==='admin' ? `<button class="btn btn-danger" style="width:100%; margin-top:5px; font-size:0.8rem" onclick="deleteProduct('${doc.id}')">Eliminar</button>` : ''}
+          </div>
+        </div>`;
     });
-    history.innerHTML = html || "<i>No hay pedidos.</i>";
+    document.getElementById("productsList").innerHTML = html;
   });
 }
-
-function updateOrderStatus(id,status){ db.collection("orders").doc(id).update({status}).then(()=>showModalMessage("Estado actualizado")); }
 
 async function uploadProduct(){
-  const name=document.getElementById("name").value;
-  const desc=document.getElementById("description").value;
-  const price=parseFloat(document.getElementById("price").value);
-  const mediaFile=document.getElementById("media").files[0];
-  if(!name || !price) return alert("Campos obligatorios");
-  let mediaUrl="";
-  if(mediaFile){
-    const data=new FormData(); data.append("file",mediaFile); data.append("upload_preset","vendors_preset");
-    const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`,{method:"POST",body:data});
-    const json = await res.json(); mediaUrl=json.secure_url;
+  const name = document.getElementById("name").value;
+  const price = parseFloat(document.getElementById("price").value);
+  const file = document.getElementById("media").files[0];
+  if(!name || !price) return alert("Llena los campos");
+
+  let url = "";
+  if(file){
+    const fd = new FormData(); fd.append("file", file); fd.append("upload_preset", "vendors_preset");
+    const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`, {method:"POST", body:fd});
+    const json = await res.json(); url = json.secure_url;
   }
-  db.collection("products").add({name, description:desc, price, media:mediaUrl}).then(()=>{ 
-    showModalMessage("Producto publicado"); 
-    document.getElementById("name").value=''; 
-    document.getElementById("price").value='';
+  await db.collection("products").add({name, price, media:url, description: document.getElementById("description").value});
+  showModalMessage("Producto subido");
+}
+
+// --- CARRITO ---
+function addToCart(id, name, price, media){
+  cart.push({id, name, price, media});
+  localStorage.setItem("cart", JSON.stringify(cart));
+  renderCart();
+  showModalMessage("Añadido!");
+}
+
+function renderCart(){
+  const list = document.getElementById("cartList");
+  if(cart.length === 0){ list.innerHTML = "<i>Carrito vacío</i>"; return; }
+  let html = "", total = 0;
+  cart.forEach((item, i) => {
+    html += `<div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span>${item.name}</span> <b>$${item.price}</b></div>`;
+    total += item.price;
   });
+  html += `<hr><div style="text-align:right; font-weight:800;">Total: $${total.toFixed(2)}</div>`;
+  list.innerHTML = html;
+}
+
+function emptyCart(){ cart = []; localStorage.removeItem("cart"); renderCart(); }
+
+function openCheckoutForm(){
+  if(cart.length === 0) return;
+  openModal(`
+    <h3>Finalizar Pedido</h3>
+    <div class="form-group"><label>Nombre de quien recibe</label><input id="chkName"></div>
+    <div class="form-group"><label>Dirección Exacta</label><textarea id="chkAddr"></textarea></div>
+    <div class="form-group">
+        <label>Forma de Pago</label>
+        <select id="chkPay" onchange="document.getElementById('payI').innerText = this.value === 'yappy' ? 'Yappy al 63892022' : 'ACH Banco General'">
+            <option value="yappy">Yappy</option>
+            <option value="ach">Transferencia ACH</option>
+        </select>
+    </div>
+    <p id="payI" style="font-size:0.8rem; color:var(--primary);">Yappy al 63892022</p>
+    <button class="btn btn-primary" style="width:100%" onclick="confirmPurchase()">Confirmar Compra</button>
+  `);
+}
+
+async function confirmPurchase(){
+  const order = {
+    userId: auth.currentUser.uid,
+    userEmail: auth.currentUser.email,
+    buyer: document.getElementById("chkName").value,
+    address: document.getElementById("chkAddr").value,
+    paymentMethod: document.getElementById("chkPay").value,
+    products: cart,
+    status: "pendiente",
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  await db.collection("orders").add(order);
+  emptyCart();
+  closeModal();
+  showModalMessage("Orden enviada");
+}
+
+// --- ÓRDENES (HISTORIAL Y ADMIN) ---
+function loadOrders(){
+  db.collection("orders").orderBy("createdAt", "desc").onSnapshot(snap => {
+    let userHtml = "", adminHtml = "";
+    snap.forEach(doc => {
+      const o = doc.data();
+      const total = o.products.reduce((s, p) => s + p.price, 0);
+      const card = `
+        <div class="order-item">
+          <div style="display:flex; justify-content:space-between; align-items:start;">
+            <div>
+                <strong>Orden #${doc.id.substring(0,5)}</strong><br>
+                <small>${o.buyer}</small>
+            </div>
+            <span class="status-badge status-${o.status.split(' ')[0]}">${o.status}</span>
+          </div>
+          <div style="margin: 10px 0; font-size:0.85rem;">
+            ${o.products.map(p => p.name).join(", ")} <br>
+            <strong>Total: $${total.toFixed(2)}</strong>
+          </div>
+          <button class="btn btn-outline" style="font-size:0.7rem; padding:5px 10px;" onclick="viewOrderDetails('${doc.id}')">Ver Detalles / Subir Pago</button>
+        </div>`;
+      
+      if(o.userId === auth.currentUser.uid) userHtml += card;
+      adminHtml += card;
+    });
+    document.getElementById("purchaseHistory").innerHTML = userHtml || "No tienes compras aún.";
+    if(role === "admin") document.getElementById("adminOrdersList").innerHTML = adminHtml;
+  });
+}
+
+async function viewOrderDetails(id){
+  const snap = await db.collection("orders").doc(id).get();
+  const o = snap.data();
+  const total = o.products.reduce((s, p) => s + p.price, 0);
+
+  let html = `
+    <h3>Detalles de Orden</h3>
+    <p><b>Estado:</b> ${o.status.toUpperCase()}</p>
+    <p><b>Dirección:</b> ${o.address}</p>
+    <p><b>Productos:</b> ${o.products.map(p => p.name).join(", ")}</p>
+    <p><b>Total a pagar:</b> $${total.toFixed(2)}</p>
+    <hr>
+  `;
+
+  if(role === "admin"){
+    html += `
+      <div class="form-group">
+        <label>Cambiar Estado (Admin)</label>
+        <select onchange="updateStatus('${id}', this.value)">
+            <option value="pendiente" ${o.status==='pendiente'?'selected':''}>Pendiente</option>
+            <option value="revision" ${o.status==='revision'?'selected':''}>En Revisión de Pago</option>
+            <option value="en camino" ${o.status==='en camino'?'selected':''}>En Camino</option>
+            <option value="entregado" ${o.status==='entregado'?'selected':''}>Entregado</option>
+        </select>
+      </div>`;
+  }
+
+  if(o.comprobante){
+    html += `<p><b>Comprobante:</b><br><img src="${o.comprobante}" style="width:100%; border-radius:8px; margin-top:5px;"></p>`;
+  } else {
+    html += `
+      <div class="form-group">
+        <label>Subir Comprobante de Pago</label>
+        <input type="file" onchange="uploadComprobante('${id}', this.files[0])">
+      </div>`;
+  }
+
+  if(o.signature){
+    html += `<p><b>Firma de Recibido:</b><br><img src="${o.signature}" style="width:100%; background:#eee;"></p>`;
+  } else if(o.status === 'entregado' || role === 'admin') {
+    html += `
+      <div class="form-group">
+        <label>Firma de Recepción</label>
+        <canvas id="canvas-${id}"></canvas>
+        <button class="btn btn-primary" style="width:100%; margin-top:5px;" onclick="saveSign('${id}')">Guardar Firma</button>
+      </div>`;
+  }
+
+  openModal(html);
+  if(document.getElementById(`canvas-${id}`)) initCanvas(`canvas-${id}`);
+}
+
+async function uploadComprobante(id, file){
+  const fd = new FormData(); fd.append("file", file); fd.append("upload_preset", "vendors_preset");
+  const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`, {method:"POST", body:fd});
+  const json = await res.json();
+  await db.collection("orders").doc(id).update({comprobante: json.secure_url, status: "revision"});
+  closeModal(); showModalMessage("Comprobante subido");
+}
+
+function updateStatus(id, status){ db.collection("orders").doc(id).update({status}); }
+
+// --- UTILS ---
+function setUpTabs(){
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll(".tab-btn, .tab-content").forEach(el => el.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(btn.dataset.tab).classList.add("active");
+    };
+  });
+}
+
+function openModal(content){ modal.style.display="flex"; modalBody.innerHTML=content; }
+function closeModal(){ modal.style.display="none"; }
+function showModalMessage(msg){ openModal(`<div style="text-align:center"><h4>${msg}</h4></div>`); setTimeout(closeModal, 1500); }
+
+function initCanvas(canvasId){
+    const c = document.getElementById(canvasId);
+    const ctx = c.getContext("2d");
+    let drawing = false;
+    c.onmousedown = (e) => { drawing = true; ctx.moveTo(e.offsetX, e.offsetY); };
+    c.onmousemove = (e) => { if(drawing) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); } };
+    c.onmouseup = () => drawing = false;
+}
+
+async function saveSign(id){
+    const url = document.getElementById(`canvas-${id}`).toDataURL();
+    await db.collection("orders").doc(id).update({signature: url});
+    closeModal(); showModalMessage("Firma guardada");
 }
 
 function filterProducts(){
-  const term=document.getElementById("search").value.toLowerCase();
-  const max=parseFloat(document.getElementById("maxPrice").value) || Infinity;
-  document.querySelectorAll("#productsList .product").forEach(p=>{
-    const name=p.querySelector(".product-info div").innerText.toLowerCase();
-    const price=parseFloat(p.querySelector(".product-price").innerText.replace('$',''));
-    p.style.display = (name.includes(term) && price<=max) ? "flex" : "none";
-  });
+    const t = document.getElementById("search").value.toLowerCase();
+    const m = parseFloat(document.getElementById("maxPrice").value) || Infinity;
+    document.querySelectorAll(".product-card").forEach(el => {
+        const name = el.querySelector("div").innerText.toLowerCase();
+        const price = parseFloat(el.querySelector("div:nth-child(2)").innerText.replace("$",""));
+        el.style.display = (name.includes(t) && price <= m) ? "block" : "none";
+    });
 }
-
 function deleteProduct(id){ if(confirm("¿Eliminar?")) db.collection("products").doc(id).delete(); }
-
 </script>
 </body>
 </html>
