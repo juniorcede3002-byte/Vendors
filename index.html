@@ -2,378 +2,279 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Vendor | Dashboard Integrado</title>
+<title>Vendor | Sistema Completo</title>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-
 <style>
-body{font-family:Arial;background:#f2f2f2;margin:0}
-header{background:#111;color:#fff;padding:15px;display:flex;justify-content:space-between;align-items:center;position:fixed;width:100%;top:0;z-index:100}
-button,input,textarea,select{padding:10px;border-radius:6px;border:1px solid #ccc;width:100%;margin-top:8px}
-button{background:#111;color:#fff;border:none;cursor:pointer}
-.container{max-width:1100px;margin:auto;padding:100px 20px;display:none}
-.tabs{display:flex;gap:5px;flex-wrap:wrap}
-.tabs button{flex:1;background:#ddd}
-.tabs button.active{background:#111;color:#fff}
-.tab-content{display:none;background:#fff;padding:20px;border-radius:8px;margin-top:10px}
-.tab-content.active{display:block}
-.product,.order{border:1px solid #ddd;padding:10px;margin-top:10px;border-radius:6px}
-.actions{display:flex;gap:5px;flex-wrap:wrap}
-.actions button{flex:1}
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);justify-content:center;align-items:center;z-index:999}
-.modal-content{background:#fff;padding:20px;border-radius:8px;max-width:650px;width:95%;max-height:90%;overflow:auto;position:relative}
-.close{position:absolute;top:10px;right:10px;background:red;color:#fff;border:none;border-radius:50%;width:30px;height:30px}
+body{margin:0;font-family:Arial;background:#f2f2f2}
+header{background:#111;color:#fff;padding:10px;display:flex;justify-content:space-between;align-items:center}
+header button{margin-left:5px}
+nav{background:#222;padding:10px;display:none}
+nav button{margin:5px}
+.view{display:none;padding:20px}
+.view.active{display:block}
+.card{background:#fff;padding:15px;margin:10px 0;border-radius:8px}
+input,select,textarea,button{width:100%;padding:8px;margin:5px 0}
 canvas{border:1px solid #000}
-.status-pendiente{color:#ff9800}
-.status-revision-de-pago{color:#2196f3}
-.status-pago-verificado{color:#4caf50}
-.status-en-camino{color:#9c27b0}
-.status-entregado{color:#000}
-.status-cancelada{color:#f44336}
+.status{font-weight:bold}
 </style>
 </head>
 
 <body>
 
 <header>
-  Vendor Dashboard
-  <div id="authButtons">
-    <button onclick="showLoginForm()">Login</button>
-    <button onclick="showRegisterForm()">Registro</button>
-    <button onclick="loginWithGoogle()">Google</button>
+  <b>Vendor Dashboard</b>
+  <div id="authBtns">
+    <button onclick="showLogin()">Login</button>
+    <button onclick="showRegister()">Registro</button>
+    <button onclick="googleLogin()">Google</button>
   </div>
-  <div id="userInfo" style="display:none">
+  <div id="userBar" style="display:none">
     <span id="userEmail"></span>
-    <button onclick="openConfig()">Configuración</button>
+    <button onclick="openConfig()">⚙️</button>
     <button onclick="logout()">Salir</button>
   </div>
 </header>
 
-<div class="container" id="dashboard">
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="productsTab">Productos</button>
-    <button class="tab-btn" data-tab="cartTab">Carrito</button>
-    <button class="tab-btn" data-tab="ordersTab">Mis Compras</button>
-    <button class="tab-btn" data-tab="adminTab">Admin</button>
-  </div>
+<nav id="nav">
+  <button onclick="showView('products')">Productos</button>
+  <button onclick="showView('cart')">Carrito</button>
+  <button onclick="showView('orders')">Mis Compras</button>
+  <button onclick="showView('admin')" id="adminBtn" style="display:none">Admin</button>
+</nav>
 
-  <div id="productsTab" class="tab-content active">
-    <h2>Productos</h2>
-    <div id="productsList"></div>
-  </div>
+<!-- LOGIN -->
+<div id="login" class="view active"></div>
 
-  <div id="cartTab" class="tab-content">
-    <h2>Carrito</h2>
-    <div id="cartList"></div>
-    <button onclick="openCheckoutForm()">Finalizar Compra</button>
-    <button onclick="emptyCart()">Vaciar</button>
-  </div>
-
-  <div id="ordersTab" class="tab-content">
-    <h2>Historial de Compras</h2>
-    <div id="purchaseHistory"></div>
-  </div>
-
-  <div id="adminTab" class="tab-content">
-    <h2>Panel Admin</h2>
-    <input id="name" placeholder="Nombre producto">
-    <textarea id="description" placeholder="Descripción"></textarea>
-    <input id="price" type="number" placeholder="Precio">
-    <input id="media" type="file">
-    <button onclick="uploadProduct()">Subir Producto</button>
-    <hr>
-    <h3>Gestión de Pedidos</h3>
-    <div id="ordersList"></div>
-  </div>
+<!-- PRODUCTS -->
+<div id="products" class="view">
+  <h2>Productos</h2>
+  <div id="productsList"></div>
 </div>
 
-<div class="modal" id="modal">
-  <div class="modal-content">
-    <button class="close" onclick="closeModal()">×</button>
-    <div id="modalBody"></div>
-  </div>
-</div>
+<!-- CART -->
+<div id="cart" class="view">
+  <h2>Carrito</h2>
+  <div id="cartList"></div>
 
-<script>
-/* =======================
-   FIREBASE CONFIG
-======================= */
-firebase.initializeApp({
-  apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
-  authDomain: "proyectovendor.firebaseapp.com",
-  projectId: "proyectovendor",
-  storageBucket: "proyectovendor.appspot.com",
-  messagingSenderId: "1033243956412",
-  appId: "1:1033243956412:web:2c5dcbf9e92f5c3c0e4c73"
-});
-const db = firebase.firestore();
-const auth = firebase.auth();
-const provider = new firebase.auth.GoogleAuthProvider();
-
-/* =======================
-   VARIABLES
-======================= */
-let cart = JSON.parse(localStorage.getItem("cart")) || [];
-let role = "usuario";
-
-/* =======================
-   MODAL
-======================= */
-function openModal(html){ modal.style.display="flex"; modalBody.innerHTML=html; }
-function closeModal(){ modal.style.display="none"; }
-function showMsg(msg){ openModal(`<p>${msg}</p>`); setTimeout(closeModal,1500); }
-
-/* =======================
-   AUTH
-======================= */
-auth.onAuthStateChanged(user=>{
-  if(user) initUser(user);
-  else{
-    dashboard.style.display="none";
-    authButtons.style.display="block";
-    userInfo.style.display="none";
-  }
-});
-
-function loginWithGoogle(){ auth.signInWithPopup(provider); }
-function logout(){ auth.signOut(); }
-
-function showLoginForm(){
-  openModal(`
-  <h3>Login</h3>
-  <input id="le" placeholder="Email">
-  <input id="lp" type="password" placeholder="Contraseña">
-  <button onclick="auth.signInWithEmailAndPassword(le.value,lp.value)">Entrar</button>`);
-}
-
-function showRegisterForm(){
-  openModal(`
-  <h3>Registro</h3>
-  <input id="re" placeholder="Email">
-  <input id="rp" type="password" placeholder="Contraseña">
-  <button onclick="auth.createUserWithEmailAndPassword(re.value,rp.value)">Crear</button>`);
-}
-
-/* =======================
-   INIT USER
-======================= */
-async function initUser(user){
-  userEmail.innerText=user.email;
-  authButtons.style.display="none";
-  userInfo.style.display="block";
-  dashboard.style.display="block";
-
-  role = user.email==="admin@vendors.com"?"admin":"usuario";
-  document.querySelector("[data-tab='adminTab']").style.display =
-    role==="admin"?"block":"none";
-
-  const ref=db.collection("users").doc(user.uid);
-  if(!(await ref.get()).exists){
-    ref.set({email:user.email,name:user.displayName||""});
-  }
-
-  loadProducts();
-  loadUserOrders();
-  loadOrders();
-  renderCart();
-}
-
-/* =======================
-   PRODUCTS
-======================= */
-function loadProducts(){
-  db.collection("products").onSnapshot(s=>{
-    productsList.innerHTML="";
-    s.forEach(d=>{
-      const p=d.data();
-      productsList.innerHTML+=`
-      <div class="product">
-        <b>${p.name}</b> - $${p.price}<br>${p.description}
-        ${p.media?`<img src="${p.media}" width="120">`:``}
-        <button onclick="addToCart('${d.id}','${p.name}',${p.price},'${p.media||''}')">Añadir</button>
-      </div>`;
-    });
-  });
-}
-
-async function uploadProduct(){
-  let file=media.files[0],url="";
-  if(file){
-    let fd=new FormData();
-    fd.append("file",file);
-    fd.append("upload_preset","vendors_preset");
-    let r=await fetch("https://api.cloudinary.com/v1_1/df79cjklp/upload",{method:"POST",body:fd});
-    url=(await r.json()).secure_url;
-  }
-  db.collection("products").add({
-    name:name.value,
-    description:description.value,
-    price:Number(price.value),
-    media:url
-  });
-  showMsg("Producto subido");
-}
-
-/* =======================
-   CART
-======================= */
-function addToCart(id,name,price,media){
-  cart.push({id,name,price,media});
-  localStorage.setItem("cart",JSON.stringify(cart));
-  renderCart();
-}
-
-function renderCart(){
-  cartList.innerHTML="";
-  let total=0;
-  cart.forEach((p,i)=>{
-    total+=p.price;
-    cartList.innerHTML+=`
-    <div class="product">${p.name} - $${p.price}
-    <button onclick="removeFromCart(${i})">Quitar</button></div>`;
-  });
-  cartList.innerHTML+=`<b>Total: $${total.toFixed(2)}</b>`;
-}
-
-function removeFromCart(i){
-  cart.splice(i,1);
-  localStorage.setItem("cart",JSON.stringify(cart));
-  renderCart();
-}
-
-function emptyCart(){ cart=[]; renderCart(); }
-
-/* =======================
-   CHECKOUT
-======================= */
-function openCheckoutForm(){
-  openModal(`
   <h3>Finalizar compra</h3>
-  <input id="cn" placeholder="Nombre">
-  <input id="cp" placeholder="Teléfono">
-  <input id="ca" placeholder="Dirección">
-  <select id="pm" onchange="updatePayInfo()">
+  <input id="cName" placeholder="Nombre completo">
+  <input id="cPhone" placeholder="Teléfono">
+  <input id="cAddress" placeholder="Dirección">
+
+  <select id="cPayment" onchange="paymentInfo()">
+    <option value="">Método de pago</option>
     <option value="yappy">Yappy</option>
     <option value="ach">ACH</option>
     <option value="efectivo">Efectivo</option>
   </select>
-  <div id="payInfo"></div>
-  <button onclick="finalizePurchase()">Confirmar</button>`);
-  updatePayInfo();
+
+  <div id="paymentText"></div>
+
+  <input type="file" id="paymentProof">
+  <button onclick="finalizeOrder()">Confirmar Pedido</button>
+</div>
+
+<!-- USER ORDERS -->
+<div id="orders" class="view">
+  <h2>Historial de pedidos</h2>
+  <div id="ordersList"></div>
+</div>
+
+<!-- ADMIN -->
+<div id="admin" class="view">
+  <h2>Panel Admin</h2>
+
+  <h3>Subir producto</h3>
+  <input id="pName" placeholder="Nombre">
+  <input id="pPrice" type="number" placeholder="Precio">
+  <input type="file" id="pFile">
+  <button onclick="uploadProduct()">Subir</button>
+
+  <h3>Pedidos</h3>
+  <div id="adminOrders"></div>
+</div>
+
+<!-- MODAL -->
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6)">
+  <div style="background:#fff;padding:20px;margin:50px auto;max-width:400px">
+    <div id="modalBody"></div>
+    <button onclick="closeModal()">Cerrar</button>
+  </div>
+</div>
+
+<script>
+/* ================= FIREBASE ================= */
+firebase.initializeApp({
+  apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
+  authDomain: "proyectovendor.firebaseapp.com",
+  projectId: "proyectovendor",
+  storageBucket: "proyectovendor.firebasestorage.app",
+  messagingSenderId: "1038115164902",
+  appId: "1:1038115164902:web:3d72bd44f3e5da487c2127"
+});
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+const provider = new firebase.auth.GoogleAuthProvider();
+
+/* ================= CLOUDINARY ================= */
+const CLOUD_NAME = "df79cjklp";
+const UPLOAD_PRESET = "vendors_preset";
+const CLOUD_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`;
+
+/* ================= GLOBAL ================= */
+let user=null;
+let role="user";
+let cart=[];
+
+/* ================= AUTH ================= */
+auth.onAuthStateChanged(async u=>{
+  if(u){
+    user=u;
+    userEmail.innerText=u.email;
+    authBtns.style.display="none";
+    userBar.style.display="block";
+    nav.style.display="block";
+
+    const ref=db.collection("users").doc(u.uid);
+    const snap=await ref.get();
+    if(!snap.exists) await ref.set({email:u.email,role:"user"});
+    role=(await ref.get()).data().role;
+    if(role==="admin") adminBtn.style.display="inline-block";
+
+    loadProducts(); loadOrders(); loadAdminOrders();
+    showView("products");
+  }else{
+    nav.style.display="none";
+    authBtns.style.display="block";
+    userBar.style.display="none";
+    showLogin();
+  }
+});
+
+function showLogin(){
+  login.innerHTML=`
+  <h2>Login</h2>
+  <input id="lEmail" placeholder="Email">
+  <input id="lPass" type="password" placeholder="Contraseña">
+  <button onclick="loginUser()">Entrar</button>`;
+  showView("login");
+}
+function showRegister(){
+  login.innerHTML=`
+  <h2>Registro</h2>
+  <input id="rEmail" placeholder="Email">
+  <input id="rPass" type="password" placeholder="Contraseña">
+  <button onclick="registerUser()">Crear cuenta</button>`;
+  showView("login");
+}
+function loginUser(){auth.signInWithEmailAndPassword(lEmail.value,lPass.value);}
+function registerUser(){auth.createUserWithEmailAndPassword(rEmail.value,rPass.value);}
+function googleLogin(){auth.signInWithPopup(provider);}
+function logout(){auth.signOut();}
+
+/* ================= NAV ================= */
+function showView(id){
+ document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+ document.getElementById(id).classList.add("active");
 }
 
-function updatePayInfo(){
-  payInfo.innerText =
-    pm.value==="yappy"?"Yappy → +507 63892022 Emanuel Cedeño":
-    pm.value==="ach"?"ACH → Banco General 0454966165208":
-    "Pago en efectivo al recibir";
-}
-
-async function finalizePurchase(){
-  await db.collection("orders").add({
-    user:auth.currentUser.uid,
-    userEmail:auth.currentUser.email,
-    buyerName:cn.value,
-    phone:cp.value,
-    address:ca.value,
-    products:cart,
-    payment:pm.value,
-    status:"pendiente",
-    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+/* ================= PRODUCTS ================= */
+function loadProducts(){
+ db.collection("products").onSnapshot(s=>{
+  productsList.innerHTML="";
+  s.forEach(d=>{
+   const p=d.data();
+   productsList.innerHTML+=`
+   <div class="card">
+     <b>${p.name}</b><br>$${p.price}
+     <button onclick="addToCart('${d.id}',${p.price})">Añadir</button>
+   </div>`;
   });
-  cart=[];
-  renderCart();
-  closeModal();
-  showMsg("Compra creada");
+ });
+}
+function addToCart(id,price){
+ cart.push({id,price});
+ renderCart();
+}
+function renderCart(){
+ cartList.innerHTML="";
+ let total=0;
+ cart.forEach(i=>{total+=i.price;cartList.innerHTML+=`<div>$${i.price}</div>`});
+ cartList.innerHTML+=`<b>Total: $${total}</b>`;
 }
 
-/* =======================
-   USER ORDERS
-======================= */
-function loadUserOrders(){
-  db.collection("orders").where("user","==",auth.currentUser.uid)
-  .onSnapshot(s=>{
-    purchaseHistory.innerHTML="";
-    s.forEach(d=>{
-      const o=d.data();
-      purchaseHistory.innerHTML+=`
-      <div class="order">
-        Estado: <b>${o.status}</b>
-        <button onclick="uploadProof('${d.id}')">Subir comprobante</button>
-      </div>`;
-    });
-  });
+/* ================= PAYMENT ================= */
+function paymentInfo(){
+ if(cPayment.value==="yappy") paymentText.innerHTML="Yappy → +507 63892022 Emanuel Cedeño";
+ if(cPayment.value==="ach") paymentText.innerHTML="ACH → Banco General 0454966165208";
+ if(cPayment.value==="efectivo") paymentText.innerHTML="Efectivo al recibir";
 }
 
-function uploadProof(id){
-  openModal(`<input type="file" onchange="sendProof('${id}',this.files[0])">`);
+/* ================= ORDER ================= */
+async function finalizeOrder(){
+ const order={
+  user:user.uid,
+  name:cName.value,
+  phone:cPhone.value,
+  address:cAddress.value,
+  payment:cPayment.value,
+  items:cart,
+  status:"pendiente",
+  created:new Date()
+ };
+ await db.collection("orders").add(order);
+ cart=[];
+ alert("Pedido enviado");
+ showView("orders");
 }
 
-async function sendProof(id,file){
-  let fd=new FormData();
-  fd.append("file",file);
-  fd.append("upload_preset","vendors_preset");
-  let r=await fetch("https://api.cloudinary.com/v1_1/df79cjklp/upload",{method:"POST",body:fd});
-  let url=(await r.json()).secure_url;
-  db.collection("orders").doc(id).update({comprobante:url});
-  showMsg("Comprobante subido");
-}
-
-/* =======================
-   ADMIN ORDERS
-======================= */
+/* ================= USER ORDERS ================= */
 function loadOrders(){
-  if(role!=="admin")return;
-  db.collection("orders").onSnapshot(s=>{
-    ordersList.innerHTML="";
-    s.forEach(d=>{
-      const o=d.data();
-      ordersList.innerHTML+=`
-      <div class="order">
-        ${o.userEmail} - ${o.status}
-        <select onchange="db.collection('orders').doc('${d.id}').update({status:this.value})">
-          <option>pendiente</option>
-          <option>revision de pago</option>
-          <option>pago verificado</option>
-          <option>en camino</option>
-          <option>entregado</option>
-        </select>
-        ${o.status==="en camino"?`<button onclick="captureSignature('${d.id}')">Firma</button>`:""}
-      </div>`;
-    });
+ db.collection("orders").where("user","==",user.uid).onSnapshot(s=>{
+  ordersList.innerHTML="";
+  s.forEach(d=>{
+   const o=d.data();
+   ordersList.innerHTML+=`<div class="card">Estado: ${o.status}</div>`;
   });
+ });
 }
 
-/* =======================
-   SIGNATURE
-======================= */
-function captureSignature(id){
-  openModal(`
-  <h3>Firma</h3>
-  <canvas id="sig" width="400" height="200"></canvas>
-  <button onclick="saveSignature('${id}')">Guardar</button>`);
-  const c=sig,ctx=c.getContext("2d");
-  let d=false;
-  c.onmousedown=()=>d=true;
-  c.onmouseup=()=>{d=false;ctx.beginPath()};
-  c.onmousemove=e=>{
-    if(!d)return;
-    ctx.lineWidth=2;
-    ctx.lineTo(e.offsetX,e.offsetY);
-    ctx.stroke();
-  };
+/* ================= ADMIN ================= */
+function loadAdminOrders(){
+ if(role!=="admin") return;
+ db.collection("orders").onSnapshot(s=>{
+  adminOrders.innerHTML="";
+  s.forEach(d=>{
+   const o=d.data();
+   adminOrders.innerHTML+=`
+   <div class="card">
+     ${o.name}
+     <select onchange="db.collection('orders').doc('${d.id}').update({status:this.value})">
+       <option>pendiente</option>
+       <option>pago verificado</option>
+       <option>en camino</option>
+       <option>entregado</option>
+     </select>
+   </div>`;
+  });
+ });
 }
 
-function saveSignature(id){
-  db.collection("orders").doc(id)
-  .update({deliveryProof:sig.toDataURL(),status:"entregado"});
-  closeModal();
-  showMsg("Entrega confirmada");
+/* ================= UPLOAD PRODUCT ================= */
+async function uploadProduct(){
+ const data=new FormData();
+ data.append("file",pFile.files[0]);
+ data.append("upload_preset",UPLOAD_PRESET);
+ const res=await fetch(CLOUD_URL,{method:"POST",body:data});
+ const json=await res.json();
+ await db.collection("products").add({name:pName.value,price:+pPrice.value,media:json.secure_url});
+ alert("Producto subido");
 }
 </script>
 </body>
