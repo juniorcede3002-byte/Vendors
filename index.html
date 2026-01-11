@@ -2,540 +2,429 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vendors | Premium Experience</title>
+<title>Vendor | Dashboard Integrado</title>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
-
 <style>
-:root {
-    --primary: #000000;
-    --accent: #2563eb;
-    --bg: #f8fafc;
-    --card: #ffffff;
-    --text: #1e293b;
-    --muted: #64748b;
-    --radius: 12px;
-    --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-}
-
-body { 
-    font-family: 'Plus Jakarta Sans', sans-serif; 
-    background: var(--bg); 
-    color: var(--text); 
-    margin: 0; 
-    padding: 0; 
-    line-height: 1.6;
-}
-
-/* --- HEADER --- */
-header { 
-    background: rgba(0, 0, 0, 0.85); 
-    backdrop-filter: blur(10px);
-    color: #fff; 
-    padding: 1rem 5%; 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    position: fixed; 
-    top: 0; 
-    width: 100%; 
-    z-index: 1000; 
-    box-sizing: border-box;
-}
-
-header button { 
-    background: #fff; 
-    color: #000; 
-    border: none; 
-    padding: 8px 18px; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    font-weight: 600;
-    font-size: 0.9rem;
-    transition: 0.3s;
-}
-
-header button:hover { 
-    background: var(--accent); 
-    color: #fff; 
-    transform: translateY(-2px);
-}
-
-/* --- CONTAINER --- */
-.container { 
-    max-width: 1100px; 
-    margin: auto; 
-    padding: 120px 20px 40px; 
-    display: none; 
-}
-
-/* --- TABS --- */
-.tabs { 
-    display: flex; 
-    gap: 10px; 
-    margin-bottom: 25px; 
-    background: #e2e8f0;
-    padding: 5px;
-    border-radius: 14px;
-}
-
-.tabs button { 
-    flex: 1; 
-    padding: 12px; 
-    cursor: pointer; 
-    border: none; 
-    border-radius: 10px; 
-    background: transparent; 
-    color: var(--muted);
-    font-weight: 600;
-    transition: 0.3s; 
-}
-
-.tabs button.active { 
-    background: #fff; 
-    color: var(--primary); 
-    box-shadow: var(--shadow);
-}
-
-/* --- CARDS & CONTENT --- */
-.tab-content { 
-    display: none; 
-    animation: fadeIn 0.4s ease;
-}
-
-.tab-content.active { display: block; }
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.card-view {
-    background: var(--card); 
-    padding: 30px; 
-    border-radius: var(--radius); 
-    box-shadow: var(--shadow);
-}
-
-/* --- FORM ELEMENTS --- */
-input, textarea, select { 
-    width: 100%; 
-    padding: 14px; 
-    margin-top: 10px; 
-    border-radius: 10px; 
-    border: 1px solid #e2e8f0; 
-    box-sizing: border-box;
-    font-size: 1rem;
-}
-
-input:focus { outline: 2px solid var(--accent); border-color: transparent; }
-
-button.primary-btn { 
-    background: var(--primary); 
-    color: #fff; 
-    border: none; 
-    padding: 14px;
-    font-weight: 700;
-    border-radius: 10px;
-    cursor: pointer; 
-    transition: 0.3s;
-    margin-top: 15px;
-}
-
-button.primary-btn:hover { background: var(--accent); }
-
-/* --- PRODUCT GRID --- */
-#productsList { 
-    display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
-    gap: 20px; 
-    margin-top: 20px; 
-}
-
-.product { 
-    background: #fff; 
-    border: 1px solid #edf2f7; 
-    padding: 20px; 
-    border-radius: 16px; 
-    transition: 0.3s;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-.product:hover { 
-    transform: translateY(-5px); 
-    box-shadow: 0 10px 20px rgba(0,0,0,0.05); 
-}
-
-.product strong { font-size: 1.2rem; display: block; margin-bottom: 5px; }
-.product img { width: 100%; border-radius: 10px; margin: 15px 0; object-fit: cover; height: 200px; }
-
-/* --- ORDERS --- */
-.order { 
-    border: 1px solid #e2e8f0; 
-    padding: 20px; 
-    margin-top: 15px; 
-    border-radius: 12px; 
-    background: #fff; 
-}
-
-.status-pendiente { color: #f59e0b; background: #fffbeb; padding: 4px 10px; border-radius: 6px; }
-.status-revision-de-pago { color: #2563eb; background: #eff6ff; padding: 4px 10px; border-radius: 6px; }
-.status-pago-verificado { color: #10b981; background: #ecfdf5; padding: 4px 10px; border-radius: 6px; }
-
-/* --- MODAL --- */
-.modal { 
-    display: none; 
-    position: fixed; 
-    top: 0; left: 0; width: 100%; height: 100%; 
-    background: rgba(15, 23, 42, 0.6); 
-    backdrop-filter: blur(4px);
-    justify-content: center; align-items: center; 
-    z-index: 2000;
-}
-
-.modal-content { 
-    background: #fff; 
-    padding: 40px; 
-    border-radius: 20px; 
-    max-width: 500px; 
-    width: 90%; 
-    position: relative; 
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
-
-.modal-content button.close { 
-    position: absolute; top: 20px; right: 20px; 
-    background: #f1f5f9; border: none; border-radius: 50%; 
-    width: 35px; height: 35px; color: #64748b; cursor: pointer; 
-}
+body { font-family: Arial,sans-serif; background:#f2f2f2; margin:0; padding:0; }
+header { background:#111; color:#fff; padding:15px; display:flex; justify-content:space-between; align-items:center; position:fixed; top:0; width:100%; z-index:100; }
+header button { background:#fff; color:#111; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; }
+.container { max-width:1000px; margin:auto; padding:100px 20px 20px; display:none; }
+.tabs { display:flex; gap:5px; margin-bottom:15px; flex-wrap:wrap; }
+.tabs button { flex:1; padding:10px; cursor:pointer; border:none; border-radius:5px; background:#ddd; transition:0.2s; }
+.tabs button.active { background:#111; color:#fff; }
+.tab-content { display:none; background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+.tab-content.active { display:block; }
+input, textarea, select, button { width:100%; padding:10px; margin-top:10px; border-radius:5px; border:1px solid #ccc; }
+button { background:#111; color:#fff; border:none; cursor:pointer; transition:0.2s; }
+button:hover { opacity:0.9; }
+.product, .order { border:1px solid #ddd; padding:10px; margin-top:15px; border-radius:8px; background:#fafafa; }
+.actions { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; }
+.actions button { flex:1; display:flex; align-items:center; justify-content:center; gap:5px; }
+.status-pendiente { color:#ff9800; font-weight:bold; }
+.status-revision-de-pago { color:#2196f3; font-weight:bold; }
+.status-pago-verificado { color:#4caf50; font-weight:bold; }
+.status-en-camino { color:#9c27b0; font-weight:bold; }
+.status-entregado { color:#000; font-weight:bold; }
+.status-cancelada { color:#f44336; font-weight:bold; }
+.modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:1000;}
+.modal-content { background:#fff; padding:20px; border-radius:8px; max-width:600px; width:90%; position:relative; box-shadow:0 2px 15px rgba(0,0,0,0.3); max-height:90%; overflow:auto; }
+.modal-content button.close { position:absolute; top:10px; right:10px; background:#f00; border:none; border-radius:50%; width:30px; height:30px; color:#fff; cursor:pointer; font-weight:bold; font-size:16px; }
+canvas { border:1px solid #000; border-radius:5px; }
 </style>
 </head>
 <body>
 
 <header>
-  <div style="font-weight: 800; font-size: 1.4rem; letter-spacing: -1px;">VENDOR.</div>
-  <div id="authButtons">
-    <button onclick="showLoginForm()"><i class="fa fa-sign-in-alt"></i> Login</button>
-    <button onclick="showRegisterForm()" style="background:transparent; color:#fff;">Crear Cuenta</button>
-  </div>
-  <div id="userInfo" style="display:none; align-items: center; gap: 15px;">
-    <span id="userEmail" style="font-size: 0.85rem; opacity: 0.8;"></span>
-    <button onclick="openConfig()"><i class="fa fa-user-gear"></i></button>
-    <button onclick="logout()" style="background:#ff4444; color:#fff;"><i class="fa fa-power-off"></i></button>
-  </div>
+  Vendor Dashboard
+  <div id="authButtons">
+    <button onclick="showLoginForm()">Iniciar Sesión</button>
+    <button onclick="showRegisterForm()">Crear Cuenta</button>
+    <button onclick="loginWithGoogle()">Google</button>
+  </div>
+  <div id="userInfo" style="display:none;">
+    <span id="userEmail"></span>
+    <button onclick="logout()">Cerrar Sesión</button>
+    <button onclick="openConfig()">Configuración</button>
+  </div>
 </header>
 
 <div class="container" id="dashboard">
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="productsTab">Tienda</button>
-    <button class="tab-btn" data-tab="cartTab">Carrito</button>
-    <button class="tab-btn" data-tab="ordersTab">Mis Pedidos</button>
-    <button class="tab-btn" data-tab="adminTab" id="adminTabBtn" style="display:none;">Panel Admin</button>
-  </div>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="productsTab">Productos</button>
+    <button class="tab-btn" data-tab="cartTab">Carrito</button>
+    <button class="tab-btn" data-tab="ordersTab">Mis Compras</button>
+    <button class="tab-btn" data-tab="adminTab">Admin</button>
+  </div>
 
-    <div id="productsTab" class="tab-content active">
-    <div class="card-view" style="margin-bottom: 20px;">
-      <h2 style="margin-top:0">Catálogo</h2>
-      <div style="display:flex; gap:10px;">
-        <input id="search" placeholder="🔍 Buscar productos..." oninput="filterProducts()" style="margin:0">
-        <input id="maxPrice" type="number" placeholder="Precio Max" oninput="filterProducts()" style="margin:0; width: 150px;">
-      </div>
+  <div id="productsTab" class="tab-content active">
+    <h2>Productos</h2>
+    <input id="search" placeholder="Buscar por nombre" oninput="filterProducts()">
+    <input id="maxPrice" type="number" placeholder="Precio máximo" oninput="filterProducts()">
+    <div id="productsList"></div>
+  </div>
+
+  <div id="cartTab" class="tab-content">
+    <h2>Carrito</h2>
+    <div id="cartList"><i>Carrito vacío</i></div>
+    <button onclick="openCheckoutForm()">Finalizar Compra</button>
+    <button onclick="emptyCart()">Vaciar Carrito</button>
+  </div>
+
+  <div id="ordersTab" class="tab-content">
+    <h2>Historial de Compras</h2>
+    <div id="purchaseHistory"></div>
+  </div>
+
+  <div id="adminTab" class="tab-content">
+    <div id="adminPanel">
+      <h3>Subir Producto</h3>
+      <input id="name" placeholder="Nombre">
+      <textarea id="description" placeholder="Descripción"></textarea>
+      <input id="price" type="number" placeholder="Precio">
+      <input id="media" type="file" accept="image/*,video/*">
+      <button onclick="uploadProduct()">Subir</button>
+
+      <h3>Gestión de Pedidos</h3>
+      <div id="ordersList"></div>
     </div>
-    <div id="productsList"></div>
-  </div>
-
-    <div id="cartTab" class="tab-content">
-    <div class="card-view">
-      <h2>Tu Carrito</h2>
-      <div id="cartList" style="margin-bottom: 20px;"><i>Tu carrito está esperando ser llenado...</i></div>
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-        <button class="primary-btn" onclick="checkout()" style="background: var(--accent);">Pagar Ahora</button>
-        <button class="primary-btn" onclick="emptyCart()" style="background: #f1f5f9; color:#64748b;">Vaciar</button>
-      </div>
-    </div>
-  </div>
-
-    <div id="ordersTab" class="tab-content">
-    <div class="card-view">
-      <h2>Historial de Compras</h2>
-      <div id="purchaseHistory"></div>
-    </div>
-  </div>
-
-    <div id="adminTab" class="tab-content">
-    <div class="card-view">
-      <h3>Publicar Nuevo Producto</h3>
-      <input id="name" placeholder="Nombre del producto">
-      <textarea id="description" placeholder="Describe el producto..."></textarea>
-      <input id="price" type="number" placeholder="Precio en USD">
-      <input id="media" type="file" accept="image/*,video/*">
-      <button class="primary-btn" onclick="uploadProduct()">Subir al Catálogo</button>
-
-      <h3 style="margin-top:40px;">Gestión de Pedidos</h3>
-      <div id="ordersList"></div>
-    </div>
-  </div>
+  </div>
 </div>
 
 <div id="modal" class="modal">
-  <div class="modal-content">
-    <button class="close" onclick="closeModal()">&times;</button>
-    <div id="modalBody"></div>
-  </div>
+  <div class="modal-content">
+    <button class="close" onclick="closeModal()">&times;</button>
+    <div id="modalBody"></div>
+  </div>
 </div>
 
 <script>
-// --- Lógica se mantiene igual para funcionalidad ---
+// --- Firebase --- 
 firebase.initializeApp({
-  apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
-  authDomain: "proyectovendor.firebaseapp.com",
-  projectId: "proyectovendor"
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_AUTH_DOMAIN",
+  projectId: "TU_PROJECT_ID"
 });
 const db = firebase.firestore();
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
 
+// --- Variables ---
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 let role = "usuario";
-
 const modal = document.getElementById("modal");
 const modalBody = document.getElementById("modalBody");
+
+// --- Modal ---
 function openModal(content){ modal.style.display="flex"; modalBody.innerHTML=content; }
 function closeModal(){ modal.style.display="none"; }
-function showModalMessage(msg){ openModal(`<div style="text-align:center"><i class="fa fa-check-circle" style="font-size:3rem; color:var(--accent)"></i><p style="font-weight:600; margin-top:15px;">${msg}</p></div>`); setTimeout(closeModal,1500); }
+function showModalMessage(msg){ openModal(`<p>${msg}</p>`); setTimeout(closeModal,1500); }
 
+// --- Auth ---
 auth.onAuthStateChanged(user => {
-    if(user){ initUser(user); } 
-    else { 
-        document.getElementById("authButtons").style.display = "flex"; 
-        document.getElementById("userInfo").style.display = "none"; 
-        document.getElementById("dashboard").style.display="none"; 
-    }
+  if(user){ initUser(user); }
+  else { document.getElementById("authButtons").style.display="inline-block"; document.getElementById("userInfo").style.display="none"; document.getElementById("dashboard").style.display="none"; }
 });
+function showLoginForm(){ openModal(`<h3>Iniciar Sesión</h3>
+<input id="loginEmail" placeholder="Email"><input id="loginPass" type="password" placeholder="Contraseña">
+<button onclick="login()">Entrar</button>
+<button onclick="showResetPass()">Olvidé mi contraseña</button>
+<button onclick="loginWithGoogle()">Google</button>`);}
+function showRegisterForm(){ openModal(`<h3>Crear Cuenta</h3>
+<input id="regEmail" placeholder="Email"><input id="regPass" type="password" placeholder="Contraseña">
+<button onclick="register()">Registrar</button>
+<button onclick="loginWithGoogle()">Google</button>`);}
+function showResetPass(){ const email=prompt("Ingrese su correo:"); if(email) auth.sendPasswordResetEmail(email).then(()=>alert("Correo enviado")).catch(e=>alert(e.message));}
+function login(){ const email=document.getElementById("loginEmail").value; const pass=document.getElementById("loginPass").value; auth.signInWithEmailAndPassword(email,pass).then(u=>{closeModal(); initUser(u.user);}).catch(e=>alert(e.message));}
+function register(){ const email=document.getElementById("regEmail").value; const pass=document.getElementById("regPass").value; auth.createUserWithEmailAndPassword(email,pass).then(u=>{closeModal(); initUser(u.user);}).catch(e=>alert(e.message));}
+function loginWithGoogle(){ auth.signInWithPopup(provider).then(r=>{closeModal(); initUser(r.user);}).catch(e=>alert(e.message));}
+function logout(){ auth.signOut().then(()=>location.reload());}
 
-function showLoginForm(){
-  openModal(`<h3>Iniciar Sesión</h3>
-  <input id="loginEmail" placeholder="Correo electrónico">
-  <input id="loginPass" placeholder="Contraseña" type="password">
-  <button class="primary-btn" onclick="login()">Entrar al Sistema</button>
-  <button onclick="loginWithGoogle()" style="width:100%; background:#fff; border:1px solid #ddd; padding:10px; border-radius:10px; margin-top:10px; cursor:pointer;"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" style="vertical-align:middle; margin-right:8px;"> Google</button>`);
-}
-
-function showRegisterForm(){
-  openModal(`<h3>Nueva Cuenta</h3>
-  <input id="regEmail" placeholder="Tu mejor Email">
-  <input id="regPass" placeholder="Crea una contraseña segura" type="password">
-  <button class="primary-btn" onclick="register()">Crear Mi Cuenta</button>`);
-}
-
-function login(){
-  const email=document.getElementById("loginEmail").value;
-  const pass=document.getElementById("loginPass").value;
-  auth.signInWithEmailAndPassword(email,pass).then(u=>{ closeModal(); initUser(u.user); }).catch(e=>alert(e.message));
-}
-
-function register(){
-  const email=document.getElementById("regEmail").value;
-  const pass=document.getElementById("regPass").value;
-  auth.createUserWithEmailAndPassword(email,pass).then(u=>{ closeModal(); initUser(u.user); }).catch(e=>alert(e.message));
-}
-
-function loginWithGoogle(){
-  auth.signInWithPopup(provider).then(result=>{ closeModal(); initUser(result.user); }).catch(e=>alert(e.message));
-}
-
-function logout(){ auth.signOut().then(()=>location.reload()); }
-
+// --- Init User ---
 async function initUser(user){
-  document.getElementById("authButtons").style.display="none";
-  document.getElementById("userInfo").style.display="flex";
-  document.getElementById("userEmail").innerText=user.email;
+  document.getElementById("authButtons").style.display="none";
+  document.getElementById("userInfo").style.display="inline-block";
+  document.getElementById("userEmail").innerText=user.email;
 
-  const docRef = db.collection("users").doc(user.uid);
-  const docSnap = await docRef.get();
-  if(!docSnap.exists){
-    await docRef.set({pais:'',residencia:'',name:user.displayName||'',email:user.email, role:"usuario"});
-  }
+  const docRef = db.collection("users").doc(user.uid);
+  const docSnap = await docRef.get();
+  if(!docSnap.exists){ await docRef.set({pais:'',residencia:'',name:user.displayName||'',email:user.email}); }
 
-  role = (user.email==="admin@vendors.com") ? "admin" : "usuario";
-  if(role === "admin") document.getElementById("adminTabBtn").style.display = "block";
-
-  document.getElementById("dashboard").style.display="block";
-  setUpTabs();
-  loadProducts();
-  loadOrders(); 
-  loadUserOrders(); 
-  renderCart();
+  role = (user.email==="admin@vendors.com") ? "admin" : "usuario";
+  document.getElementById("dashboard").style.display="block";
+  toggleAdmin(); setUpTabs(); loadProducts(); loadOrders(); loadUserOrders(); renderCart();
 }
 
-function setUpTabs(){
-  document.querySelectorAll(".tab-btn").forEach(btn=>{
-    btn.addEventListener("click",()=>{
-      document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
-      btn.classList.add("active");
-      document.querySelectorAll(".tab-content").forEach(tab=>tab.classList.remove("active"));
-      document.getElementById(btn.dataset.tab).classList.add("active");
-    });
-  });
+// --- Configuración ---
+async function openConfig(){
+  const user = auth.currentUser;
+  const docSnap = await db.collection("users").doc(user.uid).get();
+  const data = docSnap.data();
+  openModal(`<h3>Configuración</h3>
+<input id="configName" placeholder="Nombre" value="${data.name||''}">
+<input id="configEmail" placeholder="Email" value="${data.email||''}">
+<input id="configCountry" placeholder="País" value="${data.pais||''}">
+<input id="configResidence" placeholder="Residencia" value="${data.residencia||''}">
+<input id="configPass" placeholder="Nueva contraseña" type="password">
+<button onclick="updateConfig()">Guardar</button>`);
+}
+async function updateConfig(){
+  const user = auth.currentUser;
+  const name=document.getElementById("configName").value;
+  const email=document.getElementById("configEmail").value;
+  const pais=document.getElementById("configCountry").value;
+  const residencia=document.getElementById("configResidence").value;
+  const pass=document.getElementById("configPass").value;
+
+  await db.collection("users").doc(user.uid).update({name,email,pais,residencia});
+  if(name) user.updateProfile({displayName:name});
+  if(email) user.updateEmail(email).catch(e=>alert(e.message));
+  if(pass) user.updatePassword(pass).catch(e=>alert(e.message));
+  showModalMessage("Configuración actualizada"); closeModal();
 }
 
+// --- Tabs ---
+function setUpTabs(){ document.querySelectorAll(".tab-btn").forEach(btn=>{ btn.addEventListener("click",()=>{ document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active")); btn.classList.add("active"); document.querySelectorAll(".tab-content").forEach(tab=>tab.classList.remove("active")); document.getElementById(btn.dataset.tab).classList.add("active"); });});}
+function toggleAdmin(){ if(role==="admin"){ document.getElementById("adminPanel").style.display="block"; document.querySelector("[data-tab='adminTab']").style.display="inline-block"; }else{ document.getElementById("adminPanel").style.display="none"; document.querySelector("[data-tab='adminTab']").style.display="none";}}
+
+// --- Productos ---
 async function loadProducts(){
-  const productsList = document.getElementById("productsList");
-  db.collection("products").onSnapshot(snapshot=>{
-    let html="";
-    snapshot.forEach(doc=>{
-      const p = doc.data();
-      html+=`
-      <div class="product">
-        <div>
-          <strong>${p.name}</strong>
-          <p style="color:var(--muted); font-size:0.85rem;">${p.description}</p>
-          ${p.media ? `<img src="${p.media}">` : ''}
-          <div style="font-weight:700; font-size:1.3rem;">$${p.price}</div>
-        </div>
-        <div class="actions" style="display:flex; gap:5px; margin-top:15px;">
-          <button class="primary-btn" style="flex:2; margin:0;" onclick="addToCart('${doc.id}','${p.name}',${p.price},'${p.media||''}')"><i class="fa fa-cart-plus"></i></button>
-          ${role==='admin'?`<button onclick="deleteProduct('${doc.id}')" style="background:#fee2e2; color:#ef4444; border:none; border-radius:10px; padding:10px; flex:1;"><i class="fa fa-trash"></i></button>`:''}
-        </div>
-      </div>`;
-    });
-    productsList.innerHTML = html || "<i>No hay productos disponibles</i>";
-  });
+  const productsList = document.getElementById("productsList");
+  productsList.innerHTML = "Cargando...";
+  db.collection("products").onSnapshot(snapshot=>{
+    let html=""; snapshot.forEach(doc=>{ const p=doc.data();
+      html+=`<div class="product"><strong>${p.name}</strong> - $${p.price}<br>${p.description}<br>
+      ${p.media?`<img src="${p.media}" width="150">`:''}
+      <div class="actions">
+        <button onclick="addToCart('${doc.id}','${p.name}',${p.price},'${p.media||''}')"><i class="fa fa-cart-plus"></i> Añadir al carrito</button>
+        ${role==='admin'?`<button onclick="editProductForm('${doc.id}')"><i class="fa fa-edit"></i> Editar</button><button onclick="deleteProduct('${doc.id}')"><i class="fa fa-trash"></i> Eliminar</button>`:''}
+      </div></div>`;});
+    productsList.innerHTML = html || "<i>No hay productos</i>";
+  });
 }
 
+// --- Subir Producto ---
 async function uploadProduct(){
-  const name=document.getElementById("name").value.trim();
-  const desc=document.getElementById("description").value.trim();
-  const price=parseFloat(document.getElementById("price").value);
-  const mediaFile=document.getElementById("media").files[0];
-  if(!name||!desc||!price) return alert("Completa todos los campos");
+  const name=document.getElementById("name").value.trim();
+  const desc=document.getElementById("description").value.trim();
+  const price=parseFloat(document.getElementById("price").value);
+  const mediaFile=document.getElementById("media").files[0];
+  if(!name||!desc||!price) return alert("Completa todos los campos");
 
-  let mediaUrl="";
-  if(mediaFile){
-    const data = new FormData();
-    data.append("file", mediaFile);
-    data.append("upload_preset","vendors_preset");
-    const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`, {method:"POST", body:data});
-    const json = await res.json();
-    mediaUrl = json.secure_url;
-  }
+  let mediaUrl="";
+  if(mediaFile){
+    const data=new FormData();
+    data.append("file",mediaFile); data.append("upload_preset","vendors_preset");
+    const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`,{method:"POST",body:data});
+    const json = await res.json(); mediaUrl=json.secure_url;
+  }
+  db.collection("products").add({name, description:desc, price, media:mediaUrl})
+    .then(()=>{ showModalMessage("Producto subido"); document.getElementById("name").value=''; document.getElementById("description").value=''; document.getElementById("price").value=''; document.getElementById("media").value='';})
+    .catch(e=>alert(e.message));
+}
 
-  db.collection("products").add({name, description:desc, price, media:mediaUrl})
-    .then(()=>{ showModalMessage("Producto subido!"); });
+// --- Carrito ---
+function addToCart(id,name,price,media){
+  cart.push({id,name,price,media});
+  localStorage.setItem("cart",JSON.stringify(cart));
+  renderCart();
+  showModalMessage("Producto añadido al carrito");
 }
 
 function renderCart(){
-  const cartList = document.getElementById("cartList");
-  if(cart.length===0){ cartList.innerHTML="<i>Carrito vacío</i>"; return; }
-  let html="";
-  cart.forEach((item,i)=>{
-    html+=`<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding:10px 0;">
-      <strong>${item.name}</strong> <span>$${item.price}</span>
-      <button onclick="removeFromCart(${i})" style="color:red; background:none; border:none; cursor:pointer;"><i class="fa fa-trash"></i></button>
-    </div>`;
-  });
-  cartList.innerHTML=html;
-  localStorage.setItem("cart",JSON.stringify(cart));
-}
-
-function addToCart(id,name,price,media){
-  cart.push({id,name,price,media});
-  renderCart();
-  showModalMessage("Añadido!");
+  const cartList=document.getElementById("cartList");
+  if(cart.length===0){ cartList.innerHTML="<i>Carrito vacío</i>"; return; }
+  let html="";
+  let total=0;
+  cart.forEach((item,i)=>{
+    html+=`<div class="product"><strong>${item.name}</strong> - $${item.price}<br>
+    ${item.media?`<img src="${item.media}" width="100">`:''}
+    <div class="actions">
+      <button onclick="removeFromCart(${i})">Quitar</button>
+    </div></div>`;
+    total+=item.price;
+  });
+  html+=`<p><strong>Total: $${total.toFixed(2)}</strong></p>`;
+  cartList.innerHTML=html;
 }
 
 function removeFromCart(index){
-  cart.splice(index,1);
-  renderCart();
+  cart.splice(index,1);
+  localStorage.setItem("cart",JSON.stringify(cart));
+  renderCart();
 }
 
 function emptyCart(){
-  cart=[];
-  renderCart();
+  cart=[]; localStorage.setItem("cart",JSON.stringify(cart));
+  renderCart();
 }
 
-function checkout(){
-  if(cart.length===0) return alert("El carrito está vacío");
-  openModal(`<h3>Detalles de Entrega</h3>
-    <input id="buyerName" placeholder="Nombre completo">
-    <input id="buyerPhone" placeholder="WhatsApp / Teléfono">
-    <input id="buyerAddress" placeholder="Dirección exacta">
-    <select id="paymentOption">
-      <option value="yappy">Yappy (Subir comprobante)</option>
-      <option value="efectivo">Efectivo al recibir</option>
-    </select>
-    <button class="primary-btn" onclick="finalizePurchase()">Confirmar Pedido</button>`);
+// --- Checkout ---
+function openCheckoutForm(){
+  if(cart.length===0) return showModalMessage("El carrito está vacío");
+  const user = auth.currentUser;
+  openModal(`<h3>Finalizar Compra</h3>
+    <input id="checkoutName" placeholder="Nombre" value="${user.displayName||''}">
+    <input id="checkoutPhone" placeholder="Teléfono">
+    <input id="checkoutWhatsApp" placeholder="WhatsApp">
+    <input id="checkoutAddress" placeholder="Dirección">
+    <input id="checkoutEmail" placeholder="Email" value="${user.email||''}">
+    <label>Forma de pago:</label>
+    <select id="checkoutPayment" onchange="updatePaymentInstructions(this.value)">
+      <option value="yappy">Yappy</option>
+      <option value="ach">ACH</option>
+      <option value="efectivo">Efectivo</option>
+    </select>
+    <div id="paymentInstructions" style="margin:10px 0; font-weight:bold;">Enviar Yappy a: +507 63892022 Emanuel Cedeño</div>
+    <button onclick="finalizePurchase()">Confirmar Compra</button>`);
+
+}
+
+function updatePaymentInstructions(method){
+  const instr=document.getElementById("paymentInstructions");
+  if(method==="yappy") instr.innerText="Enviar Yappy a: +507 63892022 Emanuel Cedeño";
+  else if(method==="ach") instr.innerText="ACH a: EMANUEL CLEMENTE CEDEÑO MORAN - Banco General -  Cuenta de ahorros - 0454966165208";
+  else instr.innerText="Pagar en efectivo al recibir la mercancia";
 }
 
 async function finalizePurchase(){
-  const name=document.getElementById("buyerName").value.trim();
-  const phone=document.getElementById("buyerPhone").value.trim();
-  const address=document.getElementById("buyerAddress").value.trim();
-  const payment=document.getElementById("paymentOption").value;
-  if(!name || !phone || !address) return alert("Llene los datos");
+  const name=document.getElementById("checkoutName").value.trim();
+  const phone=document.getElementById("checkoutPhone").value.trim();
+  const whatsapp=document.getElementById("checkoutWhatsApp").value.trim();
+  const address=document.getElementById("checkoutAddress").value.trim();
+  const email=document.getElementById("checkoutEmail").value.trim();
+  const payment=document.getElementById("checkoutPayment").value;
 
-  await db.collection("orders").add({
-    user: auth.currentUser.uid,
-    userEmail: auth.currentUser.email,
-    buyerName: name,
-    phone, address,
-    payment,
-    products: cart,
-    status: "pendiente",
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
+  if(!name||!phone||!address||!email) return alert("Completa todos los campos");
 
-  cart=[]; renderCart(); closeModal();
-  showModalMessage("Pedido enviado con éxito");
+  const order={user:auth.currentUser.uid,userEmail:email,buyerName:name,phone,whatsapp,address,email,products:cart,payment,status:"pendiente",createdAt:firebase.firestore.FieldValue.serverTimestamp()};
+  await db.collection("orders").add(order);
+  cart=[]; localStorage.setItem("cart",JSON.stringify(cart)); renderCart();
+  showModalMessage("Compra realizada");
+  closeModal();
 }
 
+// --- Historial de Compras ---
 function loadUserOrders(){
-  const history = document.getElementById("purchaseHistory");
-  db.collection("orders").where("user","==",auth.currentUser.uid).orderBy("createdAt","desc").onSnapshot(snapshot=>{
-      let html="";
-      snapshot.forEach(doc=>{
-        const o = doc.data();
-        html+=`<div class="order">
-          <strong>Pedido #${doc.id.substring(0,6)}</strong> - <span class="status-${o.status.replace(/\s/g,'-')}">${o.status}</span><br>
-          <small>${o.products.length} productos | Total: $${o.products.reduce((s,p)=>s+p.price,0)}</small>
-        </div>`;
-      });
-      history.innerHTML = html || "<i>No tienes pedidos aún</i>";
-    });
+  const history=document.getElementById("purchaseHistory");
+  db.collection("orders").where("user","==",auth.currentUser.uid).orderBy("createdAt","desc").onSnapshot(snapshot=>{
+    let html="";
+    snapshot.forEach(doc=>{
+      const o=doc.data();
+      const total=o.products.reduce((sum,p)=>sum+p.price,0);
+      html+=`<div class="order"><strong>Compra #${doc.id}</strong> - Estado: <span class="status-${o.status.replace(/\s/g,'-')}">${o.status}</span>
+      <button onclick="toggleDetails('${doc.id}')">Ver/ocultar detalles</button>
+      <div id="details-${doc.id}" style="display:none; padding:5px 0;">
+        <ul>
+          <li>Nombre: ${o.buyerName}</li>
+          <li>Teléfono: ${o.phone}</li>
+          <li>WhatsApp: ${o.whatsapp}</li>
+          <li>Dirección: ${o.address}</li>
+          <li>Email: ${o.email}</li>
+          <li>Productos: <ul>${o.products.map(p=>`<li>${p.name} - $${p.price}</li>`).join('')}</ul></li>
+          <li>Total: $${total.toFixed(2)}</li>
+          ${o.payment==="yappy"?`<li>Pago: Yappy a +507 63892022 Emanuel Cedeño</li>`:o.payment==="ach"?`<li>Pago: ACH a EMANUEL CLEMENTE CEDEÑO MORAN - Banco General 0454966165208</li>`:`<li>Pago: Efectivo al recibir</li>`}
+          ${o.comprobante?`<li>Comprobante: <img src="${o.comprobante}" width="200"></li>`:''}
+          ${o.status!=='entregado'?`<li><input type="file" onchange="uploadComprobante('${doc.id}',this.files[0])"></li>`:''}
+        </ul>
+      </div></div>`;
+    });
+    history.innerHTML=html||"<i>No hay compras</i>";
+  });
 }
 
-// -- Funciones de Admin se cargan si es admin --
+function toggleDetails(id){
+  const el=document.getElementById("details-"+id);
+  el.style.display=(el.style.display==="none")?"block":"none";
+}
+
+// --- Subir comprobante ---
+async function uploadComprobante(orderId,file){
+  if(!file) return;
+  const data=new FormData(); data.append("file",file); data.append("upload_preset","vendors_preset");
+  const res=await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`,{method:"POST",body:data});
+  const json=await res.json();
+  await db.collection("orders").doc(orderId).update({comprobante:json.secure_url});
+  showModalMessage("Comprobante subido");
+}
+
+// --- Admin: Gestión de pedidos ---
 function loadOrders(){
-    if(role!=="admin") return;
-    db.collection("orders").orderBy("createdAt","desc").onSnapshot(snap=>{
-        let html = "";
-        snap.forEach(doc=>{
-            const o = doc.data();
-            html += `<div class="order">
-                <b>De: ${o.buyerName}</b> ($${o.products.reduce((s,p)=>s+p.price,0)})<br>
-                <select onchange="updateOrderField('${doc.id}','status',this.value)">
-                    <option value="pendiente" ${o.status==='pendiente'?'selected':''}>Pendiente</option>
-                    <option value="entregado" ${o.status==='entregado'?'selected':''}>Entregado</option>
-                </select>
-            </div>`;
-        });
-        document.getElementById("ordersList").innerHTML = html;
+  if(role!=="admin") return;
+  const ordersList=document.getElementById("ordersList");
+  db.collection("orders").orderBy("createdAt","desc").onSnapshot(snapshot=>{
+    let html="";
+    snapshot.forEach(doc=>{
+      const o=doc.data(); const total=o.products.reduce((sum,p)=>sum+p.price,0);
+      html+=`<div class="order"><strong>Compra #${doc.id}</strong> - Estado: <span class="status-${o.status.replace(/\s/g,'-')}">${o.status}</span>
+      <button onclick="toggleAdminDetails('${doc.id}')">Ver/ocultar detalles</button>
+      <div id="admin-details-${doc.id}" style="display:none; padding:5px 0;">
+        <ul>
+          <li>Usuario: ${o.userEmail}</li>
+          <li>Nombre: <input value="${o.buyerName}" onchange="updateOrderField('${doc.id}','buyerName',this.value)"></li>
+          <li>Teléfono: <input value="${o.phone}" onchange="updateOrderField('${doc.id}','phone',this.value)"></li>
+          <li>WhatsApp: <input value="${o.whatsapp}" onchange="updateOrderField('${doc.id}','whatsapp',this.value)"></li>
+          <li>Dirección: <input value="${o.address}" onchange="updateOrderField('${doc.id}','address',this.value)"></li>
+          <li>Email: <input value="${o.email}" onchange="updateOrderField('${doc.id}','email',this.value)"></li>
+          <li>Productos: <ul>${o.products.map(p=>`<li>${p.name} - $${p.price}</li>`).join('')}</ul></li>
+          <li>Total: $${total.toFixed(2)}</li>
+          ${o.comprobante?`<li>Comprobante: <img src="${o.comprobante}" width="200"></li>`:''}
+        </ul>
+        <div class="actions">Estado:
+          <select onchange="updateOrderField('${doc.id}','status',this.value)">
+            <option value="pendiente" ${o.status==='pendiente'?'selected':''}>Pendiente</option>
+            <option value="revision de pago" ${o.status==='revision de pago'?'selected':''}>Revisión de pago</option>
+            <option value="pago verificado" ${o.status==='pago verificado'?'selected':''}>Pago verificado</option>
+            <option value="en camino" ${o.status==='en camino'?'selected':''}>En camino</option>
+            <option value="entregado" ${o.status==='entregado'?'selected':''}>Entregado</option>
+            <option value="cancelada" ${o.status==='cancelada'?'selected':''}>Cancelada</option>
+          </select>
+          ${o.status==='en camino'?`<button onclick="captureSignature('${doc.id}')">Registrar Firma de Entrega</button>`:''}
+        </div>
+      </div></div>`;
     });
+    ordersList.innerHTML=html||"<i>No hay pedidos</i>";
+  });
 }
 
-function updateOrderField(id,f,v){ db.collection("orders").doc(id).update({[f]:v}); }
-function filterProducts(){
-    const text = document.getElementById("search").value.toLowerCase();
-    document.querySelectorAll('.product').forEach(p=>{
-        const name = p.querySelector('strong').innerText.toLowerCase();
-        p.style.display = name.includes(text) ? "flex" : "none";
-    });
+function toggleAdminDetails(id){
+  const el=document.getElementById("admin-details-"+id);
+  el.style.display=(el.style.display==="none")?"block":"none";
+}
+
+function updateOrderField(orderId,field,value){
+  db.collection("orders").doc(orderId).update({[field]:value}).then(()=>console.log(`${field} actualizado`));
+}
+
+// --- Firma de entrega ---
+function captureSignature(orderId){
+  openModal(`<h3>Firma de entrega</h3>
+    <canvas id="signatureCanvas" width="400" height="200"></canvas>
+    <button onclick="saveSignature('${orderId}')">Guardar Firma</button>
+    <button onclick="closeModal()">Cancelar</button>
+  `);
+  const canvas=document.getElementById("signatureCanvas");
+  const ctx=canvas.getContext("2d"); let drawing=false;
+  canvas.onmousedown=()=>drawing=true;
+  canvas.onmouseup=()=>drawing=false;
+  canvas.onmouseleave=()=>drawing=false;
+  canvas.onmousemove=e=>{
+    if(!drawing) return;
+    const rect=canvas.getBoundingClientRect();
+    ctx.lineWidth=2; ctx.lineCap="round"; ctx.strokeStyle="black";
+    ctx.lineTo(e.clientX-rect.left,e.clientY-rect.top); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(e.clientX-rect.left,e.clientY-rect.top);
+  };
+}
+
+async function saveSignature(orderId){
+  const canvas=document.getElementById("signatureCanvas");
+  const dataUrl=canvas.toDataURL();
+  await db.collection("orders").doc(orderId).update({deliveryProof:dataUrl, status:"entregado"});
+  showModalMessage("Firma registrada y estado entregado");
+  closeModal();
 }
 </script>
 </body>
