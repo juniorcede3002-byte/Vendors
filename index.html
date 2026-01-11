@@ -3,85 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendors Pro | Sincronizado</title>
+    <title>Vendors Pro | Sistema Integral 2026</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
     <style>
-        :root { --primary: #2563eb; --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --border: #e2e8f0; --radius: 12px; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 40px; }
+        :root { --primary: #2563eb; --secondary: #64748b; --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --radius: 12px; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 30px; }
+        
         header { background: #fff; padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; width: 100%; z-index: 1000; box-shadow: 0 1px 3px rgba(0,0,0,0.1); box-sizing: border-box; }
-        .container { max-width: 1000px; margin: 90px auto 20px; padding: 0 20px; display: none; }
-        .tabs { display: flex; background: #fff; padding: 5px; border-radius: var(--radius); gap: 5px; margin-bottom: 25px; }
-        .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; background: transparent; cursor: pointer; font-weight: 600; color: #64748b; }
+        .container { max-width: 1100px; margin: 90px auto 20px; padding: 0 20px; display: none; }
+        
+        .tabs { display: flex; background: #fff; padding: 5px; border-radius: var(--radius); gap: 5px; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow-x: auto; }
+        .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; background: transparent; cursor: pointer; font-weight: 600; color: var(--secondary); white-space: nowrap; transition: 0.2s; }
         .tab-btn.active { background: var(--primary); color: #fff; }
-        .card { background: var(--card); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 15px; }
+
+        .card { background: var(--card); padding: 20px; border-radius: var(--radius); border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
-        .product-item { background: #fff; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; }
-        .product-img { width: 100%; height: 140px; object-fit: cover; }
-        .status-badge { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .product-item { background: #fff; border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; transition: 0.3s; }
+        .product-item:hover { transform: translateY(-3px); }
+        .product-img { width: 100%; height: 160px; object-fit: cover; background: #eee; }
+        
+        .btn { padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem; }
+        .btn-primary { background: var(--primary); color: #fff; width: 100%; }
+        .btn-ghost { background: #f1f5f9; color: var(--text); }
+        
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
         .status-pendiente { background: #fef3c7; color: #92400e; }
         .status-revision { background: #dbeafe; color: #1e40af; }
         .status-entregado { background: #dcfce7; color: #166534; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-content { background: #fff; padding: 25px; border-radius: 16px; width: 90%; max-width: 450px; position: relative; max-height: 80vh; overflow-y: auto; }
-        .btn { padding: 10px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; width: 100%; }
-        .btn-primary { background: var(--primary); color: #fff; }
+
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: #fff; padding: 30px; border-radius: 16px; width: 100%; max-width: 500px; position: relative; max-height: 85vh; overflow-y: auto; }
+        
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 15px; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
 <header>
-    <div style="font-weight: 800; color: var(--primary); font-size: 1.2rem;">VENDORS PRO</div>
-    <div id="authHeader"><button class="btn btn-primary" onclick="openLogin()">Entrar</button></div>
-    <div id="userHeader" style="display:none; gap: 10px;">
-        <span id="displayUser" style="font-size:0.8rem; font-weight:600"></span>
-        <button onclick="logout()" style="color:#ef4444; background:none; border:none; cursor:pointer"><i class="fa-solid fa-power-off"></i></button>
+    <div style="font-weight: 800; font-size: 1.3rem; color: var(--primary);"><i class="fa-solid fa-box-open"></i> VENDORS PRO</div>
+    <div id="authHeader"><button class="btn btn-primary" onclick="openLogin()">Iniciar Sesión</button></div>
+    <div id="userHeader" style="display:none; gap: 10px; align-items: center;">
+        <span id="userNameDisplay" style="font-weight:600; font-size:0.85rem;"></span>
+        <button class="btn btn-ghost" onclick="openProfile()"><i class="fa-solid fa-cog"></i></button>
+        <button class="btn btn-ghost" style="color:#ef4444" onclick="logout()"><i class="fa-solid fa-sign-out-alt"></i></button>
     </div>
 </header>
 
 <div class="container" id="mainApp">
     <div class="tabs">
-        <button class="tab-btn active" data-tab="t-stock">Tienda</button>
+        <button class="tab-btn active" data-tab="t-stock">Suministros</button>
+        <button class="tab-btn" data-tab="t-cart">Carrito (<span id="cartCount">0</span>)</button>
         <button class="tab-btn" data-tab="t-history">Mis Solicitudes</button>
-        <button class="tab-btn" id="adminTabBtn" data-tab="t-admin" style="display:none;">Admin</button>
+        <button class="tab-btn" id="adminTabBtn" data-tab="t-admin" style="display:none;">Panel Admin</button>
     </div>
 
-    <section id="t-stock" class="tab-content active"><div class="product-grid" id="stockList"></div></section>
+    <section id="t-stock" class="tab-content active">
+        <div class="product-grid" id="stockList"></div>
+    </section>
 
-    <section id="t-history" class="tab-content"><div id="userOrders">Cargando historial...</div></section>
+    <section id="t-cart" class="tab-content">
+        <div class="card">
+            <h3>Mi Carrito de Pedido</h3>
+            <div id="cartItems"></div>
+            <div id="cartTotal" style="font-weight:800; text-align:right; margin:20px 0; font-size:1.2rem;"></div>
+            <button class="btn btn-primary" onclick="openCheckout()">Finalizar Solicitud</button>
+        </div>
+    </section>
 
-    <section id="t-admin" class="tab-content"><div id="adminOrders"></div></section>
+    <section id="t-history" class="tab-content">
+        <div id="userOrders">Cargando tus solicitudes...</div>
+    </section>
+
+    <section id="t-admin" class="tab-content">
+        <div class="card">
+            <h3>Agregar Nuevo Suministro</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+                <input id="admPName" placeholder="Nombre del producto">
+                <input id="admPPrice" type="number" placeholder="Precio ($)">
+                <input type="file" id="admPFile" style="grid-column: 1/-1">
+                <button class="btn btn-primary" style="grid-column: 1/-1" onclick="addProduct()">Añadir al Stock</button>
+            </div>
+        </div>
+        <div id="adminOrders"></div>
+    </section>
 </div>
 
 <div id="modal" class="modal"><div class="modal-content" id="modalBody"></div></div>
 
 <script>
+// CONFIGURACIÓN DE FIREBASE
 const firebaseConfig = { apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY", authDomain: "proyectovendor.firebaseapp.com", projectId: "proyectovendor" };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
+const googleProvider = new firebase.auth.GoogleAuthProvider();
 
+let cart = JSON.parse(localStorage.getItem('vendors_cart')) || [];
 let userRole = 'user';
 
-auth.onAuthStateChanged(user => {
+// --- CONTROL DE AUTENTICACIÓN ---
+auth.onAuthStateChanged(async (user) => {
     if (user) {
         userRole = (user.email === 'admin@vendors.com') ? 'admin' : 'user';
         document.getElementById('authHeader').style.display = 'none';
         document.getElementById('userHeader').style.display = 'flex';
-        document.getElementById('displayUser').innerText = user.email.split('@')[0];
+        document.getElementById('userNameDisplay').innerText = user.displayName || user.email.split('@')[0];
         document.getElementById('mainApp').style.display = 'block';
         if(userRole === 'admin') document.getElementById('adminTabBtn').style.display = 'block';
-        loadStock(); loadOrders(); setupTabs();
+        
+        loadStock(); 
+        loadOrders(); 
+        updateCartUI(); 
+        setupTabs();
     } else {
         document.getElementById('authHeader').style.display = 'block';
+        document.getElementById('userHeader').style.display = 'none';
         document.getElementById('mainApp').style.display = 'none';
         openLogin();
     }
 });
+
+// --- FUNCIONES DE ACCESO ---
+function openLogin() {
+    renderModal(`
+        <h3 style="text-align:center">Bienvenido al Sistema</h3>
+        <input id="logE" placeholder="Correo electrónico">
+        <input id="logP" type="password" placeholder="Contraseña">
+        <button class="btn btn-primary" onclick="login()">Entrar</button>
+        <div style="text-align:center; margin:15px 0">O</div>
+        <button class="btn btn-ghost" style="width:100%" onclick="googleLogin()"><i class="fa-brands fa-google"></i> Continuar con Google</button>
+        <p onclick="forgotPass()" style="text-align:center; color:var(--primary); cursor:pointer; font-size:0.8rem; margin-top:20px">¿Olvidó su contraseña?</p>
+    `);
+}
+
+async function googleLogin() { try { await auth.signInWithPopup(googleProvider); closeModal(); } catch(e) { alert(e.message); } }
+async function login() { try { await auth.signInWithEmailAndPassword(document.getElementById('logE').value, document.getElementById('logP').value); closeModal(); } catch(e) { alert("Error: Datos incorrectos"); } }
+function logout() { auth.signOut().then(() => location.reload()); }
+function forgotPass() { const e = prompt("Ingrese su correo:"); if(e) auth.sendPasswordResetEmail(e).then(() => alert("Correo enviado")); }
+
+// --- GESTIÓN DE STOCK (ADMIN) ---
+async function addProduct() {
+    const file = document.getElementById('admPFile').files[0];
+    const name = document.getElementById('admPName').value;
+    const price = document.getElementById('admPPrice').value;
+    if(!file || !name || !price) return alert("Complete los datos");
+    
+    const fd = new FormData(); fd.append("file", file); fd.append("upload_preset", "vendors_preset");
+    try {
+        const res = await fetch("https://api.cloudinary.com/v1_1/df79cjklp/upload", { method: "POST", body: fd });
+        const json = await res.json();
+        await db.collection('products').add({ name, price: parseFloat(price), media: json.secure_url });
+        alert("Suministro añadido");
+        document.getElementById('admPName').value = ''; document.getElementById('admPPrice').value = '';
+    } catch(e) { alert("Error al subir imagen"); }
+}
 
 function loadStock() {
     db.collection('products').onSnapshot(snap => {
@@ -90,68 +171,65 @@ function loadStock() {
             const p = doc.data();
             h += `<div class="product-item">
                 <img src="${p.media || p.image}" class="product-img">
-                <div style="padding:10px"><b>${p.name}</b><br>$${p.price}
-                <button class="btn btn-primary" style="padding:5px; font-size:0.7rem; margin-top:5px" onclick="makeQuickOrder('${doc.id}','${p.name}',${p.price},'${p.media || p.image}')">Solicitar Ya</button></div>
+                <div style="padding:12px">
+                    <b style="font-size:0.9rem">${p.name}</b><br>
+                    <span style="color:var(--primary); font-weight:800">$${p.price}</span><br>
+                    <button class="btn btn-primary" style="padding:5px; margin-top:8px" onclick="addToCart('${doc.id}','${p.name}',${p.price},'${p.media}')">Añadir</button>
+                    ${userRole === 'admin' ? `<button onclick="deleteProd('${doc.id}')" style="color:#ef4444; border:none; background:none; cursor:pointer; font-size:0.75rem; margin-top:10px">Eliminar</button>` : ''}
+                </div>
             </div>`;
         });
         document.getElementById('stockList').innerHTML = h;
     });
 }
 
-// CARGA DE ÓRDENES SINCRONIZADA CON TUS CAMPOS
+// --- HISTORIAL Y SOLICITUDES (SINCRONIZADO) ---
 function loadOrders() {
-    const currentUid = auth.currentUser.uid;
-    // IMPORTANTE: Asegúrate que el índice use 'user' (Asc) y 'createdAt' (Desc)
+    const uid = auth.currentUser.uid;
+    // IMPORTANTE: El campo en tu Firebase se llama 'user'
     db.collection('orders').orderBy('createdAt', 'desc').onSnapshot(snap => {
-        let uH = '', aH = '<h3>Panel de Control Admin</h3>';
+        let uH = '', aH = '<h3>Gestión Global de Pedidos</h3>';
         
         snap.forEach(doc => {
             const o = doc.data();
-            // Calculamos el total basado en tu array 'products'
             const total = o.products ? o.products.reduce((s, i) => s + i.price, 0) : 0;
-            
             const card = `<div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:start">
-                    <div>
-                        <b style="color:var(--primary)">Ref: ${doc.id.substring(0,6)}</b><br>
-                        <small>${o.buyerName || 'Sin nombre'}</small>
-                    </div>
+                <div style="display:flex; justify-content:space-between">
+                    <b>ID: ${doc.id.substring(0,6)}</b>
                     <span class="status-badge status-${o.status}">${o.status}</span>
                 </div>
-                <div style="margin:10px 0; font-size:0.85rem">
-                    <b>Items:</b> ${o.products ? o.products.length : 0}<br>
+                <div style="font-size:0.85rem; margin:10px 0">
+                    <b>Cliente:</b> ${o.buyerName || 'Usuario'}<br>
                     <b>Total:</b> $${total.toFixed(2)}
                 </div>
-                <button class="btn" style="background:#f1f5f9; font-size:0.75rem" onclick="viewDetails('${doc.id}')">Ver Detalles / Comprobante</button>
+                <button class="btn btn-ghost" style="width:100%; font-size:0.8rem" onclick="viewDetails('${doc.id}')">Ver Detalles</button>
             </div>`;
 
-            // Filtrado por el campo 'user' (que es donde guardas el ID)
-            if (o.user === currentUid) uH += card;
+            if (o.user === uid) uH += card;
             aH += card;
         });
 
-        document.getElementById('userOrders').innerHTML = uH || '<p style="text-align:center">No tienes solicitudes.</p>';
-        if (userRole === 'admin') document.getElementById('adminOrders').innerHTML = aH;
+        document.getElementById('userOrders').innerHTML = uH || '<p style="text-align:center">No tienes solicitudes pendientes.</p>';
+        if(userRole === 'admin') document.getElementById('adminOrders').innerHTML = aH;
     });
 }
 
 async function viewDetails(id) {
     const doc = await db.collection('orders').doc(id).get();
     const o = doc.data();
-    let prodList = o.products ? o.products.map(p => `<li>${p.name} - $${p.price}</li>`).join('') : '';
+    let prods = o.products ? o.products.map(p => `<li>${p.name} - $${p.price}</li>`).join('') : '';
     
-    let h = `<h3>Pedido ${id.substring(0,6)}</h3>
+    let h = `<h3>Detalle Solicitud</h3>
+             <p><b>Comprador:</b> ${o.buyerName}</p>
              <p><b>Dirección:</b> ${o.address}</p>
              <p><b>WhatsApp:</b> ${o.whatsapp || o.phone}</p>
-             <ul>${prodList}</ul>`;
+             <hr><ul>${prods}</ul>`;
              
-    if (o.comprobante || o.media) {
-        h += `<p><b>Comprobante:</b></p><img src="${o.comprobante || o.media}" style="width:100%; border-radius:10px">`;
-    }
-
-    if (userRole === 'admin') {
+    if(o.comprobante) h += `<p><b>Comprobante:</b></p><img src="${o.comprobante}" style="width:100%; border-radius:10px">`;
+    
+    if(userRole === 'admin') {
         h += `<hr><label>Cambiar Estado:</label>
-        <select onchange="updateStatus('${id}', this.value)" style="width:100%; padding:10px; margin-top:5px">
+        <select onchange="updateStatus('${id}', this.value)">
             <option value="pendiente" ${o.status==='pendiente'?'selected':''}>Pendiente</option>
             <option value="revision" ${o.status==='revision'?'selected':''}>Revisión</option>
             <option value="entregado" ${o.status==='entregado'?'selected':''}>Entregado</option>
@@ -160,28 +238,80 @@ async function viewDetails(id) {
     renderModal(h);
 }
 
-// Función rápida para probar si se guarda bien
-async function makeQuickOrder(pid, pname, pprice, pmedia) {
-    const user = auth.currentUser;
-    await db.collection('orders').add({
-        user: user.uid,
-        userEmail: user.email,
-        buyerName: "Prueba Sistema",
-        address: "Dirección de prueba",
-        products: [{id: pid, name: pname, price: pprice, media: pmedia}],
-        status: "pendiente",
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    alert("Solicitud creada con éxito");
+// --- PROCESO DE COMPRA ---
+function openCheckout() {
+    if(cart.length === 0) return alert("Carrito vacío");
+    renderModal(`
+        <h3>Finalizar Solicitud</h3>
+        <input id="fName" placeholder="Nombre completo del receptor">
+        <input id="fPhone" placeholder="Teléfono / Celular">
+        <textarea id="fAddr" placeholder="Dirección exacta de entrega"></textarea>
+        <label>Método de Pago:</label>
+        <select id="fPay"><option value="efectivo">Efectivo</option><option value="yappy">Yappy</option><option value="ach">ACH / Transferencia</option></select>
+        <label>Adjuntar Comprobante (Opcional):</label>
+        <input type="file" id="fComp">
+        <button class="btn btn-primary" onclick="submitOrder()">Enviar Pedido</button>
+    `);
 }
 
-function openLogin() { renderModal(`<h3>Acceso</h3><input id="logE" placeholder="Email" style="width:100%; margin-bottom:10px; padding:10px"><input id="logP" type="password" placeholder="Pass" style="width:100%; margin-bottom:10px; padding:10px"><button class="btn btn-primary" onclick="login()">Entrar</button>`); }
-function login() { auth.signInWithEmailAndPassword(document.getElementById('logE').value, document.getElementById('logP').value).then(()=>closeModal()).catch(e=>alert(e.message)); }
-function logout() { auth.signOut().then(()=>location.reload()); }
-function renderModal(h) { document.getElementById('modalBody').innerHTML = `<button onclick="closeModal()" style="position:absolute; top:10px; right:10px; border:none; background:none; font-size:1.2rem; cursor:pointer">&times;</button>${h}`; document.getElementById('modal').style.display='flex'; }
+async function submitOrder() {
+    const file = document.getElementById('fComp').files[0];
+    let fileUrl = '';
+    if(file) {
+        const fd = new FormData(); fd.append("file", file); fd.append("upload_preset", "vendors_preset");
+        const res = await fetch("https://api.cloudinary.com/v1_1/df79cjklp/upload", { method: "POST", body: fd });
+        const json = await res.json(); fileUrl = json.secure_url;
+    }
+
+    await db.collection('orders').add({
+        user: auth.currentUser.uid,
+        userEmail: auth.currentUser.email,
+        buyerName: document.getElementById('fName').value,
+        phone: document.getElementById('fPhone').value,
+        whatsapp: document.getElementById('fPhone').value,
+        address: document.getElementById('fAddr').value,
+        payment: document.getElementById('fPay').value,
+        products: cart,
+        comprobante: fileUrl,
+        status: fileUrl ? 'revision' : 'pendiente',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    cart = []; localStorage.removeItem('vendors_cart'); updateCartUI(); closeModal(); alert("Solicitud enviada");
+}
+
+// --- PERFIL DE USUARIO ---
+async function openProfile() {
+    const u = auth.currentUser;
+    const doc = await db.collection('users').doc(u.uid).get();
+    const d = doc.data() || {};
+    renderModal(`
+        <h3>Mi Perfil</h3>
+        <label>Nombre:</label><input id="uN" value="${d.name || u.displayName || ''}">
+        <label>País:</label><input id="uC" value="${d.country || ''}">
+        <label>Ubicación Predeterminada:</label><textarea id="uL">${d.location || ''}</textarea>
+        <button class="btn btn-primary" onclick="saveProfile()">Guardar Cambios</button>
+    `);
+}
+
+async function saveProfile() {
+    await db.collection('users').doc(auth.currentUser.uid).set({
+        name: document.getElementById('uN').value,
+        country: document.getElementById('uC').value,
+        location: document.getElementById('uL').value
+    }, {merge: true});
+    alert("Perfil actualizado"); closeModal();
+}
+
+// --- UTILIDADES ---
+function renderModal(h) { document.getElementById('modalBody').innerHTML = `<button onclick="closeModal()" style="position:absolute; top:15px; right:15px; border:none; background:none; font-size:1.4rem; cursor:pointer">&times;</button>${h}`; document.getElementById('modal').style.display='flex'; }
 function closeModal() { document.getElementById('modal').style.display='none'; }
+function addToCart(id, name, price, media) { cart.push({id, name, price, media}); localStorage.setItem('vendors_cart', JSON.stringify(cart)); updateCartUI(); }
+function updateCartUI() { document.getElementById('cartCount').innerText = cart.length; document.getElementById('cartItems').innerHTML = cart.map((i,idx)=>`<div style="display:flex; justify-content:space-between; margin-bottom:10px"><span>${i.name}</span><b>$${i.price}</b><i class="fa-solid fa-trash" style="color:red; cursor:pointer" onclick="removeFromCart(${idx})"></i></div>`).join(''); document.getElementById('cartTotal').innerText = `Total: $${cart.reduce((s,i)=>s+i.price,0).toFixed(2)}`; }
+function removeFromCart(idx) { cart.splice(idx,1); localStorage.setItem('vendors_cart', JSON.stringify(cart)); updateCartUI(); }
 function setupTabs() { document.querySelectorAll('.tab-btn').forEach(b => b.onclick = () => { document.querySelectorAll('.tab-btn, .tab-content').forEach(e=>e.classList.remove('active')); b.classList.add('active'); document.getElementById(b.dataset.tab).classList.add('active'); }); }
 function updateStatus(id, s) { db.collection('orders').doc(id).update({status: s}); }
+async function deleteProd(id) { if(confirm("¿Borrar suministro?")) await db.collection('products').doc(id).delete(); }
 </script>
 </body>
 </html>
