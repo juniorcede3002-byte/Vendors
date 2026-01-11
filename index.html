@@ -109,7 +109,7 @@ hr {
 <script>
 /* 🔥 FIREBASE CONFIG */
 firebase.initializeApp({
-  apiKey: "TU_API_KEY",
+  apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
   authDomain: "proyectovendor.firebaseapp.com",
   projectId: "proyectovendor"
 });
@@ -117,52 +117,54 @@ firebase.initializeApp({
 const db = firebase.firestore();
 
 /* ☁️ CLOUDINARY */
-const CLOUD_NAME = "demo"; // CAMBIAR
+const CLOUD_NAME = "df79cjklp";
 const UPLOAD_PRESET = "vendors_preset";
 
 /* 📦 SUBIR PRODUCTO */
 async function uploadProduct() {
-  const file = media.files[0];
-  if (!file) return alert("Selecciona una imagen o video");
+  try {
+    const file = media.files[0];
+    if (!file) return alert("Selecciona una imagen o video");
 
-  const form = new FormData();
-  form.append("file", file);
-  form.append("upload_preset", UPLOAD_PRESET);
+    const form = new FormData();
+    form.append("file", file);
+    form.append("upload_preset", UPLOAD_PRESET);
 
-  const isVideo = file.type.startsWith("video");
-  const endpoint = isVideo ? "video" : "image";
+    const isVideo = file.type.startsWith("video");
+    const endpoint = isVideo ? "video" : "image";
 
-  const res = await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${endpoint}/upload`,
-    { method: "POST", body: form }
-  );
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${endpoint}/upload`,
+      { method: "POST", body: form }
+    );
 
-  const data = await res.json();
+    const data = await res.json();
 
-  await db.collection("products").add({
-    name: name.value,
-    description: description.value,
-    price: Number(price.value),
-    mediaUrl: data.secure_url,
-    mediaType: isVideo ? "video" : "image",
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
+    if (!data.secure_url) {
+      console.error("Cloudinary error:", data);
+      return alert("Error al subir archivo a Cloudinary");
+    }
 
-  showPreview(data.secure_url, isVideo);
+    await db.collection("products").add({
+      name: name.value.trim(),
+      description: description.value.trim(),
+      price: Number(price.value),
+      mediaUrl: data.secure_url,
+      mediaType: isVideo ? "video" : "image",
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
 
-  name.value = "";
-  description.value = "";
-  price.value = "";
-  media.value = "";
+    alert("Producto subido correctamente");
 
-  alert("Producto subido correctamente");
-}
+    name.value = "";
+    description.value = "";
+    price.value = "";
+    media.value = "";
 
-/* 👀 PREVIEW */
-function showPreview(url, isVideo) {
-  preview.innerHTML = isVideo
-    ? `<video src="${url}" controls></video>`
-    : `<img src="${url}">`;
+  } catch (error) {
+    console.error(error);
+    alert("Error inesperado, revisa la consola");
+  }
 }
 
 /* 🧾 LISTAR PRODUCTOS */
