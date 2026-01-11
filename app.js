@@ -1,177 +1,325 @@
-// ================= FIREBASE =================
+// --- FIREBASE CONFIG ---
 firebase.initializeApp({
   apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
   authDomain: "proyectovendor.firebaseapp.com",
   projectId: "proyectovendor"
 });
-
-const auth = firebase.auth();
 const db = firebase.firestore();
-const CLOUD_NAME = "df79cjklp";
-const UPLOAD_PRESET = "vendors_preset";
+const auth = firebase.auth();
+const provider = new firebase.auth.GoogleAuthProvider();
 
+// --- VARIABLES GLOBALES ---
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
-let currentUser = null;
 let role = "usuario";
+const modal = document.getElementById("modal");
+const modalBody = document.getElementById("modalBody");
 
-// ================= AUTH =================
-auth.onAuthStateChanged(async user=>{
-  if(!user) return;
-  currentUser = user;
-  document.getElementById("app").classList.remove("hidden");
+// --- MODAL ---
+function openModal(content){ modal.style.display="flex"; modalBody.innerHTML=content; }
+function closeModal(){ modal.style.display="none"; }
+function showModalMessage(msg){ 
+    openModal(`<div class="text-center py-4 text-lg font-bold text-zinc-800">${msg}</div>`); 
+    setTimeout(closeModal,1500); 
+}
+
+// --- AUTH ---
+function showLoginForm(){
+  openModal(`<div class="text-center mb-6"><h3 class="text-2xl font-black">Bienvenido</h3><p class="text-zinc-500">Ingresa tus credenciales</p></div>
+  <input id="loginEmail" placeholder="Correo electrónico" class="w-full rounded-xl p-4 mb-3">
+  <input id="loginPass" placeholder="Contraseña" type="password" class="w-full rounded-xl p-4 mb-4">
+  <button onclick="login()" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl hover:bg-indigo-700 transition mb-3">Entrar</button>
+  <div class="flex justify-between text-sm text-zinc-500 px-1">
+    <button onclick="showResetPass()" class="hover:text-indigo-600">¿Olvidaste tu contraseña?</button>
+    <button onclick="loginWithGoogle()" class="font-bold text-indigo-600 hover:underline">Acceso Google</button>
+  </div>`);
+}
+
+function showRegisterForm(){
+  openModal(`<div class="text-center mb-6"><h3 class="text-2xl font-black">Crear Cuenta</h3></div>
+  <input id="regEmail" placeholder="Email" class="w-full rounded-xl p-4 mb-3">
+  <input id="regPass" placeholder="Contraseña" type="password" class="w-full rounded-xl p-4 mb-4">
+  <button onclick="register()" class="w-full bg-black text-white font-bold py-4 rounded-xl hover:bg-zinc-800 transition mb-3">Registrarse</button>
+  <button onclick="loginWithGoogle()" class="w-full border border-zinc-200 py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-50 transition font-medium">
+    <i class="fab fa-google"></i> Continuar con Google
+  </button>`);
+}
+
+function showResetPass(){
+  const email = prompt("Ingrese su correo para recuperar contraseña:");
+  if(email) auth.sendPasswordResetEmail(email).then(()=>alert("Correo enviado")).catch(e=>alert(e.message));
+}
+
+function login(){
+  const email=document.getElementById("loginEmail").value;
+  const pass=document.getElementById("loginPass").value;
+  auth.signInWithEmailAndPassword(email,pass).then(u=>{ closeModal(); initUser(u.user); }).catch(e=>alert(e.message));
+}
+
+function register(){
+  const email=document.getElementById("regEmail").value;
+  const pass=document.getElementById("regPass").value;
+  auth.createUserWithEmailAndPassword(email,pass).then(u=>{ closeModal(); initUser(u.user); }).catch(e=>alert(e.message));
+}
+
+function loginWithGoogle(){
+  auth.signInWithPopup(provider).then(result => { closeModal(); initUser(result.user); }).catch(e=>alert(e.message));
+}
+
+function logout(){ auth.signOut().then(()=>location.reload()); }
+
+// --- INICIO SESION / CARGA ---
+async function initUser(user){
   document.getElementById("authButtons").style.display="none";
-  document.getElementById("userMenu").classList.remove("hidden");
+  document.getElementById("userInfo").style.display="flex";
   document.getElementById("userEmail").innerText=user.email;
-
-  role = user.email==="admin@vendors.com"?"admin":"usuario";
-  if(role==="admin") document.getElementById("adminTabBtn").classList.remove("hidden");
-
-  await ensureUserDoc(user);
+  const docRef = db.collection("users").doc(user.uid);
+  const docSnap = await docRef.get();
+  if(!docSnap.exists){ 
+    await docRef.set({pais:'',residencia:'',name:user.displayName||'',email:user.email}); 
+  }
+  role = (user.email==="admin@vendors.com") ? "admin" : "usuario";
+  document.getElementById("dashboard").style.display="block";
+  toggleAdmin();
   setUpTabs();
   loadProducts();
+  loadOrders();
   loadUserOrders();
-  if(role==="admin") loadAdminOrders();
-});
-
-// ================= USERS =================
-async function ensureUserDoc(user){
-  const ref = db.collection("users").doc(user.uid);
-  if(!(await ref.get()).exists){
-    await ref.set({email:user.email,name:user.displayName||"",pais:"",residencia:"",role:role});
-  }
+  renderCart();
 }
 
-// ================= LOGIN / REGISTER =================
-function showLogin(){
-  openModal(`<h3>Login</h3><input id="lEmail" placeholder="Email"><input id="lPass" type="password" placeholder="Contraseña"><button onclick="login()">Entrar</button><button onclick="resetPass()">Olvidé mi contraseña</button>`);
+// --- CONFIGURACION USUARIO ---
+async function openConfig(){
+  const user = auth.currentUser;
+  const docSnap = await db.collection("users").doc(user.uid).get();
+  const data = docSnap.data();
+  openModal(`<h3 class="text-xl font-bold mb-4">Mi Perfil</h3>
+    <div class="space-y-3">
+        <input id="configName" placeholder="Nombre" value="${data.name||''}" class="w-full p-3 rounded-lg">
+        <input id="configEmail" placeholder="Email" value="${data.email||''}" class="w-full p-3 rounded-lg">
+        <input id="configCountry" placeholder="País" value="${data.pais||''}" class="w-full p-3 rounded-lg">
+        <input id="configResidence" placeholder="Residencia" value="${data.residencia||''}" class="w-full p-3 rounded-lg">
+        <input id="configPass" placeholder="Nueva contraseña (opcional)" type="password" class="w-full p-3 rounded-lg">
+        <button onclick="updateConfig()" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">Guardar Cambios</button>
+    </div>`);
 }
-function showRegister(){
-  openModal(`<h3>Registrar</h3><input id="rEmail" placeholder="Email"><input id="rPass" type="password" placeholder="Contraseña"><button onclick="register()">Registrar</button>`);
-}
-function login(){ auth.signInWithEmailAndPassword(lEmail.value,lPass.value).then(closeModal).catch(e=>alert(e.message)); }
-function register(){ auth.createUserWithEmailAndPassword(rEmail.value,rPass.value).then(closeModal).catch(e=>alert(e.message)); }
-function loginGoogle(){ auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert(e.message)); }
-function logout(){ auth.signOut(); location.reload(); }
-function resetPass(){ const email = prompt("Correo:"); if(email) auth.sendPasswordResetEmail(email); }
 
-// ================= TABS =================
+async function updateConfig(){
+  const user = auth.currentUser;
+  const name=document.getElementById("configName").value;
+  const email=document.getElementById("configEmail").value;
+  const pais=document.getElementById("configCountry").value;
+  const residencia=document.getElementById("configResidence").value;
+  const pass=document.getElementById("configPass").value;
+  await db.collection("users").doc(user.uid).update({name,email,pais,residencia});
+  if(name) user.updateProfile({displayName:name});
+  if(email) user.updateEmail(email).catch(e=>alert(e.message));
+  if(pass) user.updatePassword(pass).catch(e=>alert(e.message));
+  showModalMessage("Configuración actualizada");
+}
+
+// --- TABS ---
 function setUpTabs(){
   document.querySelectorAll(".tab-btn").forEach(btn=>{
-    btn.onclick=()=>{
-      document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
-      btn.classList.add("active");
+    btn.onclick = () => {
+      document.querySelectorAll(".tab-btn").forEach(b=>{
+          b.classList.remove("active", "bg-white", "shadow-sm", "text-indigo-600");
+          b.classList.add("text-zinc-500");
+      });
+      btn.classList.add("active", "bg-white", "shadow-sm", "text-indigo-600");
+      btn.classList.remove("text-zinc-500");
       document.querySelectorAll(".tab-content").forEach(tab=>tab.classList.remove("active"));
       document.getElementById(btn.dataset.tab).classList.add("active");
     };
+    if(btn.classList.contains("active")) btn.click();
   });
 }
 
-// ================= MODAL =================
-function openModal(html){ modal.classList.remove("hidden"); modalContent.innerHTML=html; }
-function closeModal(){ modal.classList.add("hidden"); }
-
-// ================= PRODUCTS =================
-async function uploadProduct(){
-  const name=pName.value.trim();
-  const desc=pDesc.value.trim();
-  const price=Number(pPrice.value);
-  const file=pMedia.files[0];
-  if(!name||!desc||!price) return alert("Completa todos los campos");
-
-  let media="";
-  if(file){
-    const fd=new FormData();
-    fd.append("file",file);
-    fd.append("upload_preset",UPLOAD_PRESET);
-    const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`,{method:"POST",body:fd});
-    media=(await r.json()).secure_url;
+function toggleAdmin(){ 
+  if(role==="admin"){
+     document.querySelector("[data-tab='adminTab']").classList.remove("hidden");
   }
-
-  await db.collection("products").add({name,description:desc,price,media});
-  showModalMessage("Producto subido");
 }
 
-function loadProducts(){
-  db.collection("products").onSnapshot(s=>{
-    productsList.innerHTML="";
-    s.forEach(d=>{
-      const p=d.data();
-      productsList.innerHTML+=`
-      <div class="bg-white p-2 rounded shadow">
-        ${p.media?.includes("video")?`<video src="${p.media}" controls></video>`:`<img src="${p.media}">`}
-        <h4 class="font-bold">${p.name}</h4>
-        <p>${p.description}</p>
-        <b>$${p.price}</b>
-        <div class="flex gap-1 mt-2">
-          <button onclick='addToCart(${JSON.stringify(p)})' class="bg-indigo-600 text-white p-1 rounded">Añadir</button>
-          ${role==="admin"?`<button onclick="editProduct('${d.id}')" class="bg-gray-200 p-1 rounded">Editar</button>`:""}
+// --- PRODUCTOS ---
+async function loadProducts(){
+  const productsList = document.getElementById("productsList");
+  productsList.innerHTML = `<div class="col-span-full py-10 text-center text-zinc-400">Cargando catálogo...</div>`;
+  db.collection("products").onSnapshot(snapshot=>{
+    let html="";
+    snapshot.forEach(doc=>{
+      const p = doc.data();
+      html+=`
+      <div class="product-card bg-white rounded-2xl p-4 shadow-sm border border-zinc-100 flex flex-col">
+        <div class="h-48 rounded-xl overflow-hidden bg-zinc-100 mb-4 relative">
+            ${p.media ? (p.media.includes('video') ? `<video src="${p.media}" class="w-full h-full object-cover" muted loop onmouseover="this.play()" onmouseout="this.pause()"></video>` : `<img src="${p.media}" class="w-full h-full object-cover">`) : `<div class="flex items-center justify-center h-full text-zinc-300"><i class="fas fa-image text-3xl"></i></div>`}
+            <div class="absolute top-2 right-2 bg-black/50 backdrop-blur-md text-white px-3 py-1 rounded-lg font-bold">$${p.price}</div>
+        </div>
+        <div class="flex-grow">
+            <h4 class="font-bold text-lg text-zinc-800">${p.name}</h4>
+            <p class="text-zinc-500 text-sm line-clamp-2 mb-4">${p.description}</p>
+        </div>
+        <div class="actions mt-auto flex gap-2">
+          <button onclick="addToCart('${doc.id}','${p.name}',${p.price},'${p.media||''}')" class="flex-grow bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2">
+            <i class="fa fa-cart-plus"></i> Añadir
+          </button>
+          ${role==='admin'?`
+          <button onclick="editProductForm('${doc.id}')" class="bg-zinc-100 p-2 rounded-lg text-zinc-600 hover:bg-indigo-100 hover:text-indigo-600 transition"><i class="fa fa-edit"></i></button>
+          <button onclick="deleteProduct('${doc.id}')" class="bg-zinc-100 p-2 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-500 transition"><i class="fa fa-trash"></i></button>`:''}
         </div>
       </div>`;
     });
+    productsList.innerHTML = html || `<div class="col-span-full text-center py-10 text-zinc-400">No hay productos disponibles</div>`;
   });
 }
 
-// ================= CART =================
-function addToCart(p){ cart.push(p); localStorage.setItem("cart",JSON.stringify(cart)); alert("Añadido al carrito"); }
-function updateCart(){ renderCart(); }
-function emptyCart(){ cart=[]; localStorage.removeItem("cart"); renderCart(); }
-function renderCart(){ cartList.innerHTML=""; cart.forEach((c,i)=>{cartList.innerHTML+=`<div>${c.name} - $${c.price} <button onclick="cart.splice(${i},1); updateCart()">Eliminar</button></div>`}); }
+// --- AÑADIR AL CARRITO ---
+function addToCart(id,name,price,media){
+  const index = cart.findIndex(p=>p.id===id);
+  if(index>-1) cart[index].qty +=1;
+  else cart.push({id,name,price,media,qty:1});
+  localStorage.setItem("cart",JSON.stringify(cart));
+  showModalMessage("Producto agregado al carrito");
+  renderCart();
+}
 
-// ================= PURCHASE =================
+// --- RENDER CARRITO ---
+function renderCart(){
+  const list = document.getElementById("cartList");
+  if(cart.length===0){ list.innerHTML="<i>Carrito vacío</i>"; return; }
+  list.innerHTML = "";
+  cart.forEach((p,i)=>{
+    const div = document.createElement("div");
+    div.className="flex justify-between items-center bg-zinc-50 p-3 rounded-xl";
+    div.innerHTML=`
+      <div class="flex items-center gap-3">
+        ${p.media? `<img src="${p.media}" class="w-12 h-12 object-cover rounded-lg">` : `<i class="fas fa-box text-2xl"></i>`}
+        <div>
+          <p class="font-bold">${p.name}</p>
+          <p class="text-sm text-zinc-500">$${p.price} x ${p.qty}</p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="changeQty(${i},-1)" class="bg-zinc-200 px-2 rounded-lg">-</button>
+        <button onclick="changeQty(${i},1)" class="bg-zinc-200 px-2 rounded-lg">+</button>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+
+// --- CAMBIAR CANTIDAD ---
+function changeQty(index,delta){
+  cart[index].qty += delta;
+  if(cart[index].qty<1) cart.splice(index,1);
+  localStorage.setItem("cart",JSON.stringify(cart));
+  renderCart();
+}
+
+// --- VACIAR CARRITO ---
+function emptyCart(){ cart=[]; localStorage.setItem("cart",JSON.stringify(cart)); renderCart(); }
+
+// --- COMPRAR ---
 function openPurchaseForm(){
-  if(cart.length===0) return alert("Carrito vacío");
-  openModal(`<h3>Compra</h3><input id="buyerName" placeholder="Nombre"><input id="buyerPhone" placeholder="Teléfono"><input id="buyerAddr" placeholder="Dirección"><button onclick="submitOrder()">Enviar</button>`);
-}
-async function submitOrder(){
-  const name=document.getElementById("buyerName").value;
-  const phone=document.getElementById("buyerPhone").value;
-  const addr=document.getElementById("buyerAddr").value;
-  if(!name||!phone||!addr) return alert("Completa todos los campos");
-  await db.collection("orders").add({userId:currentUser.uid,items:cart,name,phone,addr,status:"en_revision",createdAt:firebase.firestore.FieldValue.serverTimestamp()});
-  cart=[]; localStorage.removeItem("cart"); closeModal(); renderCart(); alert("Pedido enviado");
+  if(cart.length===0) return showModalMessage("El carrito está vacío");
+  let html = `<h3 class="text-xl font-bold mb-4">Finalizar Compra</h3>
+  <p class="mb-3">Selecciona método de pago y sube comprobante:</p>
+  <select id="paymentMethod" class="w-full p-3 mb-3 rounded-lg">
+    <option value="yappy">Yappy: +507 63892022</option>
+    <option value="ach">ACH: EMANUEL CLEMENTE CEDEÑO MORAN, Banco General, Ahorros: 0454966165208</option>
+  </select>
+  <div class="relative border-2 border-dashed border-zinc-200 p-4 rounded-lg text-center hover:border-indigo-400 transition cursor-pointer mb-4">
+    <input id="paymentProof" type="file" accept="image/*,application/pdf" class="absolute inset-0 opacity-0 cursor-pointer">
+    <p class="text-zinc-500 text-sm"><i class="fas fa-cloud-upload-alt block text-2xl mb-1"></i> Adjuntar comprobante de pago</p>
+  </div>
+  <button onclick="submitPurchase()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition">Enviar Compra</button>`;
+  openModal(html);
 }
 
-// ================= ORDERS =================
+// --- ENVIAR COMPRA ---
+async function submitPurchase(){
+  const method = document.getElementById("paymentMethod").value;
+  const file = document.getElementById("paymentProof").files[0];
+  if(!file) return alert("Adjunta comprobante de pago");
+  let url="";
+  const data = new FormData();
+  data.append("file", file);
+  data.append("upload_preset","vendors_preset");
+  const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`, {method:"POST", body:data});
+  const json = await res.json();
+  url = json.secure_url;
+  const user = auth.currentUser;
+  const total = cart.reduce((a,c)=>a+c.price*c.qty,0);
+  await db.collection("orders").add({
+    userId:user.uid,
+    userEmail:user.email,
+    items:cart,
+    total,
+    method,
+    proof:url,
+    status:"en_revision",
+    createdAt: firebase.firestore.Timestamp.now()
+  });
+  cart=[]; localStorage.setItem("cart",JSON.stringify(cart));
+  closeModal(); renderCart(); loadUserOrders(); loadOrders();
+  showModalMessage("Compra enviada correctamente, esperando revisión");
+}
+
+// --- MIS COMPRAS ---
 function loadUserOrders(){
-  db.collection("orders").where("userId","==",currentUser.uid).onSnapshot(s=>{
-    userOrders.innerHTML="";
-    s.forEach(d=>{
-      const o=d.data();
-      userOrders.innerHTML+=`
-        <div class="bg-white p-2 rounded shadow">
-          Pedido: ${d.id} | Estado: ${o.status}
-          <button onclick="viewOrder('${d.id}',false)">Ver</button>
-        </div>`;
+  const history = document.getElementById("purchaseHistory");
+  history.innerHTML = "Cargando...";
+  const user = auth.currentUser;
+  db.collection("orders").where("userId","==",user.uid).orderBy("createdAt","desc").onSnapshot(snapshot=>{
+    history.innerHTML = "";
+    snapshot.forEach(doc=>{
+      const o = doc.data();
+      const div = document.createElement("div");
+      div.className="bg-white p-4 rounded-xl shadow-md flex justify-between items-center";
+      div.innerHTML=`
+        <div>
+          <p class="font-bold">Total: $${o.total}</p>
+          <p class="text-sm text-zinc-500">Estado: <span class="status-badge ${statusClass(o.status)}">${o.status.replace("_"," ")}</span></p>
+        </div>
+        <button onclick="viewOrder('${doc.id}','user')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition text-sm">Ver</button>`;
+      history.appendChild(div);
     });
   });
 }
 
-function loadAdminOrders(){
-  db.collection("orders").onSnapshot(s=>{
-    adminOrders.innerHTML="";
-    s.forEach(d=>{
-      const o=d.data();
-      adminOrders.innerHTML+=`
-        <div class="bg-white p-2 rounded shadow">
-          Pedido: ${d.id} | Estado: ${o.status}
-          <button onclick="viewOrder('${d.id}',true)">Ver</button>
-        </div>`;
+// --- ADMIN ORDERS ---
+function loadOrders(){
+  if(role!=="admin") return;
+  const ordersList = document.getElementById("ordersList");
+  ordersList.innerHTML="Cargando...";
+  db.collection("orders").orderBy("createdAt","desc").onSnapshot(snapshot=>{
+    ordersList.innerHTML="";
+    snapshot.forEach(doc=>{
+      const o = doc.data();
+      const div = document.createElement("div");
+      div.className="bg-white p-4 rounded-xl shadow-md flex justify-between items-center";
+      div.innerHTML=`
+        <div>
+          <p class="font-bold">${o.userEmail}</p>
+          <p class="text-sm text-zinc-500">Total: $${o.total}</p>
+          <p class="text-sm text-zinc-500">Estado: <span class="status-badge ${statusClass(o.status)}">${o.status.replace("_"," ")}</span></p>
+        </div>
+        <button onclick="viewOrder('${doc.id}','admin')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition text-sm">Ver</button>`;
+      ordersList.appendChild(div);
     });
   });
 }
 
-async function viewOrder(id,isAdmin){
-  const o = (await db.collection("orders").doc(id).get()).data();
-  let buttons="";
-  if(o.status==="en_revision"){
-    if(isAdmin) buttons=`<button onclick="updateOrder('${id}','pago_confirmado')">Confirmar Pago</button><button onclick="cancelOrder('${id}','Cancelado por Admin')">Cancelar</button>`;
-    else buttons=`<button onclick="cancelOrder('${id}','Cancelado por Usuario')">Cancelar</button>`;
-  }
-  openModal(`<pre>${JSON.stringify(o,null,2)}</pre>${buttons}`);
-}
-
-async function updateOrder(id,status){ await db.collection("orders").doc(id).update({status}); closeModal(); }
-async function cancelOrder(id,motivo){ await db.collection("orders").doc(id).update({status:"cancelado",motivo}); closeModal(); }
-
-// ================= UI =================
-function showModalMessage(msg){ openModal(`<p>${msg}</p>`); setTimeout(closeModal,1500); }
+// --- VER ORDEN ---
+async function viewOrder(id,who){
+  const doc = await db.collection("orders").doc(id).get();
+  const o = doc.data();
+  let itemsHtml = o.items.map(p=>`<p>${p.name} x ${p.qty} - $${p.price}</p>`).join("");
+  let html=`<h3 class="text-xl font-bold mb-3">${who==="admin"?"Detalle de Compra":"Mi Compra"}</h3>
+    <p class="font-bold">Usuario: ${o.userEmail}</p>
+    <p class="font-bold">Total: $${o.total}</p>
+    <p class="font-bold">Metodo: ${o.method}</p>
+    <p class="font-bold mb-3">Items:</p>${itemsHtml}
+    <p class="font-bold mb-3">Comprobante:</p><a href="${o.proof}" target="_blank" class="text-indigo-600 underline">Ver archivo</a>
+    <p class="font-bold mt-3">Estado:</p>
+    ${who==="admin"?`
+    <select id="changeStatus" class="w-full p-2 rounded-lg mb-3">
+     
