@@ -69,7 +69,6 @@ canvas { border:1px solid #000; border-radius:5px; }
   <div id="cartTab" class="tab-content">
     <h2>Carrito</h2>
     <div id="cartList"><i>Carrito vacío</i></div>
-    <button onclick="viewCart()">Ver Carrito</button>
     <button onclick="purchaseCart()">Comprar Carrito</button>
     <button onclick="emptyCart()">Vaciar Carrito</button>
   </div>
@@ -102,7 +101,7 @@ canvas { border:1px solid #000; border-radius:5px; }
 </div>
 
 <script>
-// --- Firebase Config ---
+// --- Firebase ---
 firebase.initializeApp({
   apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
   authDomain: "proyectovendor.firebaseapp.com",
@@ -111,6 +110,7 @@ firebase.initializeApp({
 const db = firebase.firestore();
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
+
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 let role = "usuario";
 
@@ -132,7 +132,7 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-  // --- Autenticación ---
+// --- Autenticación ---
 function showLoginForm(){
   openModal(`<h3>Iniciar Sesión</h3>
   <input id="loginEmail" placeholder="Email">
@@ -158,23 +158,17 @@ function showResetPass(){
 function login(){
   const email=document.getElementById("loginEmail").value;
   const pass=document.getElementById("loginPass").value;
-  auth.signInWithEmailAndPassword(email,pass)
-    .then(u=>{ closeModal(); initUser(u.user); })
-    .catch(e=>alert(e.message));
+  auth.signInWithEmailAndPassword(email,pass).then(u=>{ closeModal(); initUser(u.user); }).catch(e=>alert(e.message));
 }
 
 function register(){
   const email=document.getElementById("regEmail").value;
   const pass=document.getElementById("regPass").value;
-  auth.createUserWithEmailAndPassword(email,pass)
-    .then(u=>{ closeModal(); initUser(u.user); })
-    .catch(e=>alert(e.message));
+  auth.createUserWithEmailAndPassword(email,pass).then(u=>{ closeModal(); initUser(u.user); }).catch(e=>alert(e.message));
 }
 
 function loginWithGoogle(){
-  auth.signInWithPopup(provider)
-    .then(result => { closeModal(); initUser(result.user); })
-    .catch(e=>alert(e.message));
+  auth.signInWithPopup(provider).then(result => { closeModal(); initUser(result.user); }).catch(e=>alert(e.message));
 }
 
 function logout(){ auth.signOut().then(()=>location.reload()); }
@@ -196,8 +190,8 @@ async function initUser(user){
   toggleAdmin();
   setUpTabs();
   loadProducts();
-  loadOrders(); // admin
-  loadUserOrders(); // usuario
+  loadOrders();
+  loadUserOrders();
   renderCart();
 }
 
@@ -278,7 +272,6 @@ async function loadProducts(){
   });
 }
 
-// --- Filtrar productos ---
 function filterProducts(){
   const search = document.getElementById("search").value.toLowerCase();
   const maxPrice = parseFloat(document.getElementById("maxPrice").value) || Infinity;
@@ -301,10 +294,7 @@ function addToCart(id,name,price,media){
 function renderCart(){
   const list = document.getElementById("cartList");
   if(cart.length===0){ list.innerHTML="<i>Carrito vacío</i>"; return; }
-  list.innerHTML = cart.map((p,i)=>`
-    ${p.name} - $${p.price}
-    <button onclick="removeFromCart(${i})">Eliminar</button>
-  `).join("<br>");
+  list.innerHTML = cart.map((p,i)=>`${p.name} - $${p.price} <button onclick="removeFromCart(${i})">Eliminar</button>`).join("<br>");
 }
 
 function removeFromCart(index){
@@ -317,7 +307,6 @@ function emptyCart(){
   cart=[]; localStorage.setItem("cart",JSON.stringify(cart)); renderCart();
 }
 
-// --- Comprar Carrito ---
 async function purchaseCart(){
   if(cart.length===0) return showModalMessage("Carrito vacío");
   const user = auth.currentUser;
@@ -331,7 +320,144 @@ async function purchaseCart(){
   cart=[]; localStorage.setItem("cart",JSON.stringify(cart)); renderCart();
 }
 
-// --- Parte de admin y órdenes ---
-// Aquí irían loadOrders(), loadUserOrders(), uploadProduct(), updateOrderField(), uploadComprobante(), captureSignature() y saveSignature()
+// --- Cargar órdenes de usuario ---
+function loadUserOrders(){
+  const history = document.getElementById("purchaseHistory");
+  auth.onAuthStateChanged(user=>{
+    if(!user) return;
+    db.collection("orders").where("user","==",user.uid)
+      .onSnapshot(snapshot=>{
+        let html="";
+        snapshot.forEach(doc=>{
+          const o = doc.data();
+          const total = o.products.reduce((sum,p)=>sum+p.price,0);
+          html+=`
+          <div class="order">
+            <strong>Compra #${doc.id}</strong> - Estado: <span class="status-${o.status.replace(/\s/g,'-')}">${o.status}</span><br>
+            <button onclick="toggleDetails('${doc.id}')">Ver/ocultar detalles</button>
+            <div id="details-${doc.id}" style="display:none; padding:5px 0;">
+              <ul>
+                <li>Nombre: ${o.buyerName}</li>
+                <li>Teléfono: ${o.phone}</li>
+                <li>Dirección: ${o.address}</li>
+                <li>Productos: <ul>${o.products.map(p=>`<li>${p.name} - $${p.price}</li>`).join('')}</ul></li>
+                <li>Total: $${total}</li>
+              </ul>
+            </div>
+          </div>`;
+        });
+        history.innerHTML = html || "<i>No hay compras</i>";
+      });
+}
 
+// --- Toggle detalles ---
+function toggleDetails(id){
+  const el = document.getElementById(`details-${id}`);
+  if(el) el.style.display = el.style.display==="none"?"block":"none";
+}
+
+// --- Admin: Cargar órdenes ---
+function loadOrders(){
+  if(role!=="admin") return;
+  const ordersList = document.getElementById("ordersList");
+  db.collection("orders").onSnapshot(snapshot=>{
+    let html="";
+    snapshot.forEach(doc=>{
+      const o = doc.data();
+      const total = o.products.reduce((sum,p)=>sum+p.price,0);
+      html+=`
+      <div class="order">
+        <strong>Compra #${doc.id}</strong> - Estado: <span class="status-${o.status.replace(/\s/g,'-')}">${o.status}</span><br>
+        <button onclick="toggleAdminDetails('${doc.id}')">Ver/ocultar detalles</button>
+        <div id="adminDetails-${doc.id}" style="display:none; padding:5px 0;">
+          <ul>
+            <li>Usuario: ${o.userEmail}</li>
+            <li>Nombre: ${o.buyerName}</li>
+            <li>Teléfono: ${o.phone}</li>
+            <li>Dirección: ${o.address}</li>
+            <li>Productos: <ul>${o.products.map(p=>`<li>${p.name} - $${p.price}</li>`).join('')}</ul></li>
+            <li>Total: $${total}</li>
+            <li>Actualizar estado: 
+              <select id="status-${doc.id}">
+                <option ${o.status==='pendiente'?'selected':''}>pendiente</option>
+                <option ${o.status==='revision de pago'?'selected':''}>revision de pago</option>
+                <option ${o.status==='pago verificado'?'selected':''}>pago verificado</option>
+                <option ${o.status==='en camino'?'selected':''}>en camino</option>
+                <option ${o.status==='entregado'?'selected':''}>entregado</option>
+                <option ${o.status==='cancelada'?'selected':''}>cancelada</option>
+              </select>
+              <button onclick="updateOrderStatus('${doc.id}')">Actualizar</button>
+            </li>
+          </ul>
+        </div>
+      </div>`;
+    });
+    ordersList.innerHTML = html || "<i>No hay órdenes</i>";
+  });
+}
+
+function toggleAdminDetails(id){
+  const el = document.getElementById(`adminDetails-${id}`);
+  if(el) el.style.display = el.style.display==="none"?"block":"none";
+}
+
+function updateOrderStatus(id){
+  const status = document.getElementById(`status-${id}`).value;
+  db.collection("orders").doc(id).update({status});
+  showModalMessage("Estado actualizado");
+}
+
+// --- Admin: Subir producto ---
+function uploadProduct(){
+  const name=document.getElementById("name").value;
+  const description=document.getElementById("description").value;
+  const price=parseFloat(document.getElementById("price").value);
+  const mediaFile=document.getElementById("media").files[0];
+  if(!name || !description || !price) return alert("Completa todos los campos");
+
+  if(mediaFile){
+    const reader = new FileReader();
+    reader.onload = async function(e){
+      const mediaURL = e.target.result;
+      await db.collection("products").add({name,description,price,media:mediaURL});
+      showModalMessage("Producto subido");
+      document.getElementById("name").value="";
+      document.getElementById("description").value="";
+      document.getElementById("price").value="";
+      document.getElementById("media").value="";
+    }
+    reader.readAsDataURL(mediaFile);
+  } else {
+    db.collection("products").add({name,description,price}).then(()=>showModalMessage("Producto subido"));
+  }
+}
+
+// --- Admin: Editar y eliminar producto ---
+function editProductForm(id){
+  db.collection("products").doc(id).get().then(doc=>{
+    const p = doc.data();
+    openModal(`<h3>Editar Producto</h3>
+      <input id="editName" value="${p.name}">
+      <textarea id="editDescription">${p.description}</textarea>
+      <input id="editPrice" type="number" value="${p.price}">
+      <button onclick="updateProduct('${id}')">Actualizar</button>`);
+  });
+}
+
+function updateProduct(id){
+  const name=document.getElementById("editName").value;
+  const description=document.getElementById("editDescription").value;
+  const price=parseFloat(document.getElementById("editPrice").value);
+  db.collection("products").doc(id).update({name,description,price}).then(()=>{
+    showModalMessage("Producto actualizado");
+    closeModal();
+  });
+}
+
+function deleteProduct(id){
+  if(confirm("¿Eliminar producto?")) db.collection("products").doc(id).delete().then(()=>showModalMessage("Producto eliminado"));
+}
 </script>
+
+</body>
+</html>
