@@ -88,7 +88,7 @@ canvas { border:1px solid #000; border-radius:5px; }
       <button onclick="uploadProduct()">Subir</button>
 
       <h3>Gestión de Pedidos</h3>
-      <div id="ordersList"></div>
+      <div id="ordersListAdmin"></div>
     </div>
   </div>
 </div>
@@ -124,7 +124,7 @@ function showModalMessage(msg){ openModal(`<p>${msg}</p>`); setTimeout(closeModa
 
 // --- Auth ---
 auth.onAuthStateChanged(user => {
-  if(user){ initUser(user); loadOrdersHistory(); }
+  if(user){ initUser(user); }
   else { document.getElementById("authButtons").style.display="inline-block"; document.getElementById("userInfo").style.display="none"; document.getElementById("dashboard").style.display="none"; }
 });
 function showLoginForm(){ openModal(`<h3>Iniciar Sesión</h3>
@@ -154,7 +154,7 @@ async function initUser(user){
 
   role = (user.email==="admin@vendors.com") ? "admin" : "usuario";
   document.getElementById("dashboard").style.display="block";
-  toggleAdmin(); setUpTabs(); loadProducts(); renderCart(); 
+  toggleAdmin(); setUpTabs(); loadProducts(); renderCart(); loadOrdersHistory();
 }
 
 // --- Configuración ---
@@ -248,24 +248,27 @@ async function finalizePurchase(){
   renderCart(); closeModal(); showModalMessage("Compra realizada con éxito");
 }
 
-// --- Historial de Pedidos / Formularios ---
+// --- Historial de Pedidos / Filtrado para Usuario y Admin ---
 async function loadOrdersHistory() {
   const history = document.getElementById("purchaseHistory");
+  const adminList = document.getElementById("ordersListAdmin");
   const userId = auth.currentUser.uid; 
 
   db.collection("orders").orderBy("createdAt","desc").onSnapshot(snapshot=>{
-    let html="";
-    let count = 0; 
+    let userHtml="";
+    let adminHtml="";
+    let userCount = 0; 
 
     snapshot.forEach(doc=>{
       const o = doc.data();
       const total = o.products.reduce((sum,p)=>sum+p.price,0);
-
-      count++;
-      html+=`<div class="order">
-        <form id="form-${doc.id}">
+      
+      // Construir el bloque de la orden
+      const orderBlock = `
+      <div class="order">
         <strong>Compra #${doc.id}</strong> - Estado: <span class="status-${o.status.replace(/\s/g,'-')}">${o.status}</span>
-        ${role==="admin"?`<select name="status" onchange="updateOrderStatus('${doc.id}',this.value)">
+        ${role==="admin"?`
+        <select onchange="updateOrderStatus('${doc.id}',this.value)">
           <option value="pendiente" ${o.status==="pendiente"?'selected':''}>Pendiente</option>
           <option value="revision de pago" ${o.status==="revision de pago"?'selected':''}>Revisión de pago</option>
           <option value="pago verificado" ${o.status==="pago verificado"?'selected':''}>Pago verificado</option>
@@ -275,27 +278,50 @@ async function loadOrdersHistory() {
         </select>`:``}
         <button type="button" onclick="toggleDetails('${doc.id}')">Ver/ocultar detalles</button>
         <div id="details-${doc.id}" style="display:none; padding:5px 10px;">
-          <label>Nombre: <input name="buyerName" value="${o.buyerName}" ${role!=='admin'?'readonly':''}></label>
-          <label>Teléfono: <input name="phone" value="${o.phone}" ${role!=='admin'?'readonly':''}></label>
-          <label>WhatsApp: <input name="whatsapp" value="${o.whatsapp}" ${role!=='admin'?'readonly':''}></label>
-          <label>Dirección: <input name="address" value="${o.address}" ${role!=='admin'?'readonly':''}></label>
-          <label>Email: <input name="email" value="${o.email}" ${role!=='admin'?'readonly':''}></label>
+          <label>Nombre: <input value="${o.buyerName}" readonly></label>
+          <label>Teléfono: <input value="${o.phone}" readonly></label>
+          <label>Dirección: <input value="${o.address}" readonly></label>
+          <label>Email: <input value="${o.email}" readonly></label>
           <div>Productos: 
             <ul>${o.products.map(p=>`<li>${p.name} - $${p.price}</li>`).join('')}</ul>
             <strong>Total: $${total.toFixed(2)}</strong>
           </div>
-          <label>Pago: <input name="payment" value="${o.payment}" readonly></label>
-          ${!o.comprobante?`<label>Subir comprobante: <input type="file" onchange="uploadComprobante('${doc.id}',this.files[0])"></label>`:`<div>Comprobante: <img src="${o.comprobante}" width="200"></div>`}
-          ${!o.signature?`<label>Firma de entrega:</label><canvas id="sign-${doc.id}" width="250" height="100"></canvas><button type="button" onclick="saveSignature('${doc.id}')">Guardar Firma</button>`:`<div>Firma de entrega: <img src="${o.signature}" width="200"></div>`}
+          <label>Pago: <input value="${o.payment}" readonly></label>
+          
+          <hr>
+          ${!o.comprobante ? 
+            `<label>Subir comprobante de pago: <input type="file" onchange="uploadComprobante('${doc.id}',this.files[0])"></label>` : 
+            `<div>Comprobante enviado: <br><img src="${o.comprobante}" width="200" style="margin-top:10px; border-radius:5px;"></div>`
+          }
+          
+          ${o.status === "en camino" || o.status === "entregado" || o.signature ? `
+            <div style="margin-top:10px;">
+              ${!o.signature ? 
+                `<label>Firma de entrega:</label><canvas id="sign-${doc.id}" width="250" height="100"></canvas>
+                 <button type="button" onclick="saveSignature('${doc.id}')">Guardar Firma</button>` : 
+                `<div>Firma de entrega: <br><img src="${o.signature}" width="200" style="border:1px solid #ccc;"></div>`
+              }
+            </div>` : ''}
         </div>
-        </form>
       </div>`;
+
+      // Si soy admin, veo todo en la pestaña admin
+      if(role === "admin") {
+        adminHtml += orderBlock;
+      }
+      
+      // Si la orden pertenece al usuario actual, mostrar en "Mis Compras"
+      if(o.user === userId) {
+        userHtml += orderBlock;
+        userCount++;
+      }
     });
 
-    if(count === 0) html = "<i>No hay compras registradas</i>";
-
-    history.innerHTML = html;
-    setTimeout(initCanvasSignatures,300); 
+    if(userCount === 0) userHtml = "<i>No tienes compras realizadas</i>";
+    history.innerHTML = userHtml;
+    if(adminList) adminList.innerHTML = adminHtml;
+    
+    setTimeout(initCanvasSignatures, 500); 
   });
 }
 
@@ -314,10 +340,12 @@ function updateOrderStatus(id,status){
 // --- Inicializar Canvas Firma ---
 function initCanvasSignatures(){
   document.querySelectorAll("canvas[id^='sign-']").forEach(c=>{
+    if(c.dataset.initialized) return;
     const ctx=c.getContext("2d"); let drawing=false;
-    c.onmousedown=e=>{drawing=true; ctx.moveTo(e.offsetX,e.offsetY);};
+    c.onmousedown=e=>{drawing=true; ctx.beginPath(); ctx.moveTo(e.offsetX,e.offsetY);};
     c.onmousemove=e=>{if(drawing){ctx.lineTo(e.offsetX,e.offsetY);ctx.stroke();}};
     c.onmouseup=c.onmouseleave=e=>{drawing=false;};
+    c.dataset.initialized = "true";
   });
 }
 
@@ -330,12 +358,18 @@ function saveSignature(orderId){
 
 // --- Subir Comprobante ---
 async function uploadComprobante(orderId,file){
+  if(!file) return;
+  showModalMessage("Subiendo comprobante...");
   const data=new FormData();
   data.append("file",file); data.append("upload_preset","vendors_preset");
-  const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`,{method:"POST",body:data});
-  const json = await res.json(); 
-  await db.collection("orders").doc(orderId).update({comprobante:json.secure_url});
-  showModalMessage("Comprobante subido");
+  try {
+    const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`,{method:"POST",body:data});
+    const json = await res.json(); 
+    await db.collection("orders").doc(orderId).update({comprobante:json.secure_url, status: "revision de pago"});
+    showModalMessage("Comprobante subido correctamente");
+  } catch(e) {
+    alert("Error al subir: " + e.message);
+  }
 }
 
 // --- Subir Producto (Admin) ---
@@ -365,7 +399,8 @@ function filterProducts(){
   const max=parseFloat(document.getElementById("maxPrice").value) || Infinity;
   document.querySelectorAll("#productsList .product").forEach(p=>{
     const name=p.querySelector("strong").innerText.toLowerCase();
-    const price=parseFloat(p.innerText.match(/\$(\d+(\.\d+)?)/)[1]);
+    const priceMatch = p.innerText.match(/\$(\d+(\.\d+)?)/);
+    const price = priceMatch ? parseFloat(priceMatch[1]) : 0;
     if(name.includes(term) && price<=max) p.style.display="block"; else p.style.display="none";
   });
 }
