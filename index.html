@@ -1,3 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Vendor | Sistema de Ventas</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<!-- Iconos -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+
+<style>
+body { font-family: Arial,sans-serif; background:#f2f2f2; margin:0; padding:20px; }
+.container { max-width:900px; margin:auto; background:#fff; padding:20px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.1);}
+input, textarea, select, button { width:100%; padding:10px; margin-top:10px; border-radius:5px; border:1px solid #ccc; }
+button { background:#111; color:#fff; border:none; cursor:pointer; transition:0.2s; }
+button:hover { opacity:0.9; }
+.role { background:#eee; }
+.product { border:1px solid #ddd; padding:10px; margin-top:15px; border-radius:8px; display:flex; flex-direction:column; gap:5px; background:#fafafa; }
+.product img, .product video { width:100%; border-radius:6px; }
+.product h3 { margin:5px 0; }
+.product p { margin:5px 0; }
+.price { font-weight:bold; color:#111; }
+.actions { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; }
+.actions button { flex:1; display:flex; align-items:center; justify-content:center; gap:5px; }
+#cartList { background:#fff3cd; padding:10px; border-radius:8px; margin-top:15px; }
+#ordersList, #purchaseHistory { margin-top:20px; }
+.status-pendiente { color:#ff9800; font-weight:bold; }
+.status-revision { color:#2196f3; font-weight:bold; }
+.status-verificado { color:#4caf50; font-weight:bold; }
+.status-en-camino { color:#9c27b0; font-weight:bold; }
+.status-finalizado { color:#000; font-weight:bold; }
+.status-cancelada { color:#f44336; font-weight:bold; }
+.modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:1000;}
+.modal-content { background:#fff; padding:20px; border-radius:8px; max-width:500px; width:90%; position:relative; box-shadow:0 2px 15px rgba(0,0,0,0.3); }
+.modal-content button.close { position:absolute; top:10px; right:10px; background:#f00; border:none; border-radius:50%; width:30px; height:30px; color:#fff; cursor:pointer; font-weight:bold; font-size:16px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h2>Rol</h2>
+<select id="role" class="role" onchange="toggleAdminFeatures(); loadProducts(); loadOrders(); loadUserOrders();">
+  <option value="usuario">Usuario</option>
+  <option value="admin">Admin</option>
+</select>
+
+<hr>
+
+<div id="adminPanel">
+<h2>Subir Producto</h2>
+<input id="name" placeholder="Nombre">
+<textarea id="description" placeholder="Descripción"></textarea>
+<input id="price" type="number" placeholder="Precio">
+<input id="media" type="file" accept="image/*,video/*">
+<button onclick="uploadProduct()"><i class="fa fa-upload"></i> Subir</button>
+
+<hr>
+<h2>Solicitudes de Compra</h2>
+<div id="ordersList"><i>No hay pedidos aún</i></div>
+</div>
+
+<hr>
+
+<h2>Buscar</h2>
+<input id="search" placeholder="Buscar por nombre" oninput="loadProducts()">
+<input id="maxPrice" type="number" placeholder="Precio máximo" oninput="loadProducts()">
+
+<hr>
+
+<h2>Productos</h2>
+<div id="productsList"></div>
+
+<hr>
+<h2><i class="fa fa-shopping-cart"></i> Carrito</h2>
+<div id="cartList"><i>Carrito vacío</i></div>
+<button onclick="viewCart()"><i class="fa fa-eye"></i> Ver Carrito</button>
+<button onclick="openPurchaseForm()"><i class="fa fa-credit-card"></i> Comprar Carrito</button>
+<button onclick="emptyCart()"><i class="fa fa-trash"></i> Vaciar Carrito</button>
+
+<hr>
+<h2>Historial de Compras</h2>
+<div id="purchaseHistory"><i>No hay compras aún</i></div>
+
+</div>
+
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <button class="close" onclick="closeModal()">&times;</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
 <script>
 /* FIREBASE */
 firebase.initializeApp({
@@ -23,7 +118,7 @@ const modalBody = document.getElementById("modalBody");
 const ordersListDiv = document.getElementById("ordersList");
 const purchaseHistoryDiv = document.getElementById("purchaseHistory");
 
-/* CARRITO EN LOCALSTORAGE */
+/* CARRITO */
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
 /* TOGGLE ADMIN */
@@ -181,7 +276,6 @@ async function confirmPurchase(){
     const form=new FormData();
     form.append("file",proofFile);
     form.append("upload_preset",UPLOAD_PRESET);
-    const isVideo=false;
     const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,{method:"POST",body:form});
     const data=await res.json();
     proofUrl=data.secure_url;
@@ -276,6 +370,8 @@ function getStatusClass(status){
     case "finalizado": return "status-finalizado";
     case "cancelada": return "status-cancelada";
     default: return "";
-}
+  }
 }
 </script>
+</body>
+</html>
