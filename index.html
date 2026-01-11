@@ -34,6 +34,7 @@ button:hover { opacity:0.9; }
 .modal-content button.close { position:absolute; top:10px; right:10px; background:#f00; border:none; border-radius:50%; width:30px; height:30px; color:#fff; cursor:pointer; font-weight:bold; font-size:16px; }
 .stats { margin-top:10px; padding:10px; background:#eee; border-radius:5px; }
 .stats div { margin-bottom:5px; }
+.paymentInfo { margin-top:10px; padding:10px; background:#f0f0f0; border-radius:5px; }
 </style>
 </head>
 <body>
@@ -153,20 +154,49 @@ async function initUser(user){
   toggleAdmin(); setUpTabs(); loadProducts(); loadOrders(); loadUserOrders(); renderCart();
 }
 
+// --- Configuración ---
+async function openConfig(){
+  const user = auth.currentUser;
+  const docSnap = await db.collection("users").doc(user.uid).get();
+  const data = docSnap.data();
+  openModal(`<h3>Configuración</h3>
+    <input id="configName" placeholder="Nombre" value="${data.name||''}">
+    <input id="configEmail" placeholder="Email" value="${data.email||''}">
+    <input id="configCountry" placeholder="País" value="${data.pais||''}">
+    <input id="configResidence" placeholder="Residencia" value="${data.residencia||''}">
+    <input id="configPass" placeholder="Nueva contraseña" type="password">
+    <button onclick="updateConfig()">Guardar</button>`);
+}
+async function updateConfig(){
+  const user = auth.currentUser;
+  const name=document.getElementById("configName").value;
+  const email=document.getElementById("configEmail").value;
+  const pais=document.getElementById("configCountry").value;
+  const residencia=document.getElementById("configResidence").value;
+  const pass=document.getElementById("configPass").value;
+  await db.collection("users").doc(user.uid).update({name,email,pais,residencia});
+  if(name) user.updateProfile({displayName:name});
+  if(email) user.updateEmail(email).catch(e=>alert(e.message));
+  if(pass) user.updatePassword(pass).catch(e=>alert(e.message));
+  showModalMessage("Configuración actualizada");
+  closeModal();
+}
+
 // --- Tabs ---
 function setUpTabs(){ document.querySelectorAll(".tab-btn").forEach(btn=>{ btn.addEventListener("click",()=>{ document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active")); btn.classList.add("active"); document.querySelectorAll(".tab-content").forEach(tab=>tab.classList.remove("active")); document.getElementById(btn.dataset.tab).classList.add("active"); }); }); }
 function toggleAdmin(){ if(role==="admin"){ document.getElementById("adminPanel").style.display="block"; document.querySelector("[data-tab='adminTab']").style.display="inline-block"; } else { document.getElementById("adminPanel").style.display="none"; document.querySelector("[data-tab='adminTab']").style.display="none"; } }
 
-// --- Productos (igual que antes) ---
-async function loadProducts(){ const productsList = document.getElementById("productsList"); productsList.innerHTML = "Cargando..."; db.collection("products").onSnapshot(snapshot=>{ let html=""; snapshot.forEach(doc=>{ const p=doc.data(); html+=`<div class="product"><strong>${p.name}</strong> - $${p.price}<br>${p.description}<br>${p.media?`<img src="${p.media}" width="150">`:""}<div class="actions"><button onclick="addToCart('${doc.id}','${p.name}',${p.price},'${p.media||''}')"><i class="fa fa-cart-plus"></i> Añadir al carrito</button>${role==='admin'?`<button onclick="editProductForm('${doc.id}')"><i class="fa fa-edit"></i> Editar</button><button onclick="deleteProduct('${doc.id}')"><i class="fa fa-trash"></i> Eliminar</button>`:""}</div></div>`; }); productsList.innerHTML=html||"<i>No hay productos</i>"; }); }
+// --- Productos ---
+async function loadProducts(){ const productsList=document.getElementById("productsList"); productsList.innerHTML="Cargando..."; db.collection("products").onSnapshot(snapshot=>{ let html=""; snapshot.forEach(doc=>{ const p=doc.data(); html+=`<div class="product"><strong>${p.name}</strong> - $${p.price}<br>${p.description}<br>${p.media?`<img src="${p.media}" width="150">`:""}<div class="actions"><button onclick="addToCart('${doc.id}','${p.name}',${p.price},'${p.media||''}')"><i class="fa fa-cart-plus"></i> Añadir al carrito</button>${role==='admin'?`<button onclick="editProductForm('${doc.id}')"><i class="fa fa-edit"></i> Editar</button><button onclick="deleteProduct('${doc.id}')"><i class="fa fa-trash"></i> Eliminar</button>`:""}</div></div>`;}); productsList.innerHTML=html||"<i>No hay productos</i>"; });}
+
 // --- Carrito ---
 function addToCart(id,name,price,media){ cart.push({id,name,price,media}); localStorage.setItem("cart",JSON.stringify(cart)); renderCart(); showModalMessage("Añadido al carrito"); }
-function renderCart(){ const list=document.getElementById("cartList"); if(cart.length===0){list.innerHTML="<i>Carrito vacío</i>"; return;} let html=""; cart.forEach((p,i)=> html+=`<div>${p.name} - $${p.price} <button onclick="removeFromCart(${i})">Eliminar</button></div>`); list.innerHTML=html; }
+function renderCart(){ const list=document.getElementById("cartList"); if(cart.length===0){ list.innerHTML="<i>Carrito vacío</i>"; return; } let html=""; cart.forEach((p,i)=> html+=`<div>${p.name} - $${p.price} <button onclick="removeFromCart(${i})">Eliminar</button></div>`); list.innerHTML=html; }
 function removeFromCart(index){ cart.splice(index,1); localStorage.setItem("cart",JSON.stringify(cart)); renderCart(); }
 function emptyCart(){ if(confirm("Vaciar carrito?")){cart=[]; localStorage.setItem("cart","[]"); renderCart();} }
 function viewCart(){ renderCart(); showModalMessage("Carrito actualizado"); }
 
-// --- Compra + comprobante ---
+// --- Compra ajustada ---
 function openPurchaseForm(){ if(cart.length===0) return alert("Carrito vacío"); openModal(`
 <h3>Formulario de Compra</h3>
 <input id="buyerName" placeholder="Nombre completo">
@@ -174,13 +204,24 @@ function openPurchaseForm(){ if(cart.length===0) return alert("Carrito vacío");
 <input id="buyerWhats" placeholder="WhatsApp">
 <input id="buyerAddress" placeholder="Dirección">
 <input id="buyerEmail" placeholder="Email">
-<select id="buyerPayment">
+<select id="buyerPayment" onchange="showPaymentInfo()">
 <option value="yappy">Yappy</option>
 <option value="ach">ACH</option>
 </select>
+<div class="paymentInfo" id="paymentInfo"></div>
 <input id="buyerComprobante" type="file" accept="image/*">
-<button onclick="submitPurchase()">Enviar Compra</button>`);}
+<button onclick="submitPurchase()">Enviar Compra</button>
+`); showPaymentInfo(); }
 
+function showPaymentInfo(){
+  const method=document.getElementById("buyerPayment").value;
+  const info=document.getElementById("paymentInfo");
+  if(method==="yappy"){ info.innerHTML="+507 63892022 Emanuel Cedeño"; }
+  else if(method==="ach"){ info.innerHTML="EMANUEL CLEMENTE CEDEÑO MORAN - Banco General - Cuenta de ahorros - 0454966165208"; }
+  else{ info.innerHTML=""; }
+}
+
+// --- Enviar compra ---
 async function submitPurchase(){
   const name=document.getElementById("buyerName").value.trim();
   const phone=document.getElementById("buyerPhone").value.trim();
@@ -190,20 +231,75 @@ async function submitPurchase(){
   const payment=document.getElementById("buyerPayment").value;
   const comprobanteFile=document.getElementById("buyerComprobante").files[0];
   if(!name||!phone||!whatsapp||!address||!email||!payment) return alert("Completa todos los campos");
+
   let comprobanteUrl="";
-  if(comprobanteFile){ const data = new FormData(); data.append("file",comprobanteFile); data.append("upload_preset","vendors_preset"); const res=await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`,{method:"POST",body:data}); const json=await res.json(); comprobanteUrl=json.secure_url; }
+  if(comprobanteFile){
+    const data=new FormData();
+    data.append("file",comprobanteFile);
+    data.append("upload_preset","vendors_preset");
+    const res=await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`,{method:"POST",body:data});
+    const json=await res.json();
+    comprobanteUrl=json.secure_url;
+  }
+
   await db.collection("orders").add({user:auth.currentUser.uid,userEmail:auth.currentUser.email,buyerName:name,phone,whatsapp,address,email,payment,comprobante:comprobanteUrl,products:cart,status:"pendiente"});
   cart=[]; localStorage.setItem("cart","[]"); renderCart(); showModalMessage("Compra enviada"); closeModal();
 }
 
-// --- Historial y Admin (igual que versión anterior) ---
-function loadUserOrders(){ const history=document.getElementById("purchaseHistory"); db.collection("orders").where("user","==",auth.currentUser.uid).onSnapshot(snapshot=>{ let html=""; snapshot.forEach(doc=>{ const o=doc.data(); html+=`<div class="order"><strong>Compra #${doc.id}</strong> - Estado: <span class="status-${o.status.replace(/\s/g,'-')}">${o.status}</span><br><button onclick="toggleDetails('${doc.id}')">Ver/ocultar detalles</button><div id="details-${doc.id}" style="display:none; padding:5px 0;">Nombre: ${o.buyerName}<br>Teléfono: ${o.phone}<br>WhatsApp: ${o.whatsapp}<br>Dirección: ${o.address}<br>Email: ${o.email}<br>Pago: ${o.payment==='yappy'?'+507 63892022 Emanuel Cedeño':'EMANUEL CLEMENTE CEDEÑO MORAN - Banco General -  Cuenta de ahorros - 0454966165208'}<br>Productos: ${o.products.map(p=>p.name).join(", ")}<br>${o.comprobante?`Comprobante: <a href="${o.comprobante}" target="_blank">Ver</a>`:'Sin comprobante'}</div></div>`; }); history.innerHTML=html||"<i>No hay compras</i>"; });}
+// --- Historial ---
+function loadUserOrders(){
+  const history=document.getElementById("purchaseHistory");
+  db.collection("orders").where("user","==",auth.currentUser.uid).onSnapshot(snapshot=>{
+    let html="";
+    snapshot.forEach(doc=>{
+      const o=doc.data();
+      html+=`<div class="order"><strong>Compra #${doc.id}</strong> - Estado: <span class="status-${o.status.replace(/\s/g,'-')}">${o.status}</span><br>
+      <button onclick="toggleDetails('${doc.id}')">Ver/ocultar detalles</button>
+      <div id="details-${doc.id}" style="display:none; padding:5px 0;">
+      Nombre: ${o.buyerName}<br>Tel: ${o.phone}<br>WhatsApp: ${o.whatsapp}<br>Dirección: ${o.address}<br>Email: ${o.email}<br>Pago: ${o.payment==='yappy'?'+507 63892022 Emanuel Cedeño':'EMANUEL CLEMENTE CEDEÑO MORAN - Banco General -  Cuenta de ahorros - 0454966165208'}<br>Productos: ${o.products.map(p=>p.name).join(", ")}<br>${o.comprobante?`Comprobante: <a href="${o.comprobante}" target="_blank">Ver</a>`:'Sin comprobante'}</div></div>`;
+    });
+    history.innerHTML=html||"<i>No hay compras</i>";
+  });
+}
 function toggleDetails(id){ const el=document.getElementById(`details-${id}`); el.style.display=(el.style.display==="none")?"block":"none"; }
-function loadOrders(){ if(role!=="admin") return; const ordersList=document.getElementById("ordersList"); const stats=document.getElementById("orderStats"); db.collection("orders").onSnapshot(snapshot=>{ let html="",counts={pendiente:0,"revision de pago":0,"pago verificado":0,"en camino":0,"entregado":0,"cancelada":0}; snapshot.forEach(doc=>{ const o=doc.data(); counts[o.status]++; html+=`<div class="order"><strong>Compra #${doc.id}</strong> - Estado: <span class="status-${o.status.replace(/\s/g,'-')}">${o.status}</span><br><button onclick="toggleAdminDetails('${doc.id}')">Ver/ocultar detalles</button><div id="admin-details-${doc.id}" style="display:none; padding:5px 0;">Usuario: ${o.userEmail}<br>Nombre: ${o.buyerName}<br>Teléfono: ${o.phone}<br>WhatsApp: ${o.whatsapp}<br>Dirección: ${o.address}<br>Email: ${o.email}<br>Tipo de pago: ${o.payment==='yappy'?'+507 63892022 Emanuel Cedeño':'EMANUEL CLEMENTE CEDEÑO MORAN - Banco General -  Cuenta de ahorros - 0454966165208'}<br>Productos: ${o.products.map(p=>p.name).join(", ")}<br>Comprobante: ${o.comprobante?`<a href="${o.comprobante}" target="_blank">Ver</a>`:'Sin comprobante'}<div class="actions">${o.status==="pendiente"||o.status==="revision de pago"?`<button onclick="changeStatus('${doc.id}')">Cambiar Estado</button><button onclick="cancelOrder('${doc.id}')">Cancelar Compra</button>`:""}${o.status==="en camino"?`<button onclick="uploadDelivery('${doc.id}')">Subir entrega</button>`:""}</div></div></div>`;}); ordersList.innerHTML=html||"<i>No hay solicitudes</i>"; stats.innerHTML=`<div>Pendiente: ${counts["pendiente"]}</div><div>Revisión de pago: ${counts["revision de pago"]}</div><div>Pago verificado: ${counts["pago verificado"]}</div><div>En camino: ${counts["en camino"]}</div><div>Entregado: ${counts["entregado"]}</div><div>Cancelada: ${counts["cancelada"]}</div>`;}); }
+
+// --- Admin ---
+function loadOrders(){
+  if(role!=="admin") return;
+  const ordersList=document.getElementById("ordersList");
+  const stats=document.getElementById("orderStats");
+  db.collection("orders").onSnapshot(snapshot=>{
+    let html="", counts={"pendiente":0,"revision de pago":0,"pago verificado":0,"en camino":0,"entregado":0,"cancelada":0};
+    snapshot.forEach(doc=>{
+      const o=doc.data(); counts[o.status] = counts[o.status]+1||1;
+      html+=`<div class="order"><strong>Compra #${doc.id}</strong> - Estado: <span class="status-${o.status.replace(/\s/g,'-')}">${o.status}</span><br>
+      <button onclick="toggleAdminDetails('${doc.id}')">Ver/ocultar detalles</button>
+      <div id="admin-details-${doc.id}" style="display:none; padding:5px 0;">
+      Usuario: ${o.userEmail}<br>Nombre: ${o.buyerName}<br>Tel: ${o.phone}<br>WhatsApp: ${o.whatsapp}<br>Dirección: ${o.address}<br>Email: ${o.email}<br>Pago: ${o.payment==='yappy'?'+507 63892022 Emanuel Cedeño':'EMANUEL CLEMENTE CEDEÑO MORAN - Banco General -  Cuenta de ahorros - 0454966165208'}<br>Productos: ${o.products.map(p=>p.name).join(", ")}<br>Comprobante: ${o.comprobante?`<a href="${o.comprobante}" target="_blank">Ver</a>`:'Sin comprobante'}<div class="actions">${(role==="admin" || o.status==="pendiente"||o.status==="revision de pago")?`<button onclick="changeStatus('${doc.id}')">Cambiar Estado</button>`:""}</div></div></div>`;
+    });
+    ordersList.innerHTML=html||"<i>No hay solicitudes</i>";
+    stats.innerHTML=`<div>Pendiente: ${counts["pendiente"]}</div><div>Revisión de pago: ${counts["revision de pago"]}</div><div>Pago verificado: ${counts["pago verificado"]}</div><div>En camino: ${counts["en camino"]}</div><div>Entregado: ${counts["entregado"]}</div><div>Cancelada: ${counts["cancelada"]}</div>`;
+  });
+}
+
 function toggleAdminDetails(id){ const el=document.getElementById(`admin-details-${id}`); el.style.display=(el.style.display==="none")?"block":"none"; }
-function changeStatus(id){ const newStatus=prompt("Nuevo estado: revision de pago, pago verificado, en camino, entregado"); if(!newStatus) return; db.collection("orders").doc(id).update({status:newStatus}).then(()=>showModalMessage("Estado actualizado"));}
-function cancelOrder(id){ const reason=prompt("Razón de cancelación:"); if(!reason) return; db.collection("orders").doc(id).update({status:"cancelada", cancelReason:reason}).then(()=>showModalMessage("Compra cancelada"));}
-function uploadDelivery(orderId){ const fileInput=document.createElement("input"); fileInput.type="file"; fileInput.accept="image/*"; fileInput.onchange=async()=>{ const file=fileInput.files[0]; if(!file) return; const data=new FormData(); data.append("file",file); data.append("upload_preset","vendors_preset"); const res=await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`,{method:"POST",body:data}); const json=await res.json(); await db.collection("orders").doc(orderId).update({deliveryProof:json.secure_url,status:"entregado"}); showModalMessage("Entrega registrada");}; fileInput.click();}
+function changeStatus(id){ const newStatus=prompt("Nuevo estado: revision de pago, pago verificado, en camino, entregado"); if(!newStatus) return; db.collection("orders").doc(id).update({status:newStatus}).then(()=>showModalMessage("Estado actualizado")); }
+
+// --- Productos admin ---
+async function uploadProduct(){
+  const name=document.getElementById("name").value.trim();
+  const desc=document.getElementById("description").value.trim();
+  const price=parseFloat(document.getElementById("price").value);
+  const mediaFile=document.getElementById("media").files[0];
+  if(!name||!desc||!price) return alert("Completa todos los campos");
+  let mediaUrl="";
+  if(mediaFile){
+    const data=new FormData(); data.append("file",mediaFile); data.append("upload_preset","vendors_preset");
+    const res=await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`,{method:"POST",body:data});
+    const json=await res.json(); mediaUrl=json.secure_url;
+  }
+  db.collection("products").add({name,description:desc,price,media:mediaUrl}).then(()=>{ showModalMessage("Producto subido"); document.getElementById("name").value=''; document.getElementById("description").value=''; document.getElementById("price").value=''; document.getElementById("media").value=''; }).catch(e=>alert(e.message));
+}
 </script>
 </body>
 </html>
