@@ -26,6 +26,12 @@ button:hover { opacity:0.9; }
 .actions { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; }
 .actions button { flex:1; display:flex; align-items:center; justify-content:center; gap:5px; }
 #cartList { background:#fff3cd; padding:10px; border-radius:8px; margin-top:15px; }
+#ordersList { margin-top:20px; }
+.status-pendiente { color:#ff9800; font-weight:bold; }
+.status-revision { color:#2196f3; font-weight:bold; }
+.status-verificado { color:#4caf50; font-weight:bold; }
+.status-en-camino { color:#9c27b0; font-weight:bold; }
+.status-finalizado { color:#000; font-weight:bold; }
 .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; }
 .modal-content { background:#fff; padding:20px; border-radius:8px; max-width:500px; width:90%; position:relative; }
 .modal-content button.close { position:absolute; top:10px; right:10px; background:#f00; border:none; border-radius:50%; width:30px; height:30px; color:#fff; cursor:pointer; }
@@ -36,7 +42,7 @@ button:hover { opacity:0.9; }
 <div class="container">
 
 <h2>Rol</h2>
-<select id="role" class="role" onchange="toggleAdminFeatures(); loadProducts();">
+<select id="role" class="role" onchange="toggleAdminFeatures(); loadProducts(); loadOrders();">
   <option value="usuario">Usuario</option>
   <option value="admin">Admin</option>
 </select>
@@ -50,6 +56,10 @@ button:hover { opacity:0.9; }
 <input id="price" type="number" placeholder="Precio">
 <input id="media" type="file" accept="image/*,video/*">
 <button onclick="uploadProduct()"><i class="fa fa-upload"></i> Subir</button>
+
+<hr>
+<h2>Solicitudes de Compra</h2>
+<div id="ordersList"><i>No hay pedidos aún</i></div>
 </div>
 
 <hr>
@@ -66,7 +76,7 @@ button:hover { opacity:0.9; }
 <hr>
 <h2><i class="fa fa-shopping-cart"></i> Carrito</h2>
 <div id="cartList"><i>Carrito vacío</i></div>
-<button onclick="viewCart()"><i class="fa fa-eye"></i> Ver Carrito</button>
+<button onclick="openPurchaseForm()"><i class="fa fa-credit-card"></i> Comprar Carrito</button>
 <button onclick="emptyCart()"><i class="fa fa-trash"></i> Vaciar Carrito</button>
 
 </div>
@@ -101,6 +111,7 @@ const mediaInput = document.getElementById("media");
 const cartListDiv = document.getElementById("cartList");
 const modal = document.getElementById("modal");
 const modalBody = document.getElementById("modalBody");
+const ordersListDiv = document.getElementById("ordersList");
 
 /* CARRITO EN LOCALSTORAGE */
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
@@ -204,6 +215,14 @@ function addToCart(id,name,price){
   showModalMessage(`${name} añadido al carrito`);
 }
 
+function emptyCart(){
+  if(confirm("Vaciar carrito?")){
+    cart=[];
+    localStorage.setItem("cart",JSON.stringify(cart));
+    cartListDiv.innerHTML="<i>Carrito vacío</i>";
+  }
+}
+
 function viewCart(){
   if(cart.length===0){ cartListDiv.innerHTML="<i>Carrito vacío</i>"; return; }
   let html="<ul>";
@@ -213,29 +232,115 @@ function viewCart(){
   cartListDiv.innerHTML=html;
 }
 
-function emptyCart(){
-  if(confirm("Vaciar carrito?")){
-    cart=[];
-    localStorage.setItem("cart",JSON.stringify(cart));
-    cartListDiv.innerHTML="<i>Carrito vacío</i>";
+/* FORMULARIO DE COMPRA */
+function openPurchaseForm(){
+  if(cart.length===0){ alert("Carrito vacío"); return; }
+  let html=`<h3>Formulario de Compra</h3>
+    <input id="buyerName" placeholder="Nombre">
+    <input id="buyerPhone" placeholder="Teléfono/WhatsApp">
+    <input id="buyerAddress" placeholder="Dirección de entrega">
+    <input id="buyerEmail" placeholder="Email">
+    <button onclick="confirmPurchase()">Confirmar Compra</button>`;
+  openModal(html);
+}
+
+async function confirmPurchase(){
+  const name = document.getElementById("buyerName").value.trim();
+  const phone = document.getElementById("buyerPhone").value.trim();
+  const address = document.getElementById("buyerAddress").value.trim();
+  const email = document.getElementById("buyerEmail").value.trim();
+
+  if(!name || !phone || !address || !email){ alert("Todos los campos son obligatorios"); return; }
+
+  await db.collection("orders").add({
+    buyerName:name,
+    buyerPhone:phone,
+    buyerAddress:address,
+    buyerEmail:email,
+    products:cart,
+    status:"Pendiente",
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  cart=[];
+  localStorage.setItem("cart",JSON.stringify(cart));
+  cartListDiv.innerHTML="<i>Carrito vacío</i>";
+  closeModal();
+  alert("Compra registrada correctamente");
+  loadOrders();
+}
+
+/* ADMIN: VER PEDIDOS Y CAMBIAR ESTADO */
+function loadOrders(){
+  if(roleSelect.value!=="admin"){ ordersListDiv.innerHTML="<i>Solo admin puede ver pedidos</i>"; return; }
+
+  db.collection("orders").orderBy("createdAt","desc").onSnapshot(snapshot=>{
+    ordersListDiv.innerHTML="";
+    snapshot.forEach(doc=>{
+      const o=doc.data();
+      const statusClass=getStatusClass(o.status);
+      let html=`<div style="border:1px solid #ccc; padding:10px; margin:5px; border-radius:5px;">
+        <b>Cliente:</b> ${o.buyerName} | <b>Tel:</b> ${o.buyerPhone} | <b>Email:</b> ${o.buyerEmail} <br>
+        <b>Dirección:</b> ${o.buyerAddress} <br>
+        <b>Productos:</b> ${o.products.map(p=>p.name+" ($"+p.price+")").join(", ")} <br>
+        <b>Total:</b> $${o.products.reduce((a,b)=>a+b.price,0)} <br>
+        <b>Status:</b> <span class="${statusClass}">${o.status}</span><br>
+        <select onchange="changeOrderStatus('${doc.id}',this.value)">
+          <option value="Pendiente" ${o.status==="Pendiente"?"selected":""}>Pendiente</option>
+          <option value="Revisión de pago" ${o.status==="Revisión de pago"?"selected":""}>Revisión de pago</option>
+          <option value="Pago verificado" ${o.status==="Pago verificado"?"selected":""}>Pago verificado</option>
+          <option value="En camino" ${o.status==="En camino"?"selected":""}>En camino</option>
+          <option value="Finalizado" ${o.status==="Finalizado"?"selected":""}>Finalizado</option>
+        </select>
+      </div>`;
+      ordersListDiv.innerHTML+=html;
+    });
+  });
+}
+
+function changeOrderStatus(id,status){
+  db.collection("orders").doc(id).update({status:status});
+}
+
+/* HISTORIAL PARA USUARIO */
+function loadUserOrders(){
+  if(roleSelect.value!=="usuario"){ return; }
+
+  db.collection("orders").orderBy("createdAt","desc").onSnapshot(snapshot=>{
+    cartListDiv.innerHTML="";
+    snapshot.forEach(doc=>{
+      const o=doc.data();
+      cartListDiv.innerHTML+=`<div style="border:1px solid #ccc; padding:5px; margin:5px; border-radius:5px;">
+        <b>Productos:</b> ${o.products.map(p=>p.name+" ($"+p.price+")").join(", ")}<br>
+        <b>Total:</b> $${o.products.reduce((a,b)=>a+b.price,0)}<br>
+        <b>Status:</b> ${o.status}
+      </div>`;
+    });
+  });
+}
+
+/* UTILS */
+function getStatusClass(status){
+  switch(status){
+    case "Pendiente": return "status-pendiente";
+    case "Revisión de pago": return "status-revision";
+    case "Pago verificado": return "status-verificado";
+    case "En camino": return "status-en-camino";
+    case "Finalizado": return "status-finalizado";
+    default: return "";
   }
 }
 
-/* MODAL */
 function openModal(content){
   modalBody.innerHTML=content;
   modal.style.display="flex";
 }
-function closeModal(){
-  modal.style.display="none";
-}
-function showModalMessage(msg){
-  openModal(msg);
-  setTimeout(closeModal,1500);
-}
+function closeModal(){ modal.style.display="none"; }
+function showModalMessage(msg){ openModal(msg); setTimeout(closeModal,1500); }
 
 loadProducts();
+loadOrders();
+loadUserOrders();
 </script>
-
 </body>
 </html>
