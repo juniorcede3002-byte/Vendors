@@ -2,31 +2,23 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Vendor | Sistema de Ventas</title>
-
-<!-- Firebase -->
+<title>Vendors | Sitio de compras</title>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
-<!-- Iconos -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
 
 <style>
-body { font-family: Arial,sans-serif; background:#f2f2f2; margin:0; padding:20px; }
-.container { max-width:900px; margin:auto; background:#fff; padding:20px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.1);}
-input, textarea, select, button { width:100%; padding:10px; margin-top:10px; border-radius:5px; border:1px solid #ccc; }
-button { background:#111; color:#fff; border:none; cursor:pointer; transition:0.2s; }
-button:hover { opacity:0.9; }
-.role { background:#eee; }
-.product { border:1px solid #ddd; padding:10px; margin-top:15px; border-radius:8px; display:flex; flex-direction:column; gap:5px; background:#fafafa; }
-.product img, .product video { width:100%; border-radius:6px; }
-.product h3 { margin:5px 0; }
-.product p { margin:5px 0; }
-.price { font-weight:bold; color:#111; }
+body { font-family: Arial,sans-serif; background:#f2f2f2; margin:0; padding:0; }
+header { background:#111; color:#fff; padding:15px; text-align:center; font-size:20px; }
+.container { max-width:1000px; margin:auto; padding:20px; }
+.tabs { display:flex; gap:5px; margin-bottom:15px; flex-wrap:wrap; }
+.tabs button { flex:1; padding:10px; cursor:pointer; border:none; border-radius:5px; background:#ddd; transition:0.2s; }
+.tabs button.active { background:#111; color:#fff; }
+.tab-content { display:none; background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+.tab-content.active { display:block; }
+.product, .order { border:1px solid #ddd; padding:10px; margin-top:15px; border-radius:8px; background:#fafafa; }
 .actions { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; }
 .actions button { flex:1; display:flex; align-items:center; justify-content:center; gap:5px; }
-#cartList { background:#fff3cd; padding:10px; border-radius:8px; margin-top:15px; }
-#ordersList, #purchaseHistory { margin-top:20px; }
 .status-pendiente { color:#ff9800; font-weight:bold; }
 .status-revision { color:#2196f3; font-weight:bold; }
 .status-verificado { color:#4caf50; font-weight:bold; }
@@ -36,53 +28,68 @@ button:hover { opacity:0.9; }
 .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:1000;}
 .modal-content { background:#fff; padding:20px; border-radius:8px; max-width:500px; width:90%; position:relative; box-shadow:0 2px 15px rgba(0,0,0,0.3); }
 .modal-content button.close { position:absolute; top:10px; right:10px; background:#f00; border:none; border-radius:50%; width:30px; height:30px; color:#fff; cursor:pointer; font-weight:bold; font-size:16px; }
+input, textarea, select, button { width:100%; padding:10px; margin-top:10px; border-radius:5px; border:1px solid #ccc; }
+button { background:#111; color:#fff; border:none; cursor:pointer; transition:0.2s; }
+button:hover { opacity:0.9; }
 </style>
 </head>
 <body>
+
+<header>Vendor Dashboard Completo</header>
+
 <div class="container">
+  <div>
+    Rol: 
+    <select id="role" onchange="setRole();">
+      <option value="usuario">Usuario</option>
+      <option value="admin">Admin</option>
+    </select>
+  </div>
 
-<h2>Rol</h2>
-<select id="role" class="role" onchange="toggleAdminFeatures(); loadProducts(); loadOrders(); loadUserOrders();">
-  <option value="usuario">Usuario</option>
-  <option value="admin">Admin</option>
-</select>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="productsTab">Productos</button>
+    <button class="tab-btn" data-tab="cartTab">Carrito</button>
+    <button class="tab-btn" data-tab="ordersTab">Compras</button>
+    <button class="tab-btn" data-tab="adminTab">Admin</button>
+  </div>
 
-<hr>
+  <!-- TAB Productos -->
+  <div id="productsTab" class="tab-content active">
+    <h2>Productos</h2>
+    <input id="search" placeholder="Buscar por nombre" oninput="loadProducts()">
+    <input id="maxPrice" type="number" placeholder="Precio máximo" oninput="loadProducts()">
+    <div id="productsList"></div>
+  </div>
 
-<div id="adminPanel">
-<h2>Subir Producto</h2>
-<input id="name" placeholder="Nombre">
-<textarea id="description" placeholder="Descripción"></textarea>
-<input id="price" type="number" placeholder="Precio">
-<input id="media" type="file" accept="image/*,video/*">
-<button onclick="uploadProduct()"><i class="fa fa-upload"></i> Subir</button>
+  <!-- TAB Carrito -->
+  <div id="cartTab" class="tab-content">
+    <h2>Carrito</h2>
+    <div id="cartList"><i>Carrito vacío</i></div>
+    <button onclick="viewCart()"><i class="fa fa-eye"></i> Ver Carrito</button>
+    <button onclick="openPurchaseForm()"><i class="fa fa-credit-card"></i> Comprar Carrito</button>
+    <button onclick="emptyCart()"><i class="fa fa-trash"></i> Vaciar Carrito</button>
+  </div>
 
-<hr>
-<h2>Solicitudes de Compra</h2>
-<div id="ordersList"><i>No hay pedidos aún</i></div>
-</div>
+  <!-- TAB Historial -->
+  <div id="ordersTab" class="tab-content">
+    <h2>Historial de Compras</h2>
+    <div id="purchaseHistory"></div>
+  </div>
 
-<hr>
+  <!-- TAB Admin -->
+  <div id="adminTab" class="tab-content">
+    <div id="adminPanel">
+      <h3>Subir Producto</h3>
+      <input id="name" placeholder="Nombre">
+      <textarea id="description" placeholder="Descripción"></textarea>
+      <input id="price" type="number" placeholder="Precio">
+      <input id="media" type="file" accept="image/*,video/*">
+      <button onclick="uploadProduct()"><i class="fa fa-upload"></i> Subir</button>
 
-<h2>Buscar</h2>
-<input id="search" placeholder="Buscar por nombre" oninput="loadProducts()">
-<input id="maxPrice" type="number" placeholder="Precio máximo" oninput="loadProducts()">
-
-<hr>
-
-<h2>Productos</h2>
-<div id="productsList"></div>
-
-<hr>
-<h2><i class="fa fa-shopping-cart"></i> Carrito</h2>
-<div id="cartList"><i>Carrito vacío</i></div>
-<button onclick="viewCart()"><i class="fa fa-eye"></i> Ver Carrito</button>
-<button onclick="openPurchaseForm()"><i class="fa fa-credit-card"></i> Comprar Carrito</button>
-<button onclick="emptyCart()"><i class="fa fa-trash"></i> Vaciar Carrito</button>
-
-<hr>
-<h2>Historial de Compras</h2>
-<div id="purchaseHistory"><i>No hay compras aún</i></div>
+      <h3>Solicitudes de Compra</h3>
+      <div id="ordersList"></div>
+    </div>
+  </div>
 
 </div>
 
@@ -94,7 +101,6 @@ button:hover { opacity:0.9; }
 </div>
 
 <script>
-/* FIREBASE */
 firebase.initializeApp({
   apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
   authDomain: "proyectovendor.firebaseapp.com",
@@ -103,50 +109,53 @@ firebase.initializeApp({
 const db = firebase.firestore();
 const CLOUD_NAME="df79cjklp";
 const UPLOAD_PRESET="vendors_preset";
+let role="usuario";
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-const roleSelect = document.getElementById("role");
 const productsList = document.getElementById("productsList");
-const adminPanel = document.getElementById("adminPanel");
-const nameInput = document.getElementById("name");
-const descriptionInput = document.getElementById("description");
-const priceInput = document.getElementById("price");
-const mediaInput = document.getElementById("media");
 const cartListDiv = document.getElementById("cartList");
 const modal = document.getElementById("modal");
 const modalBody = document.getElementById("modalBody");
 const ordersListDiv = document.getElementById("ordersList");
 const purchaseHistoryDiv = document.getElementById("purchaseHistory");
+const adminPanel = document.getElementById("adminPanel");
+const nameInput = document.getElementById("name");
+const descriptionInput = document.getElementById("description");
+const priceInput = document.getElementById("price");
+const mediaInput = document.getElementById("media");
 
-let cart = JSON.parse(localStorage.getItem("cart")) || [];
-
-function toggleAdminFeatures(){
-    adminPanel.style.display = roleSelect.value==="admin"?"block":"none";
+function setRole(){ 
+    role=document.getElementById("role").value; 
+    toggleAdmin(); 
+    loadProducts(); 
+    loadOrders(); 
+    loadUserOrders(); 
 }
 
-document.addEventListener("DOMContentLoaded",()=>{
-    toggleAdminFeatures();
-    loadProducts();
-    loadOrders();
-    loadUserOrders();
+function toggleAdmin(){ adminPanel.style.display=role==="admin"?"block":"none"; }
+
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll(".tab-content").forEach(tab=>tab.classList.remove("active"));
+    document.getElementById(btn.dataset.tab).classList.add("active");
+  });
 });
 
-/* SUBIR PRODUCTO */
+// --- Productos ---
 async function uploadProduct(){
   const file = mediaInput.files[0];
   if(!file) return alert("Archivo requerido");
   if(!nameInput.value.trim() || !priceInput.value) return alert("Nombre y precio obligatorios");
-
   const form=new FormData();
   form.append("file",file);
   form.append("upload_preset",UPLOAD_PRESET);
-
   const isVideo=file.type.startsWith("video");
   const endpoint=isVideo?"video":"image";
-
   const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${endpoint}/upload`,{method:"POST",body:form});
   const data=await res.json();
   if(!data.secure_url) return alert("Error subir archivo");
-
   await db.collection("products").add({
     name:nameInput.value.trim(),
     description:descriptionInput.value.trim(),
@@ -155,23 +164,18 @@ async function uploadProduct(){
     mediaType:isVideo?"video":"image",
     createdAt:firebase.firestore.FieldValue.serverTimestamp()
   });
-
   alert("Producto subido");
   nameInput.value=""; descriptionInput.value=""; priceInput.value=""; mediaInput.value="";
 }
 
-/* LISTAR PRODUCTOS */
 function loadProducts(){
-  const role = roleSelect.value;
   const search = document.getElementById("search").value.toLowerCase();
   const maxPrice = document.getElementById("maxPrice").value;
-
   db.collection("products").orderBy("createdAt","desc").onSnapshot(snapshot=>{
     productsList.innerHTML="";
     snapshot.forEach(doc=>{
-      const p = doc.data();
+      const p=doc.data();
       if((search && !p.name.toLowerCase().includes(search)) || (maxPrice && p.price>maxPrice)) return;
-
       productsList.innerHTML+=`
         <div class="product">
           ${p.mediaType==="video"?`<video src="${p.mediaUrl}" controls></video>`:`<img src="${p.mediaUrl}">`}
@@ -191,60 +195,35 @@ function loadProducts(){
   });
 }
 
-/* EDITAR / ELIMINAR PRODUCTO */
-function editProduct(id,name,desc,price){
-  const newName = prompt("Nombre:",name);
-  const newDesc = prompt("Descripción:",desc);
-  const newPrice = prompt("Precio:",price);
-  if(newName && newDesc && newPrice){
-    db.collection("products").doc(id).update({
-      name:newName,
-      description:newDesc,
-      price:Number(newPrice)
-    });
-    alert("Producto actualizado");
-  }
-}
-
-function deleteProduct(id){
-  if(confirm("¿Eliminar producto?")) db.collection("products").doc(id).delete();
-}
-
-/* CONTACTAR */
-function showContact(name){
-  openModal(`Contacta al vendedor sobre: <b>${name}</b><br>Número: 63892022`);
-}
-
-/* CARRITO */
+// --- Carrito ---
 function addToCart(id,name,price){
   cart.push({id,name,price});
   localStorage.setItem("cart",JSON.stringify(cart));
   showModalMessage(`${name} añadido al carrito`);
 }
 
-function emptyCart(){
-  if(confirm("Vaciar carrito?")){
-    cart=[];
-    localStorage.setItem("cart",JSON.stringify(cart));
-    cartListDiv.innerHTML="<i>Carrito vacío</i>";
-  }
-}
-
+function emptyCart(){ if(confirm("Vaciar carrito?")){ cart=[]; localStorage.setItem("cart",JSON.stringify(cart)); cartListDiv.innerHTML="<i>Carrito vacío</i>"; } }
 function viewCart(){
   if(cart.length===0){ cartListDiv.innerHTML="<i>Carrito vacío</i>"; return; }
-  let html="<ul>";
-  let total=0;
+  let html="<ul>"; let total=0;
   cart.forEach(item=>{ html+=`<li>${item.name} - $${item.price}</li>`; total+=item.price; });
   html+=`</ul><b>Total: $${total}</b>`;
   cartListDiv.innerHTML=html;
 }
 
-/* MODAL */
+// --- Modales ---
 function openModal(content){ modal.style.display="flex"; modalBody.innerHTML=content; }
 function closeModal(){ modal.style.display="none"; }
 function showModalMessage(msg){ openModal(`<p>${msg}</p>`); setTimeout(closeModal,1500); }
 
-/* FORMULARIO DE COMPRA */
+// --- Contactar ---
+function showContact(name){ openModal(`Contacta al vendedor sobre: <b>${name}</b><br>Número: 63892022`); }
+
+// --- Editar / Eliminar ---
+function editProduct(id,name,desc,price){ const n=prompt("Nombre:",name); const d=prompt("Descripción:",desc); const p=prompt("Precio:",price); if(n && d && p) db.collection("products").doc(id).update({name:n,description:d,price:Number(p)}); }
+function deleteProduct(id){ if(confirm("Eliminar producto?")) db.collection("products").doc(id).delete(); }
+
+// --- Compras ---
 function openPurchaseForm(){
   if(cart.length===0){ alert("Carrito vacío"); return; }
   let html=`<h3>Formulario de Compra</h3>
@@ -258,26 +237,19 @@ function openPurchaseForm(){
   openModal(html);
 }
 
-/* CONFIRMAR COMPRA */
 async function confirmPurchase(){
-  const name = document.getElementById("buyerName").value.trim();
-  const phone = document.getElementById("buyerPhone").value.trim();
-  const address = document.getElementById("buyerAddress").value.trim();
-  const email = document.getElementById("buyerEmail").value.trim();
-  const proofFile = document.getElementById("paymentProof").files[0];
-
-  if(!name || !phone || !address || !email) return alert("Todos los campos son obligatorios");
-
+  const name=document.getElementById("buyerName").value.trim();
+  const phone=document.getElementById("buyerPhone").value.trim();
+  const address=document.getElementById("buyerAddress").value.trim();
+  const email=document.getElementById("buyerEmail").value.trim();
+  const proofFile=document.getElementById("paymentProof").files[0];
+  if(!name||!phone||!address||!email) return alert("Todos los campos obligatorios");
   let proofUrl="";
   if(proofFile){
-    const form=new FormData();
-    form.append("file",proofFile);
-    form.append("upload_preset",UPLOAD_PRESET);
+    const form=new FormData(); form.append("file",proofFile); form.append("upload_preset",UPLOAD_PRESET);
     const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,{method:"POST",body:form});
-    const data=await res.json();
-    proofUrl=data.secure_url;
+    const data=await res.json(); proofUrl=data.secure_url;
   }
-
   await db.collection("orders").add({
     buyerName:name,
     buyerPhone:phone,
@@ -285,23 +257,21 @@ async function confirmPurchase(){
     buyerEmail:email,
     products:cart,
     status:"pendiente",
-    proof:proofUrl || "",
+    proof:proofUrl||"",
     createdAt:firebase.firestore.FieldValue.serverTimestamp()
   });
-
   cart=[]; localStorage.setItem("cart",JSON.stringify(cart)); closeModal();
   showModalMessage("Compra enviada correctamente");
   loadOrders(); loadUserOrders();
 }
 
-/* CARGAR ORDENES ADMIN */
+// --- Cargar ordenes admin ---
 function loadOrders(){
-  if(roleSelect.value!=="admin"){ ordersListDiv.innerHTML="<i>No tienes acceso</i>"; return; }
+  if(role!=="admin"){ ordersListDiv.innerHTML="<i>No tienes acceso</i>"; return; }
   db.collection("orders").orderBy("createdAt","desc").onSnapshot(snapshot=>{
     ordersListDiv.innerHTML="";
     snapshot.forEach(doc=>{
       const o=doc.data();
-      const statusClass=getStatusClass(o.status);
       let proofBtn=o.proof?`<button onclick="viewProof('${o.proof}')">Ver comprobante</button>`:"";
       let addProofBtn=`<button onclick="uploadOrderProof('${doc.id}')">Agregar / Cambiar comprobante</button>`;
       let statusOptions=["pendiente","revision","verificado","en-camino","finalizado","cancelada"];
@@ -309,11 +279,11 @@ function loadOrders(){
         ${statusOptions.map(s=>`<option value="${s}" ${o.status===s?'selected':''}>${s}</option>`).join('')}
       </select>`;
       ordersListDiv.innerHTML+=`
-        <div class="product">
+        <div class="order">
           <h4>${o.buyerName} - ${o.buyerPhone}</h4>
           <p>${o.buyerAddress} - ${o.buyerEmail}</p>
           <b>${o.products.map(p=>p.name+" $"+p.price).join(", ")}</b>
-          <p class="${statusClass}">Estado: ${o.status}</p>
+          <p class="status-${o.status}">Estado: ${o.status}</p>
           ${proofBtn} ${addProofBtn} <br>
           Cambiar Estado: ${statusSelect}
           <button onclick="cancelOrder('${doc.id}')">Cancelar Compra</button>
@@ -323,18 +293,17 @@ function loadOrders(){
   });
 }
 
-/* CARGAR ORDENES USUARIO */
+// --- Cargar historial usuario ---
 function loadUserOrders(){
   db.collection("orders").orderBy("createdAt","desc").onSnapshot(snapshot=>{
     purchaseHistoryDiv.innerHTML="";
     snapshot.forEach(doc=>{
       const o=doc.data();
-      const statusClass=getStatusClass(o.status);
       let addProofBtn=o.status!=="finalizado"?`<button onclick="uploadOrderProof('${doc.id}')">Agregar / Cambiar comprobante</button>`:"";
       purchaseHistoryDiv.innerHTML+=`
-        <div class="product">
+        <div class="order">
           <b>${o.products.map(p=>p.name+" $"+p.price).join(", ")}</b>
-          <p class="${statusClass}">Estado: ${o.status}</p>
+          <p class="status-${o.status}">Estado: ${o.status}</p>
           ${o.proof?`<button onclick="viewProof('${o.proof}')">Ver comprobante</button>`:""} ${addProofBtn}
         </div>
       `;
@@ -342,16 +311,12 @@ function loadUserOrders(){
   });
 }
 
-/* SUBIR COMPROBANTE DESPUES DE CREAR LA ORDEN */
+// --- Subir comprobante ---
 async function uploadOrderProof(orderId){
-  const input=document.createElement("input");
-  input.type="file"; input.accept="image/*";
+  const input=document.createElement("input"); input.type="file"; input.accept="image/*";
   input.onchange=async ()=>{
-    const file=input.files[0];
-    if(!file) return;
-    const form=new FormData();
-    form.append("file",file);
-    form.append("upload_preset",UPLOAD_PRESET);
+    const file=input.files[0]; if(!file) return;
+    const form=new FormData(); form.append("file",file); form.append("upload_preset",UPLOAD_PRESET);
     const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,{method:"POST",body:form});
     const data=await res.json();
     await db.collection("orders").doc(orderId).update({proof:data.secure_url});
@@ -360,37 +325,15 @@ async function uploadOrderProof(orderId){
   input.click();
 }
 
-/* CAMBIAR ESTADO CON CONFIRMACION */
-function changeStatus(id,newStatus){
-  if(confirm(`Confirmar cambio de estado a "${newStatus}"?`)){
-    db.collection("orders").doc(id).update({status:newStatus});
-  }
-}
+// --- Cambiar estado ---
+function changeStatus(id,newStatus){ if(confirm(`Confirmar cambio a "${newStatus}"?`)) db.collection("orders").doc(id).update({status:newStatus}); }
 
-/* CANCELAR ORDEN */
-function cancelOrder(id){
-  const reason=prompt("Motivo de cancelación:");
-  if(reason){
-    db.collection("orders").doc(id).update({status:"cancelada",cancelReason:reason});
-  }
-}
+// --- Cancelar orden ---
+function cancelOrder(id){ const reason=prompt("Motivo de cancelación:"); if(reason) db.collection("orders").doc(id).update({status:"cancelada",cancelReason:reason}); }
 
-/* VER COMPROBANTE */
-function viewProof(url){
-  openModal(`<img src="${url}" style="width:100%"/>`);
-}
+// --- Ver comprobante ---
+function viewProof(url){ openModal(`<img src="${url}" style="width:100%"/>`); }
 
-function getStatusClass(status){
-  switch(status){
-    case "pendiente": return "status-pendiente";
-    case "revision": return "status-revision";
-    case "verificado": return "status-verificado";
-    case "en-camino": return "status-en-camino";
-    case "finalizado": return "status-finalizado";
-    case "cancelada": return "status-cancelada";
-    default: return "";
-  }
-}
 </script>
 </body>
 </html>
