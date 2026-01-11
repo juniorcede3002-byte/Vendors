@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Vendor | Sistema de Ventas</title>
+<title>Vendor | Sitio de Ventas</title>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -42,7 +42,7 @@ button:hover { opacity:0.9; }
 <div class="container">
 
 <h2>Rol</h2>
-<select id="role" class="role" onchange="toggleAdminFeatures(); loadProducts(); loadOrders();">
+<select id="role" class="role" onchange="toggleAdminFeatures(); loadProducts(); loadOrders(); loadUserOrders();">
   <option value="usuario">Usuario</option>
   <option value="admin">Admin</option>
 </select>
@@ -76,8 +76,13 @@ button:hover { opacity:0.9; }
 <hr>
 <h2><i class="fa fa-shopping-cart"></i> Carrito</h2>
 <div id="cartList"><i>Carrito vacío</i></div>
+<button onclick="viewCart()"><i class="fa fa-eye"></i> Ver Carrito</button>
 <button onclick="openPurchaseForm()"><i class="fa fa-credit-card"></i> Comprar Carrito</button>
 <button onclick="emptyCart()"><i class="fa fa-trash"></i> Vaciar Carrito</button>
+
+<hr>
+<h2>Historial de Compras</h2>
+<div id="purchaseHistory"><i>No hay compras aún</i></div>
 
 </div>
 
@@ -112,6 +117,7 @@ const cartListDiv = document.getElementById("cartList");
 const modal = document.getElementById("modal");
 const modalBody = document.getElementById("modalBody");
 const ordersListDiv = document.getElementById("ordersList");
+const purchaseHistoryDiv = document.getElementById("purchaseHistory");
 
 /* CARRITO EN LOCALSTORAGE */
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
@@ -232,7 +238,7 @@ function viewCart(){
   cartListDiv.innerHTML=html;
 }
 
-/* FORMULARIO DE COMPRA */
+/* FORMULARIO DE COMPRA CON COMPROBANTE */
 function openPurchaseForm(){
   if(cart.length===0){ alert("Carrito vacío"); return; }
   let html=`<h3>Formulario de Compra</h3>
@@ -240,6 +246,8 @@ function openPurchaseForm(){
     <input id="buyerPhone" placeholder="Teléfono/WhatsApp">
     <input id="buyerAddress" placeholder="Dirección de entrega">
     <input id="buyerEmail" placeholder="Email">
+    <label>Adjuntar comprobante (opcional)</label>
+    <input type="file" id="paymentProof" accept="image/*">
     <button onclick="confirmPurchase()">Confirmar Compra</button>`;
   openModal(html);
 }
@@ -249,8 +257,19 @@ async function confirmPurchase(){
   const phone = document.getElementById("buyerPhone").value.trim();
   const address = document.getElementById("buyerAddress").value.trim();
   const email = document.getElementById("buyerEmail").value.trim();
+  const proofFile = document.getElementById("paymentProof").files[0];
 
   if(!name || !phone || !address || !email){ alert("Todos los campos son obligatorios"); return; }
+
+  let proofUrl = "";
+  if(proofFile){
+    const form = new FormData();
+    form.append("file", proofFile);
+    form.append("upload_preset",UPLOAD_PRESET);
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,{method:"POST",body:form});
+    const data = await res.json();
+    if(data.secure_url) proofUrl = data.secure_url;
+  }
 
   await db.collection("orders").add({
     buyerName:name,
@@ -259,6 +278,7 @@ async function confirmPurchase(){
     buyerEmail:email,
     products:cart,
     status:"Pendiente",
+    proofUrl:proofUrl,
     createdAt:firebase.firestore.FieldValue.serverTimestamp()
   });
 
@@ -268,6 +288,7 @@ async function confirmPurchase(){
   closeModal();
   alert("Compra registrada correctamente");
   loadOrders();
+  loadUserOrders();
 }
 
 /* ADMIN: VER PEDIDOS Y CAMBIAR ESTADO */
@@ -284,6 +305,7 @@ function loadOrders(){
         <b>Dirección:</b> ${o.buyerAddress} <br>
         <b>Productos:</b> ${o.products.map(p=>p.name+" ($"+p.price+")").join(", ")} <br>
         <b>Total:</b> $${o.products.reduce((a,b)=>a+b.price,0)} <br>
+        ${o.proofUrl?`<b>Comprobante:</b><br><img src="${o.proofUrl}" width="150"><br>`:""}
         <b>Status:</b> <span class="${statusClass}">${o.status}</span><br>
         <select onchange="changeOrderStatus('${doc.id}',this.value)">
           <option value="Pendiente" ${o.status==="Pendiente"?"selected":""}>Pendiente</option>
@@ -304,15 +326,17 @@ function changeOrderStatus(id,status){
 
 /* HISTORIAL PARA USUARIO */
 function loadUserOrders(){
-  if(roleSelect.value!=="usuario"){ return; }
+  if(roleSelect.value!=="usuario"){ purchaseHistoryDiv.innerHTML="<i>Solo usuarios ven historial</i>"; return; }
 
   db.collection("orders").orderBy("createdAt","desc").onSnapshot(snapshot=>{
-    cartListDiv.innerHTML="";
+    purchaseHistoryDiv.innerHTML="";
+    if(snapshot.empty){ purchaseHistoryDiv.innerHTML="<i>No hay compras aún</i>"; return; }
     snapshot.forEach(doc=>{
       const o=doc.data();
-      cartListDiv.innerHTML+=`<div style="border:1px solid #ccc; padding:5px; margin:5px; border-radius:5px;">
+      purchaseHistoryDiv.innerHTML+=`<div style="border:1px solid #ccc; padding:5px; margin:5px; border-radius:5px;">
         <b>Productos:</b> ${o.products.map(p=>p.name+" ($"+p.price+")").join(", ")}<br>
         <b>Total:</b> $${o.products.reduce((a,b)=>a+b.price,0)}<br>
+        ${o.proofUrl?`<b>Comprobante:</b><br><img src="${o.proofUrl}" width="150"><br>`:""}
         <b>Status:</b> ${o.status}
       </div>`;
     });
