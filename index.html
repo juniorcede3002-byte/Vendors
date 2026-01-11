@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Vendors | Sitio de compras</title>
+<title>Vendor | Dashboard Final</title>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
@@ -35,7 +35,7 @@ button:hover { opacity:0.9; }
 </head>
 <body>
 
-<header>Vendor Dashboard Completo</header>
+<header>Vendor Dashboard Final</header>
 
 <div class="container">
   <div>
@@ -109,6 +109,7 @@ firebase.initializeApp({
 const db = firebase.firestore();
 const CLOUD_NAME="df79cjklp";
 const UPLOAD_PRESET="vendors_preset";
+
 let role="usuario";
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
@@ -124,6 +125,7 @@ const descriptionInput = document.getElementById("description");
 const priceInput = document.getElementById("price");
 const mediaInput = document.getElementById("media");
 
+// --- Roles ---
 function setRole(){ 
     role=document.getElementById("role").value; 
     toggleAdmin(); 
@@ -131,9 +133,17 @@ function setRole(){
     loadOrders(); 
     loadUserOrders(); 
 }
+function toggleAdmin(){ 
+  if(role==="admin"){
+    adminPanel.style.display="block"; 
+    document.querySelector("[data-tab='adminTab']").style.display="inline-block";
+  } else { 
+    adminPanel.style.display="none"; 
+    document.querySelector("[data-tab='adminTab']").style.display="none";
+  }
+}
 
-function toggleAdmin(){ adminPanel.style.display=role==="admin"?"block":"none"; }
-
+// --- Tabs ---
 document.querySelectorAll(".tab-btn").forEach(btn=>{
   btn.addEventListener("click",()=>{
     document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
@@ -142,6 +152,11 @@ document.querySelectorAll(".tab-btn").forEach(btn=>{
     document.getElementById(btn.dataset.tab).classList.add("active");
   });
 });
+
+// --- Modal ---
+function openModal(content){ modal.style.display="flex"; modalBody.innerHTML=content; }
+function closeModal(){ modal.style.display="none"; }
+function showModalMessage(msg){ openModal(`<p>${msg}</p>`); setTimeout(closeModal,1500); }
 
 // --- Productos ---
 async function uploadProduct(){
@@ -201,7 +216,6 @@ function addToCart(id,name,price){
   localStorage.setItem("cart",JSON.stringify(cart));
   showModalMessage(`${name} añadido al carrito`);
 }
-
 function emptyCart(){ if(confirm("Vaciar carrito?")){ cart=[]; localStorage.setItem("cart",JSON.stringify(cart)); cartListDiv.innerHTML="<i>Carrito vacío</i>"; } }
 function viewCart(){
   if(cart.length===0){ cartListDiv.innerHTML="<i>Carrito vacío</i>"; return; }
@@ -210,11 +224,6 @@ function viewCart(){
   html+=`</ul><b>Total: $${total}</b>`;
   cartListDiv.innerHTML=html;
 }
-
-// --- Modales ---
-function openModal(content){ modal.style.display="flex"; modalBody.innerHTML=content; }
-function closeModal(){ modal.style.display="none"; }
-function showModalMessage(msg){ openModal(`<p>${msg}</p>`); setTimeout(closeModal,1500); }
 
 // --- Contactar ---
 function showContact(name){ openModal(`Contacta al vendedor sobre: <b>${name}</b><br>Número: 63892022`); }
@@ -265,7 +274,7 @@ async function confirmPurchase(){
   loadOrders(); loadUserOrders();
 }
 
-// --- Cargar ordenes admin ---
+// --- Ordenes Admin ---
 function loadOrders(){
   if(role!=="admin"){ ordersListDiv.innerHTML="<i>No tienes acceso</i>"; return; }
   db.collection("orders").orderBy("createdAt","desc").onSnapshot(snapshot=>{
@@ -293,7 +302,7 @@ function loadOrders(){
   });
 }
 
-// --- Cargar historial usuario ---
+// --- Historial Usuario ---
 function loadUserOrders(){
   db.collection("orders").orderBy("createdAt","desc").onSnapshot(snapshot=>{
     purchaseHistoryDiv.innerHTML="";
@@ -329,11 +338,4 @@ async function uploadOrderProof(orderId){
 function changeStatus(id,newStatus){ if(confirm(`Confirmar cambio a "${newStatus}"?`)) db.collection("orders").doc(id).update({status:newStatus}); }
 
 // --- Cancelar orden ---
-function cancelOrder(id){ const reason=prompt("Motivo de cancelación:"); if(reason) db.collection("orders").doc(id).update({status:"cancelada",cancelReason:reason}); }
-
-// --- Ver comprobante ---
-function viewProof(url){ openModal(`<img src="${url}" style="width:100%"/>`); }
-
-</script>
-</body>
-</html>
+function cancelOrder(id){ const reason=prompt("Motivo de cancelación:"); if(reason) db.collection("orders").doc(id).update({status
