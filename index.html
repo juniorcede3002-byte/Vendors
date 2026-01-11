@@ -124,8 +124,12 @@ function showModalMessage(msg){ openModal(`<p>${msg}</p>`); setTimeout(closeModa
 
 // --- Auth ---
 auth.onAuthStateChanged(user => {
-  if(user){ initUser(user); loadOrdersHistory(); }
-  else { document.getElementById("authButtons").style.display="inline-block"; document.getElementById("userInfo").style.display="none"; document.getElementById("dashboard").style.display="none"; }
+  if(user){ initUser(user); }
+  else { 
+    document.getElementById("authButtons").style.display="inline-block"; 
+    document.getElementById("userInfo").style.display="none"; 
+    document.getElementById("dashboard").style.display="none"; 
+  }
 });
 function showLoginForm(){ openModal(`<h3>Iniciar Sesión</h3>
 <input id="loginEmail" placeholder="Email"><input id="loginPass" type="password" placeholder="Contraseña">
@@ -150,11 +154,19 @@ async function initUser(user){
 
   const docRef = db.collection("users").doc(user.uid);
   const docSnap = await docRef.get();
-  if(!docSnap.exists){ await docRef.set({pais:'',residencia:'',name:user.displayName||'',email:user.email}); }
+  if(!docSnap.exists){ 
+    await docRef.set({pais:'',residencia:'',name:user.displayName||'',email:user.email}); 
+  }
 
   role = (user.email==="admin@vendors.com") ? "admin" : "usuario";
   document.getElementById("dashboard").style.display="block";
-  toggleAdmin(); setUpTabs(); loadProducts(); renderCart(); loadOrders(); 
+
+  toggleAdmin(); 
+  setUpTabs(); 
+  loadProducts(); 
+  renderCart(); 
+
+  loadOrdersHistory(); // 🔹 Ajuste: llamar función correcta
 }
 
 // --- Configuración ---
@@ -297,20 +309,19 @@ async function finalizePurchase(){
   showModalMessage("Compra realizada con éxito");
 }
 
-// --- Historial de Compras (ajustada) ---
+// --- Historial de Compras ---
 async function loadOrdersHistory() {
   const history = document.getElementById("purchaseHistory");
   const userId = auth.currentUser.uid; 
 
   db.collection("orders").orderBy("createdAt","desc").onSnapshot(snapshot=>{
     let html="";
-    let count = 0; // Contador de pedidos mostrados
+    let count = 0; 
 
     snapshot.forEach(doc=>{
       const o = doc.data();
       const total = o.products.reduce((sum,p)=>sum+p.price,0);
 
-      // Filtrar pedidos según rol
       if(role !== "admin" && o.user !== userId) return; 
 
       count++;
@@ -342,16 +353,12 @@ async function loadOrdersHistory() {
       </div>`;
     });
 
-    // Mostrar mensaje si no hay pedidos
-    if(count === 0){
-      html = "<i>No hay compras registradas</i>";
-    }
+    if(count === 0){ html = "<i>No hay compras registradas</i>"; }
 
     history.innerHTML = html;
-    setTimeout(initCanvasSignatures,300); // Inicializa canvas de firmas
+    setTimeout(initCanvasSignatures,300);
   });
 }
-
 
 // --- Toggle Detalles ---
 function toggleDetails(id){
