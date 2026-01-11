@@ -2,89 +2,92 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Vendors | Gestión de Solicitudes</title>
+<title>Vendors | Web de compras online</title>
+
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+
 <style>
-body { font-family: Arial,sans-serif; background:#f2f2f2; margin:0; padding:0; }
-header { background:#111; color:#fff; padding:15px; display:flex; justify-content:space-between; align-items:center; position:fixed; top:0; width:100%; z-index:100; }
-header button { background:#fff; color:#111; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; }
-.container { max-width:1000px; margin:auto; padding:100px 20px 20px; display:none; }
-.tabs { display:flex; gap:5px; margin-bottom:15px; flex-wrap:wrap; }
-.tabs button { flex:1; padding:10px; cursor:pointer; border:none; border-radius:5px; background:#ddd; transition:0.2s; }
-.tabs button.active { background:#111; color:#fff; }
-.tab-content { display:none; background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
-.tab-content.active { display:block; }
-input, textarea, select, button { width:100%; padding:10px; margin-top:10px; border-radius:5px; border:1px solid #ccc; }
-button { background:#111; color:#fff; border:none; cursor:pointer; transition:0.2s; }
-button:hover { opacity:0.9; }
-.order { border:1px solid #ddd; padding:15px; margin-top:15px; border-radius:8px; background:#fafafa; }
-.status-pendiente { color:#ff9800; font-weight:bold; }
-.status-revision-de-pago { color:#2196f3; font-weight:bold; }
-.status-pago-verificado { color:#4caf50; font-weight:bold; }
-.status-en-camino { color:#9c27b0; font-weight:bold; }
-.status-entregado { color:#000; font-weight:bold; }
-.status-cancelada { color:#f44336; font-weight:bold; }
-.modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:1000;}
-.modal-content { background:#fff; padding:20px; border-radius:8px; max-width:600px; width:90%; position:relative; max-height:90%; overflow:auto; }
-canvas { border:1px solid #000; border-radius:5px; background: #fff; }
+body{font-family:Arial;background:#f2f2f2;margin:0}
+header{background:#111;color:#fff;padding:15px;display:flex;justify-content:space-between;position:fixed;width:100%;top:0;z-index:10}
+button{cursor:pointer}
+.container{max-width:1100px;margin:auto;padding:90px 20px;display:none}
+.tabs{display:flex;gap:5px;flex-wrap:wrap}
+.tabs button{flex:1;padding:10px;border:none;border-radius:5px}
+.tabs button.active{background:#111;color:#fff}
+.tab-content{display:none;background:#fff;padding:20px;border-radius:8px;margin-top:10px}
+.tab-content.active{display:block}
+.order{border:1px solid #ddd;padding:15px;margin-top:15px;border-radius:8px}
+input,select,textarea{width:100%;padding:8px;margin-top:8px}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);justify-content:center;align-items:center;z-index:100}
+.modal-content{background:#fff;padding:20px;border-radius:8px;width:90%;max-width:600px;max-height:90%;overflow:auto}
+.status-pendiente{color:#ff9800;font-weight:bold}
+.status-revision-de-pago{color:#2196f3;font-weight:bold}
+.status-pago-verificado{color:#4caf50;font-weight:bold}
+.status-en-camino{color:#9c27b0;font-weight:bold}
+.status-entregado{color:#000;font-weight:bold}
 </style>
 </head>
+
 <body>
 
 <header>
-  Vendor Dashboard
-  <div id="authButtons">
-    <button onclick="showLoginForm()">Iniciar Sesión</button>
-    <button onclick="showRegisterForm()">Crear Cuenta</button>
+  Vendors Dashboard
+  <div id="authBtns">
+    <button onclick="showLogin()">Login</button>
+    <button onclick="showRegister()">Registro</button>
   </div>
-  <div id="userInfo" style="display:none;">
+  <div id="userBox" style="display:none">
     <span id="userEmail"></span>
-    <button onclick="logout()">Cerrar Sesión</button>
+    <button onclick="logout()">Salir</button>
   </div>
 </header>
 
 <div class="container" id="dashboard">
+
   <div class="tabs">
     <button class="tab-btn active" data-tab="productsTab">Productos</button>
     <button class="tab-btn" data-tab="cartTab">Carrito</button>
-    <button class="tab-btn" data-tab="requestsTab">Mis Solicitudes</button>
-    <button class="tab-btn" data-tab="adminTab" id="adminTabBtn" style="display:none;">Admin</button>
+    <button class="tab-btn" data-tab="ordersTab">Mis Solicitudes</button>
+    <button class="tab-btn" data-tab="adminTab" id="adminBtn" style="display:none">Admin</button>
   </div>
 
   <div id="productsTab" class="tab-content active">
-    <h2>Productos Disponibles</h2>
+    <h3>Productos</h3>
     <div id="productsList"></div>
   </div>
 
   <div id="cartTab" class="tab-content">
-    <h2>Carrito</h2>
+    <h3>Carrito</h3>
     <div id="cartList"></div>
-    <button onclick="openCheckoutForm()">Finalizar Solicitud</button>
+    <button onclick="checkout()">Finalizar Compra</button>
   </div>
 
-  <div id="requestsTab" class="tab-content">
-    <h2>Mis Solicitudes de Compra</h2>
-    <div id="userRequestsList">Cargando solicitudes...</div>
+  <div id="ordersTab" class="tab-content">
+    <h3>Mis Solicitudes</h3>
+    <div id="userOrders">Cargando...</div>
   </div>
 
   <div id="adminTab" class="tab-content">
-    <h2>Panel de Administración</h2>
-    <div id="adminOrdersList"></div>
+    <h3>Gestión de Pedidos</h3>
+    <div id="adminOrders">Cargando...</div>
   </div>
+
 </div>
 
-<div id="modal" class="modal">
+<div class="modal" id="modal">
   <div class="modal-content">
-    <button onclick="closeModal()" style="width:auto; float:right;">&times;</button>
+    <button onclick="closeModal()" style="float:right">✖</button>
     <div id="modalBody"></div>
   </div>
 </div>
 
 <script>
-// --- Configuración Firebase ---
+// ================= FIREBASE =================
 firebase.initializeApp({
   apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
   authDomain: "proyectovendor.firebaseapp.com",
@@ -93,208 +96,173 @@ firebase.initializeApp({
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-let cart = JSON.parse(localStorage.getItem("cart")) || [];
+// ================= GLOBAL =================
 let currentUser = null;
 let isAdmin = false;
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-// --- Manejo de Autenticación ---
-auth.onAuthStateChanged(user => {
+// ================= AUTH =================
+auth.onAuthStateChanged(user=>{
   if(user){
     currentUser = user;
-    document.getElementById("userInfo").style.display="block";
-    document.getElementById("authButtons").style.display="none";
-    document.getElementById("userEmail").innerText = user.email;
+    isAdmin = user.email === "admin@vendors.com";
+
     document.getElementById("dashboard").style.display="block";
-    
-    isAdmin = (user.email === "admin@vendors.com");
-    if(isAdmin) document.getElementById("adminTabBtn").style.display="inline-block";
-    
+    document.getElementById("authBtns").style.display="none";
+    document.getElementById("userBox").style.display="block";
+    document.getElementById("userEmail").innerText = user.email;
+    if(isAdmin) document.getElementById("adminBtn").style.display="block";
+
     loadProducts();
+    loadOrders();
     renderCart();
-    loadRequests(); // Carga las solicitudes del usuario
-  } else {
-    document.getElementById("dashboard").style.display="none";
-    document.getElementById("authButtons").style.display="block";
-    document.getElementById("userInfo").style.display="none";
+  }else{
+    location.reload();
   }
 });
 
-// --- Funciones de Interfaz ---
-function setUpTabs(){ 
-  document.querySelectorAll(".tab-btn").forEach(btn=>{ 
-    btn.addEventListener("click",()=>{ 
-      document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active")); 
-      btn.classList.add("active"); 
-      document.querySelectorAll(".tab-content").forEach(tab=>tab.classList.remove("active")); 
-      document.getElementById(btn.dataset.tab).classList.add("active"); 
-    });
-  });
-}
-setUpTabs();
-
-function openModal(content){ document.getElementById("modal").style.display="flex"; document.getElementById("modalBody").innerHTML=content; }
-function closeModal(){ document.getElementById("modal").style.display="none"; }
-
-// --- Cargar Solicitudes (La parte que pediste) ---
-function loadRequests() {
-  const container = document.getElementById("userRequestsList");
-  const adminContainer = document.getElementById("adminOrdersList");
-
-  // Escuchar cambios en la colección "orders"
-  db.collection("orders").orderBy("createdAt", "desc").onSnapshot(snapshot => {
-    let userHtml = "";
-    let adminHtml = "";
-
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      const orderId = doc.id;
-      const total = data.products.reduce((s, p) => s + p.price, 0);
-
-      // Crear el diseño de la orden
-      const html = `
-        <div class="order">
-          <strong>Solicitud #${orderId.substring(0,6)}</strong> - 
-          <span class="status-${data.status.replace(/\s/g,'-')}">${data.status.toUpperCase()}</span>
-          <p>Fecha: ${data.createdAt ? data.createdAt.toDate().toLocaleString() : 'Reciente'}</p>
-          
-          <button onclick="toggleDetails('${orderId}')">Ver Detalles</button>
-          
-          <div id="det-${orderId}" style="display:none; margin-top:10px; border-top:1px solid #eee; pt:10px;">
-            <label>Comprador:</label>
-            <input value="${data.buyerName}" readonly>
-            <label>Dirección:</label>
-            <input value="${data.address}" readonly>
-            
-            <p><strong>Productos:</strong></p>
-            <ul>${data.products.map(p => `<li>${p.name} - $${p.price}</li>`).join('')}</ul>
-            <p><strong>Total a pagar: $${total.toFixed(2)}</strong></p>
-            
-            <label>Método de Pago: <input value="${data.payment}" readonly></label>
-
-            <hr>
-            ${!data.comprobante ? `
-              <div style="background:#fff3e0; padding:10px; border-radius:5px;">
-                <p><strong>¿Ya pagaste? Sube tu comprobante:</strong></p>
-                <input type="file" id="file-${orderId}" onchange="uploadComprobante('${orderId}', this.files[0])">
-              </div>
-            ` : `
-              <p style="color:green;"><i class="fa fa-check"></i> Comprobante enviado:</p>
-              <img src="${data.comprobante}" width="100%" style="max-width:200px; border-radius:5px;">
-            `}
-
-            ${isAdmin ? `
-              <div style="margin-top:15px; background:#e3f2fd; padding:10px;">
-                <label>Cambiar Estado (Admin):</label>
-                <select onchange="updateStatus('${orderId}', this.value)">
-                  <option value="pendiente" ${data.status==='pendiente'?'selected':''}>Pendiente</option>
-                  <option value="revision de pago" ${data.status==='revision de pago'?'selected':''}>Revisión de Pago</option>
-                  <option value="pago verificado" ${data.status==='pago verificado'?'selected':''}>Pago Verificado</option>
-                  <option value="en camino" ${data.status==='en camino'?'selected':''}>En Camino</option>
-                  <option value="entregado" ${data.status==='entregado'?'selected':''}>Entregado</option>
-                </select>
-              </div>
-            ` : ''}
-          </div>
-        </div>
-      `;
-
-      // Filtrar: El usuario solo ve lo suyo, el Admin ve TODO
-      if (data.user === currentUser.uid) {
-        userHtml += html;
-      }
-      if (isAdmin) {
-        adminHtml += html;
-      }
-    });
-
-    container.innerHTML = userHtml || "<i>Aún no has realizado ninguna solicitud.</i>";
-    if(isAdmin) adminContainer.innerHTML = adminHtml || "<i>No hay solicitudes en el sistema.</i>";
-  });
-}
-
-function toggleDetails(id) {
-  const el = document.getElementById("det-" + id);
-  el.style.display = (el.style.display === 'none') ? 'block' : 'none';
-}
-
-async function uploadComprobante(orderId, file) {
-  if(!file) return;
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("upload_preset", "vendors_preset");
-
-  try {
-    const res = await fetch("https://api.cloudinary.com/v1_1/df79cjklp/upload", { method: "POST", body: formData });
-    const json = await res.json();
-    await db.collection("orders").doc(orderId).update({
-      comprobante: json.secure_url,
-      status: "revision de pago"
-    });
-    alert("Comprobante subido con éxito. El admin lo revisará pronto.");
-  } catch(e) {
-    alert("Error al subir imagen");
+// ================= TABS =================
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(t=>t.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.tab).classList.add("active");
   }
-}
+});
 
-function updateStatus(id, newStatus) {
-  db.collection("orders").doc(id).update({ status: newStatus });
-}
-
-// --- Resto de funciones (Auth y Carrito) ---
-function showLoginForm(){ openModal(`<h3>Login</h3><input id="lEmail" placeholder="Email"><input id="lPass" type="password" placeholder="Pass"><button onclick="login()">Entrar</button>`);}
-function login(){ auth.signInWithEmailAndPassword(document.getElementById("lEmail").value, document.getElementById("lPass").value).then(()=>closeModal());}
-function logout(){ auth.signOut().then(()=>location.reload());}
-
+// ================= PRODUCTS =================
 function loadProducts(){
-  db.collection("products").onSnapshot(snap => {
-    let html = "";
-    snap.forEach(doc => {
-      const p = doc.data();
-      html += `<div class="order"><strong>${p.name}</strong> - $${p.price}<br><button onclick="addToCart('${doc.id}','${p.name}',${p.price})">Agregar</button></div>`;
+  db.collection("products").onSnapshot(snap=>{
+    let html="";
+    snap.forEach(d=>{
+      const p=d.data();
+      html+=`
+      <div class="order">
+        <b>${p.name}</b> - $${p.price}
+        <button onclick="addToCart('${d.id}','${p.name}',${p.price})">Agregar</button>
+      </div>`;
     });
-    document.getElementById("productsList").innerHTML = html;
+    document.getElementById("productsList").innerHTML=html;
   });
 }
 
-function addToCart(id, name, price){
-  cart.push({id, name, price});
-  localStorage.setItem("cart", JSON.stringify(cart));
+// ================= CART =================
+function addToCart(id,name,price){
+  cart.push({id,name,price});
+  localStorage.setItem("cart",JSON.stringify(cart));
   renderCart();
 }
-
 function renderCart(){
-  const div = document.getElementById("cartList");
-  if(cart.length===0){ div.innerHTML="Vacío"; return; }
-  div.innerHTML = cart.map(i => `<p>${i.name} - $${i.price}</p>`).join('');
+  const div=document.getElementById("cartList");
+  if(cart.length===0){div.innerHTML="Vacío";return;}
+  div.innerHTML=cart.map(i=>`${i.name} - $${i.price}`).join("<br>");
 }
 
-function openCheckoutForm(){
-  if(cart.length===0) return alert("Carrito vacío");
-  openModal(`<h3>Finalizar Solicitud</h3>
-    <input id="cName" placeholder="Tu Nombre">
-    <input id="cAddr" placeholder="Dirección de Entrega">
-    <select id="cPay">
+// ================= CHECKOUT =================
+function checkout(){
+  if(cart.length===0)return alert("Carrito vacío");
+  openModal(`
+    <h3>Finalizar Pedido</h3>
+    <input id="name" placeholder="Nombre">
+    <input id="address" placeholder="Dirección">
+    <select id="pay">
       <option value="yappy">Yappy</option>
       <option value="ach">ACH</option>
+      <option value="efectivo">Efectivo</option>
     </select>
-    <button onclick="confirmOrder()">Enviar Solicitud</button>`);
+    <button onclick="confirmOrder()">Enviar</button>
+  `);
 }
 
 async function confirmOrder(){
-  const order = {
+  await db.collection("orders").add({
     user: currentUser.uid,
-    buyerName: document.getElementById("cName").value,
-    address: document.getElementById("cAddr").value,
-    payment: document.getElementById("cPay").value,
+    buyerName: name.value,
+    address: address.value,
+    payment: pay.value,
     products: cart,
     status: "pendiente",
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
-  await db.collection("orders").add(order);
-  cart = []; localStorage.removeItem("cart");
-  renderCart(); closeModal();
-  alert("Solicitud enviada!");
+  });
+  cart=[];
+  localStorage.removeItem("cart");
+  closeModal();
+  alert("Pedido enviado");
 }
+
+// ================= ORDERS =================
+function loadOrders(){
+  let query=db.collection("orders").orderBy("createdAt","desc");
+  if(!isAdmin) query=query.where("user","==",currentUser.uid);
+
+  query.onSnapshot(snap=>{
+    let userHtml="",adminHtml="";
+    snap.forEach(doc=>{
+      const o=doc.data();
+      const total=o.products.reduce((s,p)=>s+p.price,0);
+
+      const html=`
+      <div class="order">
+        <b>Pedido ${doc.id.substring(0,6)}</b>
+        <span class="status-${o.status.replace(/ /g,'-')}">${o.status}</span>
+        <p>Total: $${total}</p>
+        ${!o.comprobante?`
+          <input type="file" onchange="uploadProof('${doc.id}',this.files[0])">
+        `:`<img src="${o.comprobante}" width="150">`}
+        ${isAdmin?`
+        <select onchange="updateStatus('${doc.id}',this.value)">
+          <option ${o.status=='pendiente'?'selected':''}>pendiente</option>
+          <option ${o.status=='revision de pago'?'selected':''}>revision de pago</option>
+          <option ${o.status=='pago verificado'?'selected':''}>pago verificado</option>
+          <option ${o.status=='en camino'?'selected':''}>en camino</option>
+          <option ${o.status=='entregado'?'selected':''}>entregado</option>
+        </select>`:""}
+      </div>`;
+
+      if(o.user===currentUser.uid) userHtml+=html;
+      if(isAdmin) adminHtml+=html;
+    });
+    document.getElementById("userOrders").innerHTML=userHtml||"Sin pedidos";
+    if(isAdmin) document.getElementById("adminOrders").innerHTML=adminHtml||"Sin pedidos";
+  });
+}
+
+// ================= CLOUDINARY =================
+async function uploadProof(id,file){
+  const fd=new FormData();
+  fd.append("file",file);
+  fd.append("upload_preset","vendors_preset");
+
+  const r=await fetch("https://api.cloudinary.com/v1_1/df79cjklp/upload",{method:"POST",body:fd});
+  const j=await r.json();
+  await db.collection("orders").doc(id).update({
+    comprobante:j.secure_url,
+    status:"revision de pago"
+  });
+}
+
+// ================= ADMIN =================
+function updateStatus(id,status){
+  db.collection("orders").doc(id).update({status});
+}
+
+// ================= MODAL & AUTH UI =================
+function openModal(html){modal.style.display="flex";modalBody.innerHTML=html}
+function closeModal(){modal.style.display="none"}
+
+function showLogin(){
+  openModal(`<input id="le"><input id="lp" type="password"><button onclick="login()">Entrar</button>`);
+}
+function login(){auth.signInWithEmailAndPassword(le.value,lp.value).then(closeModal)}
+
+function showRegister(){
+  openModal(`<input id="re"><input id="rp" type="password"><button onclick="register()">Registrar</button>`);
+}
+function register(){auth.createUserWithEmailAndPassword(re.value,rp.value).then(closeModal)}
+
+function logout(){auth.signOut()}
 </script>
+
 </body>
 </html>
