@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Vendor | Subir y Listar Productos</title>
+<title>Vendor | Sistema de Ventas</title>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -12,23 +12,18 @@
 body {
   font-family: Arial, sans-serif;
   background: #f2f2f2;
-  margin: 0;
   padding: 20px;
 }
 
 .container {
-  max-width: 500px;
+  max-width: 600px;
   margin: auto;
   background: #fff;
   padding: 20px;
   border-radius: 10px;
 }
 
-h2 {
-  text-align: center;
-}
-
-input, textarea, button {
+input, textarea, select, button {
   width: 100%;
   padding: 10px;
   margin-top: 10px;
@@ -38,33 +33,22 @@ button {
   background: #111;
   color: #fff;
   border: none;
-  cursor: pointer;
   border-radius: 6px;
+  cursor: pointer;
 }
 
-button:hover {
-  opacity: 0.9;
-}
-
-.preview {
-  margin-top: 15px;
-  text-align: center;
-}
-
-hr {
-  margin: 30px 0;
+.role {
+  background: #eee;
 }
 
 .product {
   border: 1px solid #ddd;
-  border-radius: 8px;
   padding: 10px;
   margin-top: 15px;
-  background: #fafafa;
+  border-radius: 8px;
 }
 
-.product img,
-.product video {
+.product img, .product video {
   width: 100%;
   border-radius: 6px;
 }
@@ -80,6 +64,10 @@ hr {
 .price {
   font-weight: bold;
 }
+
+.actions button {
+  margin-top: 5px;
+}
 </style>
 </head>
 
@@ -87,101 +75,116 @@ hr {
 
 <div class="container">
 
-  <h2>Subir Producto</h2>
+<h2>Rol</h2>
+<select id="role" class="role" onchange="toggleAdminFeatures(); loadProducts();">
+  <option value="usuario">Usuario</option>
+  <option value="admin">Admin</option>
+</select>
 
-  <input id="name" placeholder="Nombre del producto">
-  <textarea id="description" placeholder="Descripción"></textarea>
-  <input id="price" type="number" placeholder="Precio">
+<hr>
 
-  <input type="file" id="media" accept="image/*,video/*">
+<div id="adminPanel">
+<h2>Subir Producto</h2>
+<input id="name" placeholder="Nombre">
+<textarea id="description" placeholder="Descripción"></textarea>
+<input id="price" type="number" placeholder="Precio">
+<input id="media" type="file" accept="image/*,video/*">
+<button onclick="uploadProduct()">Subir</button>
+</div>
 
-  <button onclick="uploadProduct()">Subir producto</button>
+<hr>
 
-  <div class="preview" id="preview"></div>
+<h2>Buscar</h2>
+<input id="search" placeholder="Buscar por nombre" oninput="loadProducts()">
+<input id="maxPrice" type="number" placeholder="Precio máximo" oninput="loadProducts()">
 
-  <hr>
+<hr>
 
-  <h2>Productos</h2>
-  <div id="productsList"></div>
+<h2>Productos</h2>
+<div id="productsList"></div>
 
 </div>
 
 <script>
-/* 🔥 FIREBASE CONFIG */
+/* FIREBASE */
 firebase.initializeApp({
   apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
   authDomain: "proyectovendor.firebaseapp.com",
   projectId: "proyectovendor"
 });
-
 const db = firebase.firestore();
 
-/* ☁️ CLOUDINARY */
+/* CLOUDINARY */
 const CLOUD_NAME = "df79cjklp";
 const UPLOAD_PRESET = "vendors_preset";
 
-/* 🎯 ELEMENTOS */
+/* ELEMENTOS */
+const roleSelect = document.getElementById("role");
+const productsList = document.getElementById("productsList");
+const adminPanel = document.getElementById("adminPanel");
 const nameInput = document.getElementById("name");
 const descriptionInput = document.getElementById("description");
 const priceInput = document.getElementById("price");
 const mediaInput = document.getElementById("media");
-const preview = document.getElementById("preview");
-const productsList = document.getElementById("productsList");
 
-/* 📦 SUBIR PRODUCTO */
-async function uploadProduct() {
-  try {
-    const file = mediaInput.files[0];
-    if (!file) return alert("Selecciona una imagen o video");
-
-    if (!nameInput.value.trim() || !priceInput.value) {
-      return alert("Nombre y precio son obligatorios");
-    }
-
-    const form = new FormData();
-    form.append("file", file);
-    form.append("upload_preset", UPLOAD_PRESET);
-
-    const isVideo = file.type.startsWith("video");
-    const endpoint = isVideo ? "video" : "image";
-
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${endpoint}/upload`,
-      { method: "POST", body: form }
-    );
-
-    const data = await res.json();
-
-    if (!data.secure_url) {
-      console.error("Cloudinary error:", data);
-      return alert("Error al subir archivo");
-    }
-
-    await db.collection("products").add({
-      name: nameInput.value.trim(),
-      description: descriptionInput.value.trim(),
-      price: Number(priceInput.value),
-      mediaUrl: data.secure_url,
-      mediaType: isVideo ? "video" : "image",
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    alert("Producto subido correctamente");
-
-    nameInput.value = "";
-    descriptionInput.value = "";
-    priceInput.value = "";
-    mediaInput.value = "";
-    preview.innerHTML = "";
-
-  } catch (error) {
-    console.error(error);
-    alert("Error inesperado, revisa la consola");
+/* MOSTRAR / OCULTAR PANEL ADMIN */
+function toggleAdminFeatures() {
+  if(roleSelect.value === "admin") {
+    adminPanel.style.display = "block";
+  } else {
+    adminPanel.style.display = "none";
   }
 }
+toggleAdminFeatures(); // al cargar
 
-/* 🧾 LISTAR PRODUCTOS */
+/* SUBIR PRODUCTO (solo admin) */
+async function uploadProduct() {
+  const file = mediaInput.files[0];
+  if (!file) return alert("Archivo requerido");
+
+  if (!nameInput.value.trim() || !priceInput.value) {
+    return alert("Nombre y precio son obligatorios");
+  }
+
+  const form = new FormData();
+  form.append("file", file);
+  form.append("upload_preset", UPLOAD_PRESET);
+
+  const isVideo = file.type.startsWith("video");
+  const endpoint = isVideo ? "video" : "image";
+
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${endpoint}/upload`,
+    { method: "POST", body: form }
+  );
+
+  const data = await res.json();
+
+  if (!data.secure_url) return alert("Error al subir archivo");
+
+  await db.collection("products").add({
+    name: nameInput.value.trim(),
+    description: descriptionInput.value.trim(),
+    price: Number(priceInput.value),
+    mediaUrl: data.secure_url,
+    mediaType: isVideo ? "video" : "image",
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  alert("Producto subido");
+
+  nameInput.value = "";
+  descriptionInput.value = "";
+  priceInput.value = "";
+  mediaInput.value = "";
+}
+
+/* LISTAR PRODUCTOS */
 function loadProducts() {
+  const role = roleSelect.value;
+  const search = document.getElementById("search").value.toLowerCase();
+  const maxPrice = document.getElementById("maxPrice").value;
+
   db.collection("products")
     .orderBy("createdAt", "desc")
     .onSnapshot(snapshot => {
@@ -189,6 +192,8 @@ function loadProducts() {
 
       snapshot.forEach(doc => {
         const p = doc.data();
+        if ((search && !p.name.toLowerCase().includes(search)) ||
+            (maxPrice && p.price > maxPrice)) return;
 
         productsList.innerHTML += `
           <div class="product">
@@ -199,11 +204,29 @@ function loadProducts() {
             }
             <h3>${p.name}</h3>
             <p>${p.description}</p>
-            <p class="price">$${p.price}</p>
+            <b>$${p.price}</b>
+
+            <div class="actions">
+              <button onclick="buy('${p.name}', ${p.price})">Comprar</button>
+              ${role === "admin" ? `<button onclick="deleteProduct('${doc.id}')">Eliminar</button>` : ""}
+            </div>
           </div>
         `;
       });
     });
+}
+
+/* ELIMINAR PRODUCTO */
+function deleteProduct(id) {
+  if (confirm("¿Eliminar producto?")) {
+    db.collection("products").doc(id).delete();
+  }
+}
+
+/* COMPRAR POR WHATSAPP */
+function buy(name, price) {
+  const msg = `Hola, quiero comprar: ${name} por $${price}`;
+  window.open(`https://wa.me/50763892022?text=${encodeURIComponent(msg)}`);
 }
 
 loadProducts();
