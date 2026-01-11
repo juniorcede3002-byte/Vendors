@@ -8,20 +8,27 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
+<!-- Iconos -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+
 <style>
 body { font-family: Arial,sans-serif; background:#f2f2f2; padding:20px; }
-.container { max-width:600px; margin:auto; background:#fff; padding:20px; border-radius:10px; }
-input, textarea, select, button { width:100%; padding:10px; margin-top:10px; }
-button { background:#111; color:#fff; border:none; border-radius:6px; cursor:pointer; }
+.container { max-width:700px; margin:auto; background:#fff; padding:20px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.1);}
+input, textarea, select, button { width:100%; padding:10px; margin-top:10px; border-radius:5px; border:1px solid #ccc; }
+button { background:#111; color:#fff; border:none; cursor:pointer; transition:0.2s; }
 button:hover { opacity:0.9; }
 .role { background:#eee; }
-.product { border:1px solid #ddd; padding:10px; margin-top:15px; border-radius:8px; }
+.product { border:1px solid #ddd; padding:10px; margin-top:15px; border-radius:8px; display:flex; flex-direction:column; gap:5px; background:#fafafa; }
 .product img, .product video { width:100%; border-radius:6px; }
-.product h3 { margin:10px 0 5px; }
+.product h3 { margin:5px 0; }
 .product p { margin:5px 0; }
-.price { font-weight:bold; }
-.actions button { margin-top:5px; margin-right:5px; }
-#cartList { background:#fafafa; padding:10px; border-radius:8px; margin-top:15px; }
+.price { font-weight:bold; color:#111; }
+.actions { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; }
+.actions button { flex:1; display:flex; align-items:center; justify-content:center; gap:5px; }
+#cartList { background:#fff3cd; padding:10px; border-radius:8px; margin-top:15px; }
+.modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; }
+.modal-content { background:#fff; padding:20px; border-radius:8px; max-width:500px; width:90%; position:relative; }
+.modal-content button.close { position:absolute; top:10px; right:10px; background:#f00; border:none; border-radius:50%; width:30px; height:30px; color:#fff; cursor:pointer; }
 </style>
 </head>
 
@@ -42,7 +49,7 @@ button:hover { opacity:0.9; }
 <textarea id="description" placeholder="Descripción"></textarea>
 <input id="price" type="number" placeholder="Precio">
 <input id="media" type="file" accept="image/*,video/*">
-<button onclick="uploadProduct()">Subir</button>
+<button onclick="uploadProduct()"><i class="fa fa-upload"></i> Subir</button>
 </div>
 
 <hr>
@@ -57,11 +64,19 @@ button:hover { opacity:0.9; }
 <div id="productsList"></div>
 
 <hr>
-<h2>Carrito</h2>
-<div id="cartList"></div>
-<button onclick="viewCart()">Ver Carrito</button>
-<button onclick="emptyCart()">Vaciar Carrito</button>
+<h2><i class="fa fa-shopping-cart"></i> Carrito</h2>
+<div id="cartList"><i>Carrito vacío</i></div>
+<button onclick="viewCart()"><i class="fa fa-eye"></i> Ver Carrito</button>
+<button onclick="emptyCart()"><i class="fa fa-trash"></i> Vaciar Carrito</button>
 
+</div>
+
+<!-- Modal -->
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <button class="close" onclick="closeModal()">&times;</button>
+    <div id="modalBody"></div>
+  </div>
 </div>
 
 <script>
@@ -84,9 +99,11 @@ const descriptionInput = document.getElementById("description");
 const priceInput = document.getElementById("price");
 const mediaInput = document.getElementById("media");
 const cartListDiv = document.getElementById("cartList");
+const modal = document.getElementById("modal");
+const modalBody = document.getElementById("modalBody");
 
-/* CARRITO EN MEMORIA */
-let cart = [];
+/* CARRITO EN LOCALSTORAGE */
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
 /* PANEL ADMIN */
 function toggleAdminFeatures(){
@@ -143,9 +160,11 @@ function loadProducts(){
           <p>${p.description}</p>
           <b>$${p.price}</b>
           <div class="actions">
-            <button onclick="contactSeller('${p.name}')">Contactar</button>
-            <button onclick="addToCart('${doc.id}','${p.name}',${p.price})">Añadir al carrito</button>
-            ${role==="admin"?`<button onclick="deleteProduct('${doc.id}')">Eliminar</button>`:""}
+            <button onclick="showContact('${p.name}')"><i class="fa fa-phone"></i> Contactar</button>
+            <button onclick="addToCart('${doc.id}','${p.name}',${p.price})"><i class="fa fa-cart-plus"></i> Añadir al carrito</button>
+            ${role==="admin"?`
+              <button onclick="editProduct('${doc.id}','${p.name}','${p.description}',${p.price})"><i class="fa fa-edit"></i> Editar</button>
+              <button onclick="deleteProduct('${doc.id}')"><i class="fa fa-trash"></i> Eliminar</button>`:""}
           </div>
         </div>
       `;
@@ -153,30 +172,43 @@ function loadProducts(){
   });
 }
 
+/* EDITAR PRODUCTO */
+function editProduct(id,name,desc,price){
+  const newName = prompt("Nombre:",name);
+  const newDesc = prompt("Descripción:",desc);
+  const newPrice = prompt("Precio:",price);
+  if(newName && newDesc && newPrice){
+    db.collection("products").doc(id).update({
+      name:newName,
+      description:newDesc,
+      price:Number(newPrice)
+    });
+    alert("Producto actualizado");
+  }
+}
+
 /* ELIMINAR PRODUCTO */
 function deleteProduct(id){
   if(confirm("¿Eliminar producto?")) db.collection("products").doc(id).delete();
 }
 
-/* CONTACTAR (alert) */
-function contactSeller(name){
-  alert(`Contacta al vendedor sobre: ${name}\nNúmero: 63892022`);
+/* CONTACTAR */
+function showContact(name){
+  openModal(`Contacta al vendedor sobre: <b>${name}</b><br>Número: 63892022`);
 }
 
 /* CARRITO */
 function addToCart(id,name,price){
   cart.push({id,name,price});
-  alert(`${name} añadido al carrito`);
+  localStorage.setItem("cart",JSON.stringify(cart));
+  showModalMessage(`${name} añadido al carrito`);
 }
 
 function viewCart(){
   if(cart.length===0){ cartListDiv.innerHTML="<i>Carrito vacío</i>"; return; }
   let html="<ul>";
   let total=0;
-  cart.forEach((item,i)=>{
-    html+=`<li>${item.name} - $${item.price}</li>`;
-    total+=item.price;
-  });
+  cart.forEach(item=>{ html+=`<li>${item.name} - $${item.price}</li>`; total+=item.price; });
   html+=`</ul><b>Total: $${total}</b>`;
   cartListDiv.innerHTML=html;
 }
@@ -184,8 +216,22 @@ function viewCart(){
 function emptyCart(){
   if(confirm("Vaciar carrito?")){
     cart=[];
+    localStorage.setItem("cart",JSON.stringify(cart));
     cartListDiv.innerHTML="<i>Carrito vacío</i>";
   }
+}
+
+/* MODAL */
+function openModal(content){
+  modalBody.innerHTML=content;
+  modal.style.display="flex";
+}
+function closeModal(){
+  modal.style.display="none";
+}
+function showModalMessage(msg){
+  openModal(msg);
+  setTimeout(closeModal,1500);
 }
 
 loadProducts();
