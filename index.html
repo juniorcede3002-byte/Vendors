@@ -2,20 +2,25 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Vendor | Dashboard Final</title>
+<title>Vendor | Dashboard Final Integrado</title>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
 
 <style>
 body { font-family: Arial,sans-serif; background:#f2f2f2; margin:0; padding:0; }
-header { background:#111; color:#fff; padding:15px; text-align:center; font-size:20px; }
-.container { max-width:1000px; margin:auto; padding:20px; }
+header { background:#111; color:#fff; padding:15px; display:flex; justify-content:space-between; align-items:center; }
+header button { background:#fff; color:#111; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; }
+.container { max-width:1000px; margin:auto; padding:20px; display:none; }
 .tabs { display:flex; gap:5px; margin-bottom:15px; flex-wrap:wrap; }
 .tabs button { flex:1; padding:10px; cursor:pointer; border:none; border-radius:5px; background:#ddd; transition:0.2s; }
 .tabs button.active { background:#111; color:#fff; }
 .tab-content { display:none; background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
 .tab-content.active { display:block; }
+input, textarea, select, button { width:100%; padding:10px; margin-top:10px; border-radius:5px; border:1px solid #ccc; }
+button { background:#111; color:#fff; border:none; cursor:pointer; transition:0.2s; }
+button:hover { opacity:0.9; }
 .product, .order { border:1px solid #ddd; padding:10px; margin-top:15px; border-radius:8px; background:#fafafa; }
 .actions { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; }
 .actions button { flex:1; display:flex; align-items:center; justify-content:center; gap:5px; }
@@ -28,24 +33,24 @@ header { background:#111; color:#fff; padding:15px; text-align:center; font-size
 .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:1000;}
 .modal-content { background:#fff; padding:20px; border-radius:8px; max-width:500px; width:90%; position:relative; box-shadow:0 2px 15px rgba(0,0,0,0.3); }
 .modal-content button.close { position:absolute; top:10px; right:10px; background:#f00; border:none; border-radius:50%; width:30px; height:30px; color:#fff; cursor:pointer; font-weight:bold; font-size:16px; }
-input, textarea, select, button { width:100%; padding:10px; margin-top:10px; border-radius:5px; border:1px solid #ccc; }
-button { background:#111; color:#fff; border:none; cursor:pointer; transition:0.2s; }
-button:hover { opacity:0.9; }
 </style>
 </head>
 <body>
 
-<header>Vendor Dashboard Final</header>
-
-<div class="container">
-  <div>
-    Rol: 
-    <select id="role">
-      <option value="usuario">Usuario</option>
-      <option value="admin">Admin</option>
-    </select>
+<header>
+  Vendor Dashboard
+  <div id="authButtons">
+    <button onclick="showLoginForm()">Iniciar Sesión</button>
+    <button onclick="showRegisterForm()">Crear Cuenta</button>
   </div>
+  <div id="userInfo" style="display:none;">
+    <span id="userEmail"></span>
+    <button onclick="logout()">Cerrar Sesión</button>
+    <button onclick="openConfig()">Configuración</button>
+  </div>
+</header>
 
+<div class="container" id="dashboard">
   <div class="tabs">
     <button class="tab-btn active" data-tab="productsTab">Productos</button>
     <button class="tab-btn" data-tab="cartTab">Carrito</button>
@@ -53,30 +58,26 @@ button:hover { opacity:0.9; }
     <button class="tab-btn" data-tab="adminTab">Admin</button>
   </div>
 
-  <!-- TAB Productos -->
   <div id="productsTab" class="tab-content active">
     <h2>Productos</h2>
-    <input id="search" placeholder="Buscar por nombre">
-    <input id="maxPrice" type="number" placeholder="Precio máximo">
+    <input id="search" placeholder="Buscar por nombre" oninput="filterProducts()">
+    <input id="maxPrice" type="number" placeholder="Precio máximo" oninput="filterProducts()">
     <div id="productsList"></div>
   </div>
 
-  <!-- TAB Carrito -->
   <div id="cartTab" class="tab-content">
     <h2>Carrito</h2>
     <div id="cartList"><i>Carrito vacío</i></div>
-    <button onclick="viewCart()"><i class="fa fa-eye"></i> Ver Carrito</button>
-    <button onclick="openPurchaseForm()"><i class="fa fa-credit-card"></i> Comprar Carrito</button>
-    <button onclick="emptyCart()"><i class="fa fa-trash"></i> Vaciar Carrito</button>
+    <button onclick="viewCart()">Ver Carrito</button>
+    <button onclick="openPurchaseForm()">Comprar Carrito</button>
+    <button onclick="emptyCart()">Vaciar Carrito</button>
   </div>
 
-  <!-- TAB Historial -->
   <div id="ordersTab" class="tab-content">
     <h2>Historial de Compras</h2>
     <div id="purchaseHistory"></div>
   </div>
 
-  <!-- TAB Admin -->
   <div id="adminTab" class="tab-content">
     <div id="adminPanel">
       <h3>Subir Producto</h3>
@@ -84,13 +85,12 @@ button:hover { opacity:0.9; }
       <textarea id="description" placeholder="Descripción"></textarea>
       <input id="price" type="number" placeholder="Precio">
       <input id="media" type="file" accept="image/*,video/*">
-      <button onclick="uploadProduct()"><i class="fa fa-upload"></i> Subir</button>
+      <button onclick="uploadProduct()">Subir</button>
 
       <h3>Solicitudes de Compra</h3>
       <div id="ordersList"></div>
     </div>
   </div>
-
 </div>
 
 <div id="modal" class="modal">
@@ -107,220 +107,307 @@ firebase.initializeApp({
   projectId: "proyectovendor"
 });
 const db = firebase.firestore();
-const CLOUD_NAME="df79cjklp";
-const UPLOAD_PRESET="vendors_preset";
+const auth = firebase.auth();
 
-let role="usuario";
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
-
-const productsList = document.getElementById("productsList");
-const cartListDiv = document.getElementById("cartList");
-const modal = document.getElementById("modal");
-const modalBody = document.getElementById("modalBody");
-const ordersListDiv = document.getElementById("ordersList");
-const purchaseHistoryDiv = document.getElementById("purchaseHistory");
-const adminPanel = document.getElementById("adminPanel");
-const nameInput = document.getElementById("name");
-const descriptionInput = document.getElementById("description");
-const priceInput = document.getElementById("price");
-const mediaInput = document.getElementById("media");
-
-// --- Roles ---
-document.getElementById("role").addEventListener("change", setRole);
-function setRole(){ 
-    role=document.getElementById("role").value; 
-    toggleAdmin(); 
-    loadProducts(); 
-    loadOrders(); 
-    loadUserOrders(); 
-}
-function toggleAdmin(){ 
-  if(role==="admin"){
-    adminPanel.style.display="block"; 
-    document.querySelector("[data-tab='adminTab']").style.display="inline-block";
-  } else { 
-    adminPanel.style.display="none"; 
-    document.querySelector("[data-tab='adminTab']").style.display="none";
-  }
-}
-
-// --- Tabs ---
-document.querySelectorAll(".tab-btn").forEach(btn=>{
-  btn.addEventListener("click",()=>{
-    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    document.querySelectorAll(".tab-content").forEach(tab=>tab.classList.remove("active"));
-    document.getElementById(btn.dataset.tab).classList.add("active");
-  });
-});
+let role = "usuario";
 
 // --- Modal ---
+const modal = document.getElementById("modal");
+const modalBody = document.getElementById("modalBody");
 function openModal(content){ modal.style.display="flex"; modalBody.innerHTML=content; }
 function closeModal(){ modal.style.display="none"; }
 function showModalMessage(msg){ openModal(`<p>${msg}</p>`); setTimeout(closeModal,1500); }
 
-// --- Productos ---
-async function uploadProduct(){
-  const file = mediaInput.files[0];
-  if(!file) return alert("Archivo requerido");
-  if(!nameInput.value.trim() || !priceInput.value) return alert("Nombre y precio obligatorios");
-  const form=new FormData();
-  form.append("file",file);
-  form.append("upload_preset",UPLOAD_PRESET);
-  const isVideo=file.type.startsWith("video");
-  const endpoint=isVideo?"video":"image";
-  const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${endpoint}/upload`,{method:"POST",body:form});
-  const data=await res.json();
-  if(!data.secure_url) return alert("Error subir archivo");
-  await db.collection("products").add({
-    name:nameInput.value.trim(),
-    description:descriptionInput.value.trim(),
-    price:Number(priceInput.value),
-    mediaUrl:data.secure_url,
-    mediaType:isVideo?"video":"image",
-    createdAt:firebase.firestore.FieldValue.serverTimestamp()
-  });
-  alert("Producto subido");
-  nameInput.value=""; descriptionInput.value=""; priceInput.value=""; mediaInput.value="";
+// --- Auth ---
+function showLoginForm(){
+  openModal(`<h3>Iniciar Sesión</h3>
+  <input id="loginEmail" placeholder="Email">
+  <input id="loginPass" placeholder="Contraseña" type="password">
+  <button onclick="login()">Entrar</button>
+  <button onclick="showResetPass()">Olvidé mi contraseña</button>`);
+}
+function showRegisterForm(){
+  openModal(`<h3>Crear Cuenta</h3>
+  <input id="regEmail" placeholder="Email">
+  <input id="regPass" placeholder="Contraseña" type="password">
+  <button onclick="register()">Registrar</button>`);
+}
+function showResetPass(){
+  const email = prompt("Ingrese su correo para recuperar contraseña:");
+  if(email) auth.sendPasswordResetEmail(email).then(()=>alert("Correo enviado")).catch(e=>alert(e.message));
+}
+function login(){
+  const email=document.getElementById("loginEmail").value;
+  const pass=document.getElementById("loginPass").value;
+  auth.signInWithEmailAndPassword(email,pass).then(u=>{ closeModal(); initUser(u.user); }).catch(e=>alert(e.message));
+}
+function register(){
+  const email=document.getElementById("regEmail").value;
+  const pass=document.getElementById("regPass").value;
+  auth.createUserWithEmailAndPassword(email,pass).then(u=>{ closeModal(); initUser(u.user); }).catch(e=>alert(e.message));
+}
+function logout(){ auth.signOut().then(()=>location.reload()); }
+
+function initUser(user){
+  document.getElementById("authButtons").style.display="none";
+  document.getElementById("userInfo").style.display="inline-block";
+  document.getElementById("userEmail").innerText=user.email;
+  role = (user.email==="Admin@vendors.com") ? "admin" : "usuario";
+  document.getElementById("dashboard").style.display="block";
+  toggleAdmin();
+  setUpTabs();
+  loadProducts();
+  loadOrders();
+  loadUserOrders();
+  renderCart();
 }
 
-function loadProducts(){
-  const search = document.getElementById("search").value.toLowerCase();
-  const maxPrice = document.getElementById("maxPrice").value;
-  db.collection("products").orderBy("createdAt","desc").onSnapshot(snapshot=>{
-    productsList.innerHTML="";
-    snapshot.forEach(doc=>{
-      const p=doc.data();
-      if((search && !p.name.toLowerCase().includes(search)) || (maxPrice && p.price>maxPrice)) return;
-      productsList.innerHTML+=`
-        <div class="product">
-          ${p.mediaType==="video"?`<video src="${p.mediaUrl}" controls></video>`:`<img src="${p.mediaUrl}">`}
-          <h3>${p.name}</h3>
-          <p>${p.description}</p>
-          <b>$${p.price}</b>
-          <div class="actions">
-            <button onclick="showContact('${p.name}')"><i class="fa fa-phone"></i> Contactar</button>
-            <button onclick="addToCart('${doc.id}','${p.name}',${p.price})"><i class="fa fa-cart-plus"></i> Añadir al carrito</button>
-            ${role==="admin"?`
-              <button onclick="editProduct('${doc.id}','${p.name}','${p.description}',${p.price})"><i class="fa fa-edit"></i> Editar</button>
-              <button onclick="deleteProduct('${doc.id}')"><i class="fa fa-trash"></i> Eliminar</button>`:""}
-          </div>
-        </div>
-      `;
+// --- Configuración ---
+function openConfig(){
+  const user = auth.currentUser;
+  openModal(`<h3>Configuración</h3>
+    <input id="configName" placeholder="Nombre" value="${user.displayName||''}">
+    <input id="configEmail" placeholder="Email" value="${user.email}">
+    <input id="configCountry" placeholder="País">
+    <input id="configResidence" placeholder="Residencia">
+    <input id="configPass" placeholder="Nueva contraseña" type="password">
+    <button onclick="updateConfig()">Guardar</button>`);
+}
+function updateConfig(){
+  const name=document.getElementById("configName").value;
+  const email=document.getElementById("configEmail").value;
+  const pass=document.getElementById("configPass").value;
+  const user = auth.currentUser;
+  if(name) user.updateProfile({displayName:name});
+  if(email) user.updateEmail(email).catch(e=>alert(e.message));
+  if(pass) user.updatePassword(pass).catch(e=>alert(e.message));
+  showModalMessage("Configuración actualizada");
+  closeModal();
+}
+
+// --- Tabs ---
+function setUpTabs(){
+  document.querySelectorAll(".tab-btn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      document.querySelectorAll(".tab-content").forEach(tab=>tab.classList.remove("active"));
+      document.getElementById(btn.dataset.tab).classList.add("active");
     });
   });
+}
+function toggleAdmin(){ 
+  if(role==="admin"){ document.getElementById("adminPanel").style.display="block"; document.querySelector("[data-tab='adminTab']").style.display="inline-block"; }
+  else { document.getElementById("adminPanel").style.display="none"; document.querySelector("[data-tab='adminTab']").style.display="none"; }
+}
+
+// --- Productos ---
+async function loadProducts(){
+  const productsList = document.getElementById("productsList");
+  productsList.innerHTML = "Cargando...";
+  db.collection("products").onSnapshot(snapshot=>{
+    let html="";
+    snapshot.forEach(doc=>{
+      const p = doc.data();
+      html+=`
+      <div class="product">
+        <strong>${p.name}</strong> - $${p.price} <br>
+        ${p.description}<br>
+        ${p.media ? `<img src="${p.media}" width="100">` : ''}
+        <div class="actions">
+          <button onclick="addToCart('${doc.id}','${p.name}',${p.price},'${p.media||''}')"><i class="fa fa-cart-plus"></i> Añadir al carrito</button>
+          ${role==='admin'?`<button onclick="editProduct('${doc.id}','${p.name}','${p.description}',${p.price})"><i class="fa fa-edit"></i> Editar</button>
+          <button onclick="deleteProduct('${doc.id}')"><i class="fa fa-trash"></i> Eliminar</button>`:''}
+        </div>
+      </div>`;
+    });
+    productsList.innerHTML = html || "<i>No hay productos</i>";
+  }, err=>console.log(err));
+}
+
+function filterProducts(){
+  const nameFilter = document.getElementById("search").value.toLowerCase();
+  const maxPrice = parseFloat(document.getElementById("maxPrice").value) || Infinity;
+  document.querySelectorAll(".product").forEach(p=>{
+    const text = p.querySelector("strong").innerText.toLowerCase();
+    const price = parseFloat(p.innerText.match(/\$(\d+\.?\d*)/)[1]);
+    p.style.display = (text.includes(nameFilter) && price<=maxPrice) ? "block" : "none";
+  });
+}
+
+async function uploadProduct(){
+  const name=document.getElementById("name").value.trim();
+  const desc=document.getElementById("description").value.trim();
+  const price=parseFloat(document.getElementById("price").value);
+  const mediaFile=document.getElementById("media").files[0];
+
+  if(!name||!desc||!price) return alert("Completa todos los campos");
+
+  let mediaUrl="";
+  if(mediaFile){
+    const data = new FormData();
+    data.append("file", mediaFile);
+    data.append("upload_preset","vendors_preset");
+    const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`, {method:"POST", body:data});
+    const json = await res.json();
+    mediaUrl = json.secure_url;
+  }
+
+  db.collection("products").add({name, description:desc, price, media:mediaUrl})
+    .then(()=>{ showModalMessage("Producto subido"); document.getElementById("name").value=''; document.getElementById("description").value=''; document.getElementById("price").value=''; document.getElementById("media").value=''; })
+    .catch(e=>alert(e.message));
+}
+
+function editProduct(id,name,desc,price){
+  const newName = prompt("Nombre", name);
+  const newDesc = prompt("Descripción", desc);
+  const newPrice = parseFloat(prompt("Precio", price));
+  if(!newName || !newDesc || !newPrice) return;
+  db.collection("products").doc(id).update({name:newName, description:newDesc, price:newPrice})
+    .then(()=>showModalMessage("Producto actualizado"))
+    .catch(e=>alert(e.message));
+}
+
+function deleteProduct(id){
+  if(!confirm("Eliminar producto?")) return;
+  db.collection("products").doc(id).delete().then(()=>showModalMessage("Producto eliminado")).catch(e=>alert(e.message));
 }
 
 // --- Carrito ---
-function addToCart(id,name,price){ cart.push({id,name,price}); localStorage.setItem("cart",JSON.stringify(cart)); showModalMessage(`${name} añadido al carrito`); }
-function emptyCart(){ if(confirm("Vaciar carrito?")){ cart=[]; localStorage.setItem("cart",JSON.stringify(cart)); cartListDiv.innerHTML="<i>Carrito vacío</i>"; } }
-function viewCart(){ if(cart.length===0){ cartListDiv.innerHTML="<i>Carrito vacío</i>"; return; } let html="<ul>"; let total=0; cart.forEach(item=>{ html+=`<li>${item.name} - $${item.price}</li>`; total+=item.price; }); html+=`</ul><b>Total: $${total}</b>`; cartListDiv.innerHTML=html; }
-
-// --- Contactar ---
-function showContact(name){ openModal(`Contacta al vendedor sobre: <b>${name}</b><br>Número: 63892022`); }
-
-// --- Editar / Eliminar ---
-function editProduct(id,name,desc,price){ const n=prompt("Nombre:",name); const d=prompt("Descripción:",desc); const p=prompt("Precio:",price); if(n && d && p) db.collection("products").doc(id).update({name:n,description:d,price:Number(p)}); }
-function deleteProduct(id){ if(confirm("Eliminar producto?")) db.collection("products").doc(id).delete(); }
-
-// --- Compras ---
-function openPurchaseForm(){
-  if(cart.length===0){ alert("Carrito vacío"); return; }
-  let html=`<h3>Formulario de Compra</h3>
-    <input id="buyerName" placeholder="Nombre">
-    <input id="buyerPhone" placeholder="Teléfono/WhatsApp">
-    <input id="buyerAddress" placeholder="Dirección de entrega">
-    <input id="buyerEmail" placeholder="Email">
-    <label>Adjuntar comprobante (opcional)</label>
-    <input type="file" id="paymentProof" accept="image/*">
-    <button onclick="confirmPurchase()">Confirmar Compra</button>`;
-  openModal(html);
+function addToCart(id,name,price,media){
+  cart.push({id,name,price,media});
+  localStorage.setItem("cart",JSON.stringify(cart));
+  renderCart();
+  showModalMessage("Añadido al carrito");
 }
 
-async function confirmPurchase(){
+function renderCart(){
+  const list = document.getElementById("cartList");
+  if(cart.length===0) { list.innerHTML="<i>Carrito vacío</i>"; return; }
+  let html="";
+  cart.forEach((p,i)=> html+=`<div>${p.name} - $${p.price} <button onclick="removeFromCart(${i})">Eliminar</button></div>`);
+  list.innerHTML = html;
+}
+
+function removeFromCart(index){
+  cart.splice(index,1);
+  localStorage.setItem("cart",JSON.stringify(cart));
+  renderCart();
+}
+
+function emptyCart(){ if(confirm("Vaciar carrito?")){ cart=[]; localStorage.setItem("cart","[]"); renderCart(); } }
+
+function viewCart(){ renderCart(); showModalMessage("Carrito actualizado"); }
+
+// --- Compra ---
+function openPurchaseForm(){
+  if(cart.length===0) return alert("Carrito vacío");
+  openModal(`
+    <h3>Formulario de Compra</h3>
+    <input id="buyerName" placeholder="Nombre completo">
+    <input id="buyerPhone" placeholder="Teléfono">
+    <input id="buyerWhats" placeholder="WhatsApp">
+    <input id="buyerAddress" placeholder="Dirección">
+    <input id="buyerEmail" placeholder="Email">
+    <button onclick="submitPurchase()">Enviar Compra</button>
+  `);
+}
+
+function submitPurchase(){
   const name=document.getElementById("buyerName").value.trim();
   const phone=document.getElementById("buyerPhone").value.trim();
+  const whatsapp=document.getElementById("buyerWhats").value.trim();
   const address=document.getElementById("buyerAddress").value.trim();
   const email=document.getElementById("buyerEmail").value.trim();
-  const proofFile=document.getElementById("paymentProof").files[0];
-  if(!name||!phone||!address||!email) return alert("Todos los campos obligatorios");
-  let proofUrl="";
-  if(proofFile){
-    const form=new FormData(); form.append("file",proofFile); form.append("upload_preset",UPLOAD_PRESET);
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,{method:"POST",body:form});
-    const data=await res.json(); proofUrl=data.secure_url;
-  }
-  await db.collection("orders").add({
+
+  if(!name||!phone||!whatsapp||!address||!email) return alert("Completa todos los campos");
+
+  db.collection("orders").add({
+    user:auth.currentUser.uid,
+    userEmail:auth.currentUser.email,
     buyerName:name,
-    buyerPhone:phone,
-    buyerAddress:address,
-    buyerEmail:email,
+    phone, whatsapp, address, email,
     products:cart,
     status:"pendiente",
-    proof:proofUrl||"",
-    createdAt:firebase.firestore.FieldValue.serverTimestamp()
-  });
-  cart=[]; localStorage.setItem("cart",JSON.stringify(cart)); closeModal();
-  showModalMessage("Compra enviada correctamente");
-  loadOrders(); loadUserOrders();
-}
-
-// --- Ordenes Admin ---
-function loadOrders(){
-  if(role!=="admin"){ ordersListDiv.innerHTML="<i>No tienes acceso</i>"; return; }
-  db.collection("orders").orderBy("createdAt","desc").onSnapshot(snapshot=>{
-    ordersListDiv.innerHTML="";
-    snapshot.forEach(doc=>{
-      const o=doc.data();
-      let proofBtn=o.proof?`<button onclick="viewProof('${o.proof}')">Ver comprobante</button>`:"";
-      let addProofBtn=`<button onclick="uploadOrderProof('${doc.id}')">Agregar / Cambiar comprobante</button>`;
-      let statusOptions=["pendiente","revision","verificado","en-camino","finalizado","cancelada"];
-      let statusSelect=`<select onchange="changeStatus('${doc.id}',this.value)">${statusOptions.map(s=>`<option value="${s}" ${o.status===s?'selected':''}>${s}</option>`).join('')}</select>`;
-      ordersListDiv.innerHTML+=`<div class="order"><h4>${o.buyerName} - ${o.buyerPhone}</h4><p>${o.buyerAddress} - ${o.buyerEmail}</p><b>${o.products.map(p=>p.name+" $"+p.price).join(", ")}</b><p class="status-${o.status}">Estado: ${o.status}</p>${proofBtn} ${addProofBtn}<br>Cambiar Estado: ${statusSelect}<button onclick="cancelOrder('${doc.id}')">Cancelar Compra</button></div>`;
-    });
-  });
+    comprobante:""
+  }).then(()=>{ cart=[]; localStorage.setItem("cart","[]"); renderCart(); showModalMessage("Compra enviada"); closeModal(); })
+    .catch(e=>alert(e.message));
 }
 
 // --- Historial Usuario ---
 function loadUserOrders(){
-  db.collection("orders").orderBy("createdAt","desc").onSnapshot(snapshot=>{
-    purchaseHistoryDiv.innerHTML="";
-    snapshot.forEach(doc=>{
-      const o=doc.data();
-      let addProofBtn=o.status!=="finalizado"?`<button onclick="uploadOrderProof('${doc.id}')">Agregar / Cambiar comprobante</button>`:"";
-      purchaseHistoryDiv.innerHTML+=`<div class="order"><b>${o.products.map(p=>p.name+" $"+p.price).join(", ")}</b><p class="status-${o.status}">Estado: ${o.status}</p>${o.proof?`<button onclick="viewProof('${o.proof}')">Ver comprobante</button>`:""} ${addProofBtn}</div>`;
+  const history = document.getElementById("purchaseHistory");
+  db.collection("orders").where("user","==",auth.currentUser.uid)
+    .onSnapshot(snapshot=>{
+      let html="";
+      snapshot.forEach(doc=>{
+        const o = doc.data();
+        html+=`<div class="order">
+          <strong>Compra #${doc.id}</strong> - Estado: <span class="status-${o.status}">${o.status}</span><br>
+          Productos: ${o.products.map(p=>p.name).join(", ")}<br>
+          ${o.comprobante?`Comprobante: <a href="${o.comprobante}" target="_blank">Ver</a>`:'Sin comprobante'}
+          ${o.status!=="finalizado"?`<button onclick="uploadComprobante('${doc.id}')">Añadir Comprobante</button>`:''}
+        </div>`;
+      });
+      history.innerHTML = html || "<i>No hay compras</i>";
     });
+}
+
+// --- Subir Comprobante ---
+function uploadComprobante(orderId){
+  const fileInput = document.createElement("input");
+  fileInput.type="file";
+  fileInput.accept="image/*";
+  fileInput.onchange = async ()=>{
+    const file = fileInput.files[0];
+    if(!file) return;
+    const data = new FormData();
+    data.append("file",file);
+    data.append("upload_preset","vendors_preset");
+    const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`,{method:"POST",body:data});
+    const json = await res.json();
+    db.collection("orders").doc(orderId).update({comprobante:json.secure_url}).then(()=>showModalMessage("Comprobante subido"));
+  };
+  fileInput.click();
+}
+
+// --- Admin Solicitudes ---
+function loadOrders(){
+  if(role!=="admin") return;
+  const ordersList = document.getElementById("ordersList");
+  db.collection("orders").onSnapshot(snapshot=>{
+    let html="";
+    snapshot.forEach(doc=>{
+      const o = doc.data();
+      html+=`<div class="order">
+        <strong>Compra #${doc.id}</strong> - Estado: <span class="status-${o.status}">${o.status}</span><br>
+        Usuario: ${o.userEmail}<br>
+        Productos: ${o.products.map(p=>p.name).join(", ")}<br>
+        ${o.comprobante?`Comprobante: <a href="${o.comprobante}" target="_blank">Ver</a>`:'Sin comprobante'}
+        <div class="actions">
+          ${o.status!=="cancelada"?`<button onclick="changeStatus('${doc.id}')">Cambiar Estado</button>`:''}
+          <button onclick="cancelOrder('${doc.id}')">Cancelar Compra</button>
+        </div>
+      </div>`;
+    });
+    ordersList.innerHTML = html || "<i>No hay solicitudes</i>";
   });
 }
 
-// --- Subir comprobante ---
-async function uploadOrderProof(orderId){
-  const input=document.createElement("input"); input.type="file"; input.accept="image/*";
-  input.onchange=async ()=>{
-    const file=input.files[0]; if(!file) return;
-    const form=new FormData(); form.append("file",file); form.append("upload_preset",UPLOAD_PRESET);
-    const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,{method:"POST",body:form});
-    const data=await res.json();
-    await db.collection("orders").doc(orderId).update({proof:data.secure_url});
-    showModalMessage("Comprobante subido");
-  };
-  input.click();
+function changeStatus(id){
+  const newStatus = prompt("Nuevo estado: pendiente, revision, verificado, en-camino, finalizado");
+  if(!newStatus) return;
+  db.collection("orders").doc(id).update({status:newStatus}).then(()=>showModalMessage("Estado actualizado"));
 }
 
-// --- Cambiar estado ---
-function changeStatus(id,newStatus){ if(confirm(`Confirmar cambio a "${newStatus}"?`)) db.collection("orders").doc(id).update({status:newStatus}); }
+function cancelOrder(id){
+  const reason = prompt("Razón de cancelación:");
+  if(!reason) return;
+  db.collection("orders").doc(id).update({status:"cancelada", cancelReason:reason}).then(()=>showModalMessage("Compra cancelada"));
+}
 
-// --- Cancelar orden ---
-function cancelOrder(id){ const reason=prompt("Motivo de cancelación:"); if(reason) db.collection("orders").doc(id).update({status:"cancelada",cancelReason:reason}); }
 
-// --- Ver comprobante ---
-function viewProof(url){ openModal(`<img src="${url}" style="width:100%;">`); }
-
-// --- Inicializar ---
-setRole();
-loadProducts();
-loadOrders();
-loadUserOrders();
 </script>
 </body>
 </html>
