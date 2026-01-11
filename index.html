@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Subir Producto</title>
+<title>Vendor | Subir y Listar Productos</title>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -13,17 +13,20 @@ body {
   font-family: Arial, sans-serif;
   background: #f2f2f2;
   margin: 0;
+  padding: 20px;
 }
 
 .container {
   max-width: 500px;
-  margin: 50px auto;
+  margin: auto;
   background: #fff;
   padding: 20px;
   border-radius: 10px;
 }
 
-h2 { text-align: center }
+h2 {
+  text-align: center;
+}
 
 input, textarea, button {
   width: 100%;
@@ -36,11 +39,46 @@ button {
   color: #fff;
   border: none;
   cursor: pointer;
+  border-radius: 6px;
+}
+
+button:hover {
+  opacity: 0.9;
 }
 
 .preview {
   margin-top: 15px;
   text-align: center;
+}
+
+hr {
+  margin: 30px 0;
+}
+
+.product {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 15px;
+  background: #fafafa;
+}
+
+.product img,
+.product video {
+  width: 100%;
+  border-radius: 6px;
+}
+
+.product h3 {
+  margin: 10px 0 5px;
+}
+
+.product p {
+  margin: 5px 0;
+}
+
+.price {
+  font-weight: bold;
 }
 </style>
 </head>
@@ -48,6 +86,7 @@ button {
 <body>
 
 <div class="container">
+
   <h2>Subir Producto</h2>
 
   <input id="name" placeholder="Nombre del producto">
@@ -59,12 +98,18 @@ button {
   <button onclick="uploadProduct()">Subir producto</button>
 
   <div class="preview" id="preview"></div>
+
+  <hr>
+
+  <h2>Productos</h2>
+  <div id="productsList"></div>
+
 </div>
 
 <script>
 /* 🔥 FIREBASE CONFIG */
 firebase.initializeApp({
-  apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
+  apiKey: "TU_API_KEY",
   authDomain: "proyectovendor.firebaseapp.com",
   projectId: "proyectovendor"
 });
@@ -72,10 +117,10 @@ firebase.initializeApp({
 const db = firebase.firestore();
 
 /* ☁️ CLOUDINARY */
-const CLOUD_NAME = "demo"; // ⚠️ CAMBIAR por el tuyo
+const CLOUD_NAME = "demo"; // CAMBIAR
 const UPLOAD_PRESET = "vendors_preset";
 
-/* 🚀 SUBIR PRODUCTO */
+/* 📦 SUBIR PRODUCTO */
 async function uploadProduct() {
   const file = media.files[0];
   if (!file) return alert("Selecciona una imagen o video");
@@ -104,20 +149,51 @@ async function uploadProduct() {
   });
 
   showPreview(data.secure_url, isVideo);
-  alert("Producto subido correctamente");
 
   name.value = "";
   description.value = "";
   price.value = "";
   media.value = "";
+
+  alert("Producto subido correctamente");
 }
 
 /* 👀 PREVIEW */
 function showPreview(url, isVideo) {
   preview.innerHTML = isVideo
-    ? `<video src="${url}" controls width="100%"></video>`
-    : `<img src="${url}" width="100%">`;
+    ? `<video src="${url}" controls></video>`
+    : `<img src="${url}">`;
 }
+
+/* 🧾 LISTAR PRODUCTOS */
+const productsList = document.getElementById("productsList");
+
+function loadProducts() {
+  db.collection("products")
+    .orderBy("createdAt", "desc")
+    .onSnapshot(snapshot => {
+      productsList.innerHTML = "";
+
+      snapshot.forEach(doc => {
+        const p = doc.data();
+
+        productsList.innerHTML += `
+          <div class="product">
+            ${
+              p.mediaType === "video"
+                ? `<video src="${p.mediaUrl}" controls></video>`
+                : `<img src="${p.mediaUrl}">`
+            }
+            <h3>${p.name}</h3>
+            <p>${p.description}</p>
+            <p class="price">$${p.price}</p>
+          </div>
+        `;
+      });
+    });
+}
+
+loadProducts();
 </script>
 
 </body>
