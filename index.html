@@ -103,13 +103,18 @@ canvas { border:1px solid #000; border-radius:5px; }
 <script>
 // --- Firebase --- 
 firebase.initializeApp({
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_AUTH_DOMAIN",
-  projectId: "TU_PROJECT_ID"
+  apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
+  authDomain: "proyectovendor.firebaseapp.com",
+  projectId: "proyectovendor",
+  storageBucket: "proyectovendor.appspot.com",
+  messagingSenderId: "1033243956412",
+  appId: "1:1033243956412:web:2c5dcbf9e92f5c3c0e4c73"
 });
+
 const db = firebase.firestore();
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
+</script>
 
 // --- Variables ---
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
