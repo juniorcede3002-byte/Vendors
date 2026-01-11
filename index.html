@@ -299,4 +299,140 @@ async function finalizePurchase(){
 
   const order={user:auth.currentUser.uid,userEmail:email,buyerName:name,phone,whatsapp,address,email,products:cart,payment,status:"pendiente",createdAt:firebase.firestore.FieldValue.serverTimestamp()};
   await db.collection("orders").add(order);
-  cart=[]; localStorage.setItem("
+  cart=[]; localStorage.setItem("cart", JSON.stringify(cart));
+  renderCart();
+  closeModal();
+  showModalMessage("Compra realizada correctamente");
+}
+
+// --- Historial del usuario ---
+function loadUserOrders(){
+  const history=document.getElementById("purchaseHistory");
+  const uid=auth.currentUser.uid;
+
+  db.collection("orders").where("user","==",uid)
+  .orderBy("createdAt","desc")
+  .onSnapshot(snapshot=>{
+    let html="";
+    snapshot.forEach(doc=>{
+      const o=doc.data();
+      html+=`
+      <div class="order">
+        <strong>Pedido:</strong> ${doc.id}<br>
+        <strong>Estado:</strong> <span class="status-${o.status.replace(/ /g,'-')}">${o.status}</span><br>
+        <strong>Pago:</strong> ${o.payment}<br>
+        <strong>Productos:</strong>
+        <ul>${o.products.map(p=>`<li>${p.name} - $${p.price}</li>`).join("")}</ul>
+
+        <label>Subir comprobante:</label>
+        <input type="file" onchange="uploadReceipt('${doc.id}',this.files[0])">
+
+        <label>Firma:</label><br>
+        <canvas id="sign-${doc.id}" width="250" height="100"></canvas>
+        <button onclick="saveSignature('${doc.id}')">Guardar Firma</button>
+      </div>`;
+    });
+    history.innerHTML = html || "<i>No hay compras</i>";
+    setTimeout(initCanvasSignatures,300);
+  });
+}
+
+// --- Firma ---
+const signatures={};
+
+function initCanvasSignatures(){
+  document.querySelectorAll("canvas").forEach(canvas=>{
+    const ctx=canvas.getContext("2d");
+    let drawing=false;
+
+    canvas.onmousedown=()=>drawing=true;
+    canvas.onmouseup=()=>drawing=false;
+    canvas.onmouseleave=()=>drawing=false;
+    canvas.onmousemove=e=>{
+      if(!drawing) return;
+      ctx.lineWidth=2;
+      ctx.lineCap="round";
+      ctx.strokeStyle="#000";
+      ctx.lineTo(e.offsetX,e.offsetY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(e.offsetX,e.offsetY);
+    };
+  });
+}
+
+async function saveSignature(orderId){
+  const canvas=document.getElementById(`sign-${orderId}`);
+  const dataURL=canvas.toDataURL("image/png");
+  await db.collection("orders").doc(orderId).update({signature:dataURL});
+  showModalMessage("Firma guardada");
+}
+
+// --- Comprobante ---
+async function uploadReceipt(orderId,file){
+  if(!file) return;
+  const data=new FormData();
+  data.append("file",file);
+  data.append("upload_preset","vendors_preset");
+
+  const res=await fetch("https://api.cloudinary.com/v1_1/df79cjklp/upload",{method:"POST",body:data});
+  const json=await res.json();
+
+  await db.collection("orders").doc(orderId).update({
+    receipt:json.secure_url,
+    status:"revision de pago"
+  });
+  showModalMessage("Comprobante enviado");
+}
+
+// --- ADMIN ---
+function loadOrders(){
+  const ordersList=document.getElementById("ordersList");
+
+  db.collection("orders")
+  .orderBy("createdAt","desc")
+  .onSnapshot(snapshot=>{
+    let html="";
+    snapshot.forEach(doc=>{
+      const o=doc.data();
+      html+=`
+      <div class="order">
+        <strong>ID:</strong> ${doc.id}<br>
+        <strong>Cliente:</strong> ${o.buyerName}<br>
+        <strong>Email:</strong> ${o.email}<br>
+        <strong>Pago:</strong> ${o.payment}<br>
+        <strong>Estado:</strong> ${o.status}<br>
+        ${o.receipt?`<a href="${o.receipt}" target="_blank">Ver comprobante</a><br>`:""}
+        ${o.signature?`<img src="${o.signature}" width="150"><br>`:""}
+
+        <select onchange="updateOrderStatus('${doc.id}',this.value)">
+          <option value="pendiente">Pendiente</option>
+          <option value="revision de pago">Revisión de pago</option>
+          <option value="pago verificado">Pago verificado</option>
+          <option value="en camino">En camino</option>
+          <option value="entregado">Entregado</option>
+          <option value="cancelada">Cancelada</option>
+        </select>
+      </div>`;
+    });
+    ordersList.innerHTML = html || "<i>No hay pedidos</i>";
+  });
+}
+
+function updateOrderStatus(id,status){
+  db.collection("orders").doc(id).update({status});
+}
+
+// --- Filtros ---
+function filterProducts(){
+  const search=document.getElementById("search").value.toLowerCase();
+  const maxPrice=parseFloat(document.getElementById("maxPrice").value||Infinity);
+  document.querySelectorAll("#productsList .product").forEach(p=>{
+    const name=p.innerText.toLowerCase();
+    const price=parseFloat(p.innerText.match(/\$(\d+)/)?.[1]||0);
+    p.style.display=(name.includes(search)&&price<=maxPrice)?"block":"none";
+  });
+}
+</script>
+</body>
+</html>
