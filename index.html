@@ -1,140 +1,106 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendor | Dashboard Premium</title>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        header { backdrop-filter: blur(10px); background: rgba(17, 17, 17, 0.95); }
-        
-        .product-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
-        
-        .status-badge { padding: 4px 12px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
-        .status-pendiente { background: #fef3c7; color: #92400e; }
-        .status-revision { background: #e0f2fe; color: #0369a1; }
-        .status-verificado { background: #dcfce7; color: #15803d; }
-        .status-en-camino { background: #f3e8ff; color: #7e22ce; }
-        .status-finalizado { background: #f1f5f9; color: #475569; }
-        .status-cancelada { background: #fee2e2; color: #b91c1c; }
-
-        input, textarea, select { transition: border 0.2s ease; border: 1px solid #e2e8f0 !important; }
-        input:focus, textarea:focus { border-color: #6366f1 !important; outline: none; ring: 2px rgba(99, 102, 241, 0.2); }
-    </style>
+<meta charset="UTF-8">
+<title>Vendor | Dashboard Integrado</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<style>
+body { font-family: Arial,sans-serif; background:#f2f2f2; margin:0; padding:0; }
+header { background:#111; color:#fff; padding:15px; display:flex; justify-content:space-between; align-items:center; position:fixed; top:0; width:100%; z-index:100; }
+header button { background:#fff; color:#111; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; }
+.container { max-width:1000px; margin:auto; padding:100px 20px 20px; display:none; }
+.tabs { display:flex; gap:5px; margin-bottom:15px; flex-wrap:wrap; }
+.tabs button { flex:1; padding:10px; cursor:pointer; border:none; border-radius:5px; background:#ddd; transition:0.2s; }
+.tabs button.active { background:#111; color:#fff; }
+.tab-content { display:none; background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+.tab-content.active { display:block; }
+input, textarea, select, button { width:100%; padding:10px; margin-top:10px; border-radius:5px; border:1px solid #ccc; }
+button { background:#111; color:#fff; border:none; cursor:pointer; transition:0.2s; }
+button:hover { opacity:0.9; }
+.product, .order { border:1px solid #ddd; padding:10px; margin-top:15px; border-radius:8px; background:#fafafa; }
+.actions { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; }
+.actions button { flex:1; display:flex; align-items:center; justify-content:center; gap:5px; }
+.status-pendiente { color:#ff9800; font-weight:bold; }
+.status-revision\ de\ pago { color:#2196f3; font-weight:bold; }
+.status-pago\ verificado { color:#4caf50; font-weight:bold; }
+.status-en\ camino { color:#9c27b0; font-weight:bold; }
+.status-entregado { color:#000; font-weight:bold; }
+.status-cancelada { color:#f44336; font-weight:bold; }
+.modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:1000;}
+.modal-content { background:#fff; padding:20px; border-radius:8px; max-width:500px; width:90%; position:relative; box-shadow:0 2px 15px rgba(0,0,0,0.3); max-height:90%; overflow:auto; }
+.modal-content button.close { position:absolute; top:10px; right:10px; background:#f00; border:none; border-radius:50%; width:30px; height:30px; color:#fff; cursor:pointer; font-weight:bold; font-size:16px; }
+</style>
 </head>
-<body class="pb-10">
+<body>
 
-<header class="fixed top-0 w-full z-50 text-white p-4 shadow-lg">
-    <div class="max-w-6xl mx-auto flex justify-between items-center">
-        <div class="flex items-center gap-2">
-            <div class="bg-indigo-600 p-2 rounded-lg">
-                <i class="fas fa-store"></i>
-            </div>
-            <span class="font-bold text-xl tracking-tight">VENDOR</span>
-        </div>
-        
-        <div id="authButtons" class="flex gap-2">
-            <button onclick="showLoginForm()" class="text-sm font-medium hover:text-indigo-400 transition">Iniciar Sesión</button>
-            <button onclick="showRegisterForm()" class="bg-white text-black px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-500 hover:text-white transition">Registrar</button>
-            <button onclick="loginWithGoogle()" class="bg-zinc-800 p-2 rounded-lg hover:bg-zinc-700 transition"><i class="fab fa-google"></i></button>
-        </div>
-
-        <div id="userInfo" style="display:none;" class="flex items-center gap-4">
-            <span id="userEmail" class="text-sm text-zinc-400 hidden md:block"></span>
-            <button onclick="openConfig()" class="hover:text-indigo-400 transition"><i class="fas fa-user-cog"></i></button>
-            <button onclick="logout()" class="bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-500 hover:text-white transition">Salir</button>
-        </div>
-    </div>
+<header>
+  Vendor Dashboard
+  <div id="authButtons">
+    <button onclick="showLoginForm()">Iniciar Sesión</button>
+    <button onclick="showRegisterForm()">Crear Cuenta</button>
+    <button onclick="loginWithGoogle()">Google</button>
+  </div>
+  <div id="userInfo" style="display:none;">
+    <span id="userEmail"></span>
+    <button onclick="logout()">Cerrar Sesión</button>
+    <button onclick="openConfig()">Configuración</button>
+  </div>
 </header>
 
-<div class="max-w-6xl mx-auto mt-24 px-4">
-    <div class="container" id="dashboard">
-        <div class="tabs flex p-1 bg-zinc-200 rounded-xl mb-8 overflow-x-auto">
-            <button class="tab-btn active flex-1 py-2.5 text-sm font-bold rounded-lg transition" data-tab="productsTab">Productos</button>
-            <button class="tab-btn flex-1 py-2.5 text-sm font-bold rounded-lg transition" data-tab="cartTab">Carrito</button>
-            <button class="tab-btn flex-1 py-2.5 text-sm font-bold rounded-lg transition" data-tab="ordersTab">Compras</button>
-            <button class="tab-btn flex-1 py-2.5 text-sm font-bold rounded-lg transition hidden" data-tab="adminTab">Admin</button>
-        </div>
+<div class="container" id="dashboard">
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="productsTab">Productos</button>
+    <button class="tab-btn" data-tab="cartTab">Carrito</button>
+    <button class="tab-btn" data-tab="ordersTab">Compras</button>
+    <button class="tab-btn" data-tab="adminTab">Admin</button>
+  </div>
 
-        <div id="productsTab" class="tab-content active">
-            <div class="flex flex-wrap gap-4 mb-8 items-center justify-between">
-                <h2 class="text-3xl font-black text-zinc-800">Catálogo</h2>
-                <div class="flex gap-2 w-full md:w-auto">
-                    <div class="relative flex-1">
-                        <i class="fas fa-search absolute left-3 top-4 text-zinc-400"></i>
-                        <input id="search" placeholder="Buscar..." oninput="filterProducts()" class="pl-10 w-full rounded-xl py-3 shadow-sm bg-white">
-                    </div>
-                    <input id="maxPrice" type="number" placeholder="Precio Máx." oninput="filterProducts()" class="w-32 rounded-xl py-3 shadow-sm bg-white">
-                </div>
-            </div>
-            <div id="productsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-        </div>
+  <div id="productsTab" class="tab-content active">
+    <h2>Productos</h2>
+    <input id="search" placeholder="Buscar por nombre" oninput="filterProducts()">
+    <input id="maxPrice" type="number" placeholder="Precio máximo" oninput="filterProducts()">
+    <div id="productsList"></div>
+  </div>
 
-        <div id="cartTab" class="tab-content">
-            <div class="bg-white rounded-2xl p-6 shadow-xl max-w-2xl mx-auto">
-                <h2 class="text-2xl font-bold mb-6 flex items-center gap-2 border-b pb-4">
-                    <i class="fas fa-shopping-cart text-indigo-600"></i> Mi Carrito
-                </h2>
-                <div id="cartList" class="space-y-4 mb-6"><i>Carrito vacío</i></div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    <button onclick="viewCart()" class="bg-zinc-100 text-zinc-600 font-bold py-3 rounded-xl hover:bg-zinc-200 transition">Actualizar</button>
-                    <button onclick="emptyCart()" class="bg-red-50 text-red-500 font-bold py-3 rounded-xl hover:bg-red-100 transition">Vaciar</button>
-                    <button onclick="openPurchaseForm()" class="bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">Comprar</button>
-                </div>
-            </div>
-        </div>
+  <div id="cartTab" class="tab-content">
+    <h2>Carrito</h2>
+    <div id="cartList"><i>Carrito vacío</i></div>
+    <button onclick="viewCart()">Ver Carrito</button>
+    <button onclick="openPurchaseForm()">Comprar Carrito</button>
+    <button onclick="emptyCart()">Vaciar Carrito</button>
+  </div>
 
-        <div id="ordersTab" class="tab-content">
-            <h2 class="text-2xl font-bold mb-6">Mis Pedidos</h2>
-            <div id="purchaseHistory" class="grid grid-cols-1 gap-4"></div>
-        </div>
+  <div id="ordersTab" class="tab-content">
+    <h2>Historial de Compras</h2>
+    <div id="purchaseHistory"></div>
+  </div>
 
-        <div id="adminTab" class="tab-content">
-            <div id="adminPanel" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-1 bg-white p-6 rounded-2xl shadow-lg h-fit">
-                    <h3 class="text-xl font-bold mb-4">Gestionar Inventario</h3>
-                    <div class="space-y-3">
-                        <input id="name" placeholder="Nombre del producto" class="w-full rounded-lg p-3">
-                        <textarea id="description" placeholder="Descripción detallada" class="w-full rounded-lg p-3 h-24"></textarea>
-                        <input id="price" type="number" placeholder="Precio venta" class="w-full rounded-lg p-3">
-                        <div class="relative border-2 border-dashed border-zinc-200 p-4 rounded-lg text-center hover:border-indigo-400 transition cursor-pointer">
-                            <input id="media" type="file" accept="image/*,video/*" class="absolute inset-0 opacity-0 cursor-pointer">
-                            <p class="text-zinc-500 text-sm"><i class="fas fa-cloud-upload-alt block text-2xl mb-1"></i> Subir imagen o video</p>
-                        </div>
-                        <button onclick="uploadProduct()" class="w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-indigo-600 transition">Subir Producto</button>
-                    </div>
-                </div>
-                <div class="lg:col-span-2">
-                    <h3 class="text-xl font-bold mb-4">Solicitudes Recientes</h3>
-                    <div id="ordersList" class="space-y-4"></div>
-                </div>
-            </div>
-        </div>
+  <div id="adminTab" class="tab-content">
+    <div id="adminPanel">
+      <h3>Subir Producto</h3>
+      <input id="name" placeholder="Nombre">
+      <textarea id="description" placeholder="Descripción"></textarea>
+      <input id="price" type="number" placeholder="Precio">
+      <input id="media" type="file" accept="image/*,video/*">
+      <button onclick="uploadProduct()">Subir</button>
+
+      <h3>Solicitudes de Compra</h3>
+      <div id="ordersList"></div>
     </div>
+  </div>
 </div>
 
-<div id="modal" class="modal fixed inset-0 z-[1000] hidden items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-    <div class="modal-content relative bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-[fadeIn_0.2s_ease-out]">
-        <button class="close absolute top-4 right-4 text-zinc-400 hover:text-black transition text-2xl" onclick="closeModal()">&times;</button>
-        <div id="modalBody" class="p-8"></div>
-    </div>
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <button class="close" onclick="closeModal()">&times;</button>
+    <div id="modalBody"></div>
+  </div>
 </div>
 
 <script>
-// --- TU LOGICA ORIGINAL (SIN CAMBIOS) ---
 firebase.initializeApp({
   apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
   authDomain: "proyectovendor.firebaseapp.com",
@@ -147,91 +113,85 @@ const provider = new firebase.auth.GoogleAuthProvider();
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 let role = "usuario";
 
+// --- Modal ---
 const modal = document.getElementById("modal");
 const modalBody = document.getElementById("modalBody");
 function openModal(content){ modal.style.display="flex"; modalBody.innerHTML=content; }
 function closeModal(){ modal.style.display="none"; }
-function showModalMessage(msg){ 
-    openModal(`<div class="text-center py-4 text-lg font-bold text-zinc-800">${msg}</div>`); 
-    setTimeout(closeModal,1500); 
-}
+function showModalMessage(msg){ openModal(`<p>${msg}</p>`); setTimeout(closeModal,1500); }
 
+// --- Auth ---
 function showLoginForm(){
-  openModal(`<div class="text-center mb-6"><h3 class="text-2xl font-black">Bienvenido</h3><p class="text-zinc-500">Ingresa tus credenciales</p></div>
-  <input id="loginEmail" placeholder="Correo electrónico" class="w-full rounded-xl p-4 mb-3">
-  <input id="loginPass" placeholder="Contraseña" type="password" class="w-full rounded-xl p-4 mb-4">
-  <button onclick="login()" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl hover:bg-indigo-700 transition mb-3">Entrar</button>
-  <div class="flex justify-between text-sm text-zinc-500 px-1">
-    <button onclick="showResetPass()" class="hover:text-indigo-600">¿Olvidaste tu contraseña?</button>
-    <button onclick="loginWithGoogle()" class="font-bold text-indigo-600 hover:underline">Acceso Google</button>
-  </div>`);
+  openModal(`<h3>Iniciar Sesión</h3>
+  <input id="loginEmail" placeholder="Email">
+  <input id="loginPass" placeholder="Contraseña" type="password">
+  <button onclick="login()">Entrar</button>
+  <button onclick="showResetPass()">Olvidé mi contraseña</button>
+  <button onclick="loginWithGoogle()">Iniciar con Google</button>`);
 }
-
 function showRegisterForm(){
-  openModal(`<div class="text-center mb-6"><h3 class="text-2xl font-black">Crear Cuenta</h3></div>
-  <input id="regEmail" placeholder="Email" class="w-full rounded-xl p-4 mb-3">
-  <input id="regPass" placeholder="Contraseña" type="password" class="w-full rounded-xl p-4 mb-4">
-  <button onclick="register()" class="w-full bg-black text-white font-bold py-4 rounded-xl hover:bg-zinc-800 transition mb-3">Registrarse</button>
-  <button onclick="loginWithGoogle()" class="w-full border border-zinc-200 py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-50 transition font-medium">
-    <i class="fab fa-google"></i> Continuar con Google
-  </button>`);
+  openModal(`<h3>Crear Cuenta</h3>
+  <input id="regEmail" placeholder="Email">
+  <input id="regPass" placeholder="Contraseña" type="password">
+  <button onclick="register()">Registrar</button>
+  <button onclick="loginWithGoogle()">Registrar con Google</button>`);
 }
-
 function showResetPass(){
   const email = prompt("Ingrese su correo para recuperar contraseña:");
   if(email) auth.sendPasswordResetEmail(email).then(()=>alert("Correo enviado")).catch(e=>alert(e.message));
 }
-
 function login(){
   const email=document.getElementById("loginEmail").value;
   const pass=document.getElementById("loginPass").value;
   auth.signInWithEmailAndPassword(email,pass).then(u=>{ closeModal(); initUser(u.user); }).catch(e=>alert(e.message));
 }
-
 function register(){
   const email=document.getElementById("regEmail").value;
   const pass=document.getElementById("regPass").value;
   auth.createUserWithEmailAndPassword(email,pass).then(u=>{ closeModal(); initUser(u.user); }).catch(e=>alert(e.message));
 }
-
 function loginWithGoogle(){
-  auth.signInWithPopup(provider).then(result => { closeModal(); initUser(result.user); }).catch(e=>alert(e.message));
+  auth.signInWithPopup(provider)
+    .then(result => { closeModal(); initUser(result.user); })
+    .catch(e=>alert(e.message));
 }
-
 function logout(){ auth.signOut().then(()=>location.reload()); }
 
+// --- Init User ---
 async function initUser(user){
   document.getElementById("authButtons").style.display="none";
-  document.getElementById("userInfo").style.display="flex";
+  document.getElementById("userInfo").style.display="inline-block";
   document.getElementById("userEmail").innerText=user.email;
+
   const docRef = db.collection("users").doc(user.uid);
   const docSnap = await docRef.get();
-  if(!docSnap.exists){ await docRef.set({pais:'',residencia:'',name:user.displayName||'',email:user.email}); }
+  if(!docSnap.exists){
+    await docRef.set({pais:'',residencia:'',name:user.displayName||'',email:user.email});
+  }
+
   role = (user.email==="admin@vendors.com") ? "admin" : "usuario";
   document.getElementById("dashboard").style.display="block";
   toggleAdmin();
   setUpTabs();
   loadProducts();
-  loadOrders();
-  loadUserOrders();
+  loadOrders(); // admin
+  loadUserOrders(); // usuario
   renderCart();
 }
 
+// --- Configuración ---
 async function openConfig(){
   const user = auth.currentUser;
   const docSnap = await db.collection("users").doc(user.uid).get();
   const data = docSnap.data();
-  openModal(`<h3 class="text-xl font-bold mb-4">Mi Perfil</h3>
-    <div class="space-y-3">
-        <input id="configName" placeholder="Nombre" value="${data.name||''}" class="w-full p-3 rounded-lg">
-        <input id="configEmail" placeholder="Email" value="${data.email||''}" class="w-full p-3 rounded-lg">
-        <input id="configCountry" placeholder="País" value="${data.pais||''}" class="w-full p-3 rounded-lg">
-        <input id="configResidence" placeholder="Residencia" value="${data.residencia||''}" class="w-full p-3 rounded-lg">
-        <input id="configPass" placeholder="Nueva contraseña (opcional)" type="password" class="w-full p-3 rounded-lg">
-        <button onclick="updateConfig()" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">Guardar Cambios</button>
-    </div>`);
+  openModal(`<h3>Configuración</h3>
+    <input id="configName" placeholder="Nombre" value="${data.name||''}">
+    <input id="configEmail" placeholder="Email" value="${data.email||''}">
+    <input id="configCountry" placeholder="País" value="${data.pais||''}">
+    <input id="configResidence" placeholder="Residencia" value="${data.residencia||''}">
+    <input id="configPass" placeholder="Nueva contraseña" type="password">
+    <button onclick="updateConfig()">Guardar</button>`);
 }
-
 async function updateConfig(){
   const user = auth.currentUser;
   const name=document.getElementById("configName").value;
@@ -239,73 +199,63 @@ async function updateConfig(){
   const pais=document.getElementById("configCountry").value;
   const residencia=document.getElementById("configResidence").value;
   const pass=document.getElementById("configPass").value;
+
   await db.collection("users").doc(user.uid).update({name,email,pais,residencia});
   if(name) user.updateProfile({displayName:name});
   if(email) user.updateEmail(email).catch(e=>alert(e.message));
   if(pass) user.updatePassword(pass).catch(e=>alert(e.message));
   showModalMessage("Configuración actualizada");
+  closeModal();
 }
 
+// --- Tabs ---
 function setUpTabs(){
   document.querySelectorAll(".tab-btn").forEach(btn=>{
-    btn.onclick = () => {
-      document.querySelectorAll(".tab-btn").forEach(b=>{
-          b.classList.remove("active", "bg-white", "shadow-sm", "text-indigo-600");
-          b.classList.add("text-zinc-500");
-      });
-      btn.classList.add("active", "bg-white", "shadow-sm", "text-indigo-600");
-      btn.classList.remove("text-zinc-500");
+    btn.addEventListener("click",()=>{
+      document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
       document.querySelectorAll(".tab-content").forEach(tab=>tab.classList.remove("active"));
       document.getElementById(btn.dataset.tab).classList.add("active");
-    };
-    // Active init
-    if(btn.classList.contains("active")) btn.click();
+    });
   });
 }
-
 function toggleAdmin(){ 
-  if(role==="admin"){
-     document.querySelector("[data-tab='adminTab']").classList.remove("hidden");
-  }
+  if(role==="admin"){ document.getElementById("adminPanel").style.display="block"; document.querySelector("[data-tab='adminTab']").style.display="inline-block"; }
+  else { document.getElementById("adminPanel").style.display="none"; document.querySelector("[data-tab='adminTab']").style.display="none"; }
 }
 
+// --- Productos ---
 async function loadProducts(){
   const productsList = document.getElementById("productsList");
-  productsList.innerHTML = `<div class="col-span-full py-10 text-center text-zinc-400">Cargando catálogo...</div>`;
+  productsList.innerHTML = "Cargando...";
   db.collection("products").onSnapshot(snapshot=>{
     let html="";
     snapshot.forEach(doc=>{
       const p = doc.data();
       html+=`
-      <div class="product-card bg-white rounded-2xl p-4 shadow-sm border border-zinc-100 flex flex-col">
-        <div class="h-48 rounded-xl overflow-hidden bg-zinc-100 mb-4 relative">
-            ${p.media ? (p.media.includes('video') ? `<video src="${p.media}" class="w-full h-full object-cover" muted loop onmouseover="this.play()" onmouseout="this.pause()"></video>` : `<img src="${p.media}" class="w-full h-full object-cover">`) : `<div class="flex items-center justify-center h-full text-zinc-300"><i class="fas fa-image text-3xl"></i></div>`}
-            <div class="absolute top-2 right-2 bg-black/50 backdrop-blur-md text-white px-3 py-1 rounded-lg font-bold">$${p.price}</div>
-        </div>
-        <div class="flex-grow">
-            <h4 class="font-bold text-lg text-zinc-800">${p.name}</h4>
-            <p class="text-zinc-500 text-sm line-clamp-2 mb-4">${p.description}</p>
-        </div>
-        <div class="actions mt-auto flex gap-2">
-          <button onclick="addToCart('${doc.id}','${p.name}',${p.price},'${p.media||''}')" class="flex-grow bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2">
-            <i class="fa fa-cart-plus"></i> Añadir
-          </button>
-          ${role==='admin'?`
-          <button onclick="editProductForm('${doc.id}')" class="bg-zinc-100 p-2 rounded-lg text-zinc-600 hover:bg-indigo-100 hover:text-indigo-600 transition"><i class="fa fa-edit"></i></button>
-          <button onclick="deleteProduct('${doc.id}')" class="bg-zinc-100 p-2 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-500 transition"><i class="fa fa-trash"></i></button>`:''}
+      <div class="product">
+        <strong>${p.name}</strong> - $${p.price} <br>
+        ${p.description}<br>
+        ${p.media ? `<img src="${p.media}" width="150">` : ''}
+        <div class="actions">
+          <button onclick="addToCart('${doc.id}','${p.name}',${p.price},'${p.media||''}')"><i class="fa fa-cart-plus"></i> Añadir al carrito</button>
+          ${role==='admin'?`<button onclick="editProductForm('${doc.id}')"><i class="fa fa-edit"></i> Editar</button>
+          <button onclick="deleteProduct('${doc.id}')"><i class="fa fa-trash"></i> Eliminar</button>`:''}
         </div>
       </div>`;
     });
-    productsList.innerHTML = html || `<div class="col-span-full text-center py-10 text-zinc-400">No hay productos disponibles</div>`;
+    productsList.innerHTML = html || "<i>No hay productos</i>";
   });
 }
 
+// --- Subir Producto Cloudinary ---
 async function uploadProduct(){
   const name=document.getElementById("name").value.trim();
   const desc=document.getElementById("description").value.trim();
   const price=parseFloat(document.getElementById("price").value);
   const mediaFile=document.getElementById("media").files[0];
   if(!name||!desc||!price) return alert("Completa todos los campos");
+
   let mediaUrl="";
   if(mediaFile){
     const data = new FormData();
@@ -315,28 +265,30 @@ async function uploadProduct(){
     const json = await res.json();
     mediaUrl = json.secure_url;
   }
+
   db.collection("products").add({name, description:desc, price, media:mediaUrl})
-    .then(()=>{ showModalMessage("✅ Producto subido"); document.getElementById("name").value=''; document.getElementById("description").value=''; document.getElementById("price").value=''; document.getElementById("media").value=''; })
+    .then(()=>{ showModalMessage("Producto subido"); document.getElementById("name").value=''; document.getElementById("description").value=''; document.getElementById("price").value=''; document.getElementById("media").value=''; })
     .catch(e=>alert(e.message));
 }
 
+// --- Editar y eliminar producto ---
 async function editProductForm(id){
   const docSnap = await db.collection("products").doc(id).get();
   const p = docSnap.data();
-  openModal(`<h3 class="text-xl font-bold mb-4">Editar Producto</h3>
-    <input id="editName" placeholder="Nombre" value="${p.name}" class="w-full p-3 rounded-lg mb-3">
-    <textarea id="editDesc" placeholder="Descripción" class="w-full p-3 rounded-lg h-24 mb-3">${p.description}</textarea>
-    <input id="editPrice" type="number" placeholder="Precio" value="${p.price}" class="w-full p-3 rounded-lg mb-3">
-    <input id="editMedia" type="file" accept="image/*,video/*" class="w-full mb-4">
-    <button onclick="submitEditProduct('${id}')" class="w-full bg-black text-white font-bold py-3 rounded-xl">Actualizar</button>`);
+  openModal(`<h3>Editar Producto</h3>
+    <input id="editName" placeholder="Nombre" value="${p.name}">
+    <textarea id="editDesc" placeholder="Descripción">${p.description}</textarea>
+    <input id="editPrice" type="number" placeholder="Precio" value="${p.price}">
+    <input id="editMedia" type="file" accept="image/*,video/*">
+    <button onclick="submitEditProduct('${id}')">Guardar Cambios</button>`);
 }
-
 async function submitEditProduct(id){
   const name=document.getElementById("editName").value.trim();
   const desc=document.getElementById("editDesc").value.trim();
   const price=parseFloat(document.getElementById("editPrice").value);
   const mediaFile=document.getElementById("editMedia").files[0];
   if(!name||!desc||!price) return alert("Completa todos los campos");
+
   let mediaUrl = null;
   if(mediaFile){
     const data = new FormData();
@@ -346,194 +298,27 @@ async function submitEditProduct(id){
     const json = await res.json();
     mediaUrl = json.secure_url;
   }
+
   const updateData = {name, description:desc, price};
   if(mediaUrl) updateData.media = mediaUrl;
+
   db.collection("products").doc(id).update(updateData).then(()=>{ showModalMessage("Producto actualizado"); closeModal(); }).catch(e=>alert(e.message));
 }
-
 function deleteProduct(id){
-  if(!confirm("¿Eliminar producto de forma permanente?")) return;
+  if(!confirm("Eliminar producto?")) return;
   db.collection("products").doc(id).delete().then(()=>showModalMessage("Producto eliminado")).catch(e=>alert(e.message));
 }
 
-function addToCart(id,name,price,media){
-  cart.push({id,name,price,media});
-  localStorage.setItem("cart",JSON.stringify(cart));
-  renderCart();
-  showModalMessage("🛒 Añadido al carrito");
-}
+// --- Carrito ---
+function addToCart(id,name,price,media){ cart.push({id,name,price,media}); localStorage.setItem("cart",JSON.stringify(cart)); renderCart(); showModalMessage("Añadido al carrito"); }
+function renderCart(){ const list = document.getElementById("cartList"); if(cart.length===0) { list.innerHTML="<i>Carrito vacío</i>"; return; } let html=""; cart.forEach((p,i)=> html+=`<div>${p.name} - $${p.price} <button onclick="removeFromCart(${i})">Eliminar</button></div>`); list.innerHTML = html; }
+function removeFromCart(index){ cart.splice(index,1); localStorage.setItem("cart",JSON.stringify(cart)); renderCart(); }
+function emptyCart(){ if(confirm("Vaciar carrito?")){ cart=[]; localStorage.setItem("cart","[]"); renderCart(); } }
+function viewCart(){ renderCart(); showModalMessage("Carrito actualizado"); }
 
-function renderCart(){
-  const list = document.getElementById("cartList");
-  if(cart.length===0) { list.innerHTML="<div class='text-center text-zinc-400 py-10'><i class='fas fa-ghost text-4xl block mb-2'></i>El carrito está vacío</div>"; return; }
-  let html="";
-  cart.forEach((p,i)=> html+=`
-  <div class="flex items-center gap-4 bg-zinc-50 p-3 rounded-xl border border-zinc-100">
-    <div class="w-16 h-16 rounded-lg bg-white overflow-hidden flex-shrink-0">
-        <img src="${p.media}" class="w-full h-full object-cover">
-    </div>
-    <div class="flex-grow">
-        <h5 class="font-bold text-zinc-800">${p.name}</h5>
-        <span class="text-indigo-600 font-bold">$${p.price}</span>
-    </div>
-    <button onclick="removeFromCart(${i})" class="text-red-400 p-2 hover:bg-red-50 rounded-lg transition"><i class="fas fa-trash"></i></button>
-  </div>`);
-  list.innerHTML = html;
-}
-
-function removeFromCart(index){
-  cart.splice(index,1);
-  localStorage.setItem("cart",JSON.stringify(cart));
-  renderCart();
-}
-
-function emptyCart(){ if(confirm("¿Vaciar todo el carrito?")){ cart=[]; localStorage.setItem("cart","[]"); renderCart(); } }
-function viewCart(){ renderCart(); }
-
-function openPurchaseForm(){
-  if(cart.length===0) return alert("El carrito está vacío");
-  openModal(`<h3 class="text-xl font-bold mb-4">Información de Envío</h3>
-    <div class="space-y-3">
-        <input id="buyerName" placeholder="Nombre completo" class="w-full p-3 rounded-lg">
-        <input id="buyerPhone" placeholder="Teléfono" class="w-full p-3 rounded-lg">
-        <input id="buyerWhats" placeholder="WhatsApp" class="w-full p-3 rounded-lg">
-        <input id="buyerAddress" placeholder="Dirección exacta" class="w-full p-3 rounded-lg">
-        <input id="buyerEmail" placeholder="Email de contacto" class="w-full p-3 rounded-lg">
-        <button onclick="submitPurchase()" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg mt-2">Enviar Orden de Compra</button>
-    </div>`);
-}
-
-function submitPurchase(){
-  const name=document.getElementById("buyerName").value.trim();
-  const phone=document.getElementById("buyerPhone").value.trim();
-  const whatsapp=document.getElementById("buyerWhats").value.trim();
-  const address=document.getElementById("buyerAddress").value.trim();
-  const email=document.getElementById("buyerEmail").value.trim();
-  if(!name||!phone||!whatsapp||!address||!email) return alert("Completa todos los campos");
-  db.collection("orders").add({
-    user:auth.currentUser.uid,
-    userEmail:auth.currentUser.email,
-    buyerName:name,
-    phone, whatsapp, address, email,
-    products:cart,
-    status:"pendiente",
-    comprobante:""
-  }).then(()=>{
-    cart=[];
-    localStorage.setItem("cart","[]");
-    renderCart();
-    showModalMessage("📦 ¡Compra enviada con éxito!");
-    closeModal();
-  }).catch(e=>alert(e.message));
-}
-
-function loadUserOrders(){
-  const history = document.getElementById("purchaseHistory");
-  db.collection("orders").where("user","==",auth.currentUser.uid)
-    .onSnapshot(snapshot=>{
-      let html="";
-      snapshot.forEach(doc=>{
-        const o = doc.data();
-        html+=`
-        <div class="bg-white rounded-2xl p-6 border border-zinc-100 shadow-sm">
-          <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
-              <h4 class="font-bold text-zinc-800">Orden #${doc.id.slice(0,8)}</h4>
-              <span class="status-badge status-${o.status}">${o.status}</span>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 text-sm gap-y-1 mb-4 text-zinc-600">
-              <p><i class="fas fa-user w-6"></i> ${o.buyerName}</p>
-              <p><i class="fas fa-map-marker-alt w-6"></i> ${o.address}</p>
-              <p><i class="fas fa-box w-6"></i> ${o.products.map(p=>p.name).join(", ")}</p>
-          </div>
-          <div class="flex items-center gap-3">
-            ${o.comprobante?`<a href="${o.comprobante}" target="_blank" class="text-xs font-bold text-indigo-600 underline">Ver Comprobante</a>`:'<span class="text-xs text-zinc-400">Sin comprobante</span>'}
-            ${o.status!=="finalizado"?`<button onclick="uploadComprobante('${doc.id}')" class="ml-auto bg-zinc-100 text-zinc-700 px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-600 hover:text-white transition">Adjuntar Comprobante</button>`:''}
-          </div>
-        </div>`;
-      });
-      history.innerHTML = html || "<div class='text-center py-10 text-zinc-400'>No tienes historial de compras</div>";
-    });
-}
-
-function uploadComprobante(orderId){
-  const fileInput = document.createElement("input");
-  fileInput.type="file";
-  fileInput.accept="image/*";
-  fileInput.onchange = async ()=>{
-    const file = fileInput.files[0];
-    if(!file) return;
-    const data = new FormData();
-    data.append("file",file);
-    data.append("upload_preset","vendors_preset");
-    const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`,{method:"POST",body:data});
-    const json = await res.json();
-    db.collection("orders").doc(orderId).update({comprobante:json.secure_url}).then(()=>showModalMessage("Comprobante subido"));
-  };
-  fileInput.click();
-}
-
-function loadOrders(){
-  if(role!=="admin") return;
-  const ordersList = document.getElementById("ordersList");
-  db.collection("orders").onSnapshot(snapshot=>{
-    let html="";
-    snapshot.forEach(doc=>{
-      const o = doc.data();
-      html+=`
-      <div class="bg-white rounded-2xl p-6 shadow-sm border-l-4 border-indigo-500">
-        <div class="flex justify-between mb-4">
-            <span class="text-xs font-bold text-zinc-400 uppercase">Solicitud #${doc.id.slice(0,10)}</span>
-            <span class="status-badge status-${o.status}">${o.status}</span>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-6">
-            <div>
-                <p class="font-bold text-zinc-800 underline mb-2">Cliente:</p>
-                <p>${o.buyerName} (${o.userEmail})</p>
-                <p>Telf: ${o.phone} / WA: ${o.whatsapp}</p>
-                <p>Dirección: ${o.address}</p>
-            </div>
-            <div>
-                <p class="font-bold text-zinc-800 underline mb-2">Detalle:</p>
-                <p>${o.products.map(p=>p.name).join(", ")}</p>
-                ${o.comprobante?`<a href="${o.comprobante}" target="_blank" class="text-indigo-600 font-bold">📄 Ver Comprobante de Pago</a>`:'<p class="text-red-400">Sin pago adjunto</p>'}
-            </div>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          ${o.status!=="cancelada"?`<button onclick="changeStatus('${doc.id}')" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold">Cambiar Estado</button>`:''}
-          <button onclick="cancelOrder('${doc.id}')" class="bg-red-50 text-red-500 px-4 py-2 rounded-lg text-xs font-bold hover:bg-red-500 hover:text-white transition">Cancelar Orden</button>
-        </div>
-      </div>`;
-    });
-    ordersList.innerHTML = html || "<p class='text-zinc-400'>No hay solicitudes pendientes</p>";
-  });
-}
-
-function changeStatus(id){
-  const newStatus = prompt("Ingresa el nuevo estado:\npendiente, revision, verificado, en-camino, finalizado");
-  if(!newStatus) return;
-  db.collection("orders").doc(id).update({status:newStatus}).then(()=>showModalMessage("Estado actualizado"));
-}
-
-function cancelOrder(id){
-  const reason = prompt("Indique el motivo de la cancelación:");
-  if(!reason) return;
-  db.collection("orders").doc(id).update({status:"cancelada", cancelReason:reason}).then(()=>showModalMessage("Orden cancelada"));
-}
-
-function filterProducts() {
-    const term = document.getElementById('search').value.toLowerCase();
-    const max = parseFloat(document.getElementById('maxPrice').value) || Infinity;
-    const cards = document.querySelectorAll('.product-card');
-    cards.forEach(card => {
-        const name = card.querySelector('h4').innerText.toLowerCase();
-        const price = parseFloat(card.querySelector('.absolute').innerText.replace('$', ''));
-        if (name.includes(term) && price <= max) {
-            card.style.display = 'flex';
-        } else {
-            card.style.display = 'none';
-        }
-    });
-}
-</script>
-</body>
-</html>
+// --- Compra ---
+function openPurchaseForm(){ if(cart.length===0) return alert("Carrito vacío");
+  openModal(`
+    <h3>Formulario de Compra</h3>
+    <input id="buyerName" placeholder="Nombre completo">
+    <input id="buyer
