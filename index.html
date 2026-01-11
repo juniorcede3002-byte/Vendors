@@ -2,166 +2,231 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vendor</title>
+<title>Vendor | Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-<style>
-.status{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
-.en_revision{background:#fde68a}
-.pago_confirmado{background:#bbf7d0}
-.en_camino{background:#c7d2fe}
-.finalizado{background:#e5e7eb}
-.cancelada{background:#fecaca}
-</style>
 </head>
-
 <body class="bg-slate-100">
 
-<div id="modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
-  <div class="bg-white p-6 rounded max-w-lg w-full relative">
-    <button onclick="closeModal()" class="absolute right-3 top-2 text-xl">&times;</button>
+<header class="fixed top-0 w-full bg-black text-white z-50 p-4 flex justify-between">
+  <b>VENDOR</b>
+  <div id="authButtons">
+    <button onclick="showLoginForm()">Login</button>
+  </div>
+  <div id="userInfo" class="hidden">
+    <span id="userEmail"></span>
+    <button onclick="openConfig()">⚙</button>
+    <button onclick="logout()">Salir</button>
+  </div>
+</header>
+
+<main class="pt-24 max-w-6xl mx-auto px-4 hidden" id="dashboard">
+
+<div class="flex gap-2 mb-6">
+  <button onclick="showTab('products')">Productos</button>
+  <button onclick="showTab('cart')">Carrito</button>
+  <button onclick="showTab('orders')">Mis Compras</button>
+  <button onclick="showTab('admin')" id="adminBtn" class="hidden">Admin</button>
+</div>
+
+<!-- PRODUCTOS -->
+<section id="products" class="tab"></section>
+
+<!-- CARRITO -->
+<section id="cart" class="tab hidden"></section>
+
+<!-- MIS COMPRAS -->
+<section id="orders" class="tab hidden"></section>
+
+<!-- ADMIN -->
+<section id="admin" class="tab hidden">
+  <h2 class="text-xl font-bold mb-4">Solicitudes</h2>
+  <div id="adminOrders"></div>
+</section>
+
+</main>
+
+<!-- MODAL -->
+<div id="modal" class="fixed inset-0 hidden bg-black/60 flex items-center justify-center">
+  <div class="bg-white p-6 rounded w-full max-w-lg">
     <div id="modalBody"></div>
+    <button onclick="closeModal()">Cerrar</button>
   </div>
 </div>
 
 <script>
-// FIREBASE
+/* ================= FIREBASE ================= */
 firebase.initializeApp({
-  apiKey:"AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
-  authDomain:"proyectovendor.firebaseapp.com",
-  projectId:"proyectovendor"
+  apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
+  authDomain: "proyectovendor.firebaseapp.com",
+  projectId: "proyectovendor"
+});
+const db = firebase.firestore();
+const auth = firebase.auth();
+const provider = new firebase.auth.GoogleAuthProvider();
+
+/* ================= GLOBAL ================= */
+let cart = JSON.parse(localStorage.getItem("cart")||"[]");
+let role = "usuario";
+
+/* ================= UI ================= */
+function showTab(id){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.add("hidden"));
+  document.getElementById(id).classList.remove("hidden");
+}
+
+function openModal(html){
+  modal.classList.remove("hidden");
+  modalBody.innerHTML = html;
+}
+function closeModal(){ modal.classList.add("hidden"); }
+
+/* ================= AUTH ================= */
+auth.onAuthStateChanged(user=>{
+  if(user){
+    initUser(user);
+  }
 });
 
-const auth=firebase.auth();
-const db=firebase.firestore();
-
-// MODAL
-function openModal(c){modal.style.display="flex";modalBody.innerHTML=c}
-function closeModal(){modal.style.display="none"}
-
-// ================= ORDENES =================
-
-function showOrderDetails(id, isAdmin=false){
-  db.collection("orders").doc(id).get().then(doc=>{
-    const o=doc.data();
-    const editable=o.status==="en_revision";
-
-    let products=o.products.map(p=>`<li>${p.name} - $${p.price}</li>`).join("");
-
-    openModal(`
-      <h3 class="text-xl font-bold mb-3">Detalle de compra</h3>
-
-      <p><b>Email:</b> ${o.email}</p>
-      <p><b>Estado:</b> <span class="status ${o.status}">${o.status}</span></p>
-      <p><b>Total:</b> $${o.total}</p>
-
-      <h4 class="font-bold mt-4">Productos</h4>
-      <ul class="list-disc ml-5">${products}</ul>
-
-      ${o.cancelReason?`<p class="text-red-600 mt-3"><b>Motivo:</b> ${o.cancelReason}</p>`:""}
-
-      ${editable ? `
-        <button onclick="editOrder('${id}')" class="mt-4 bg-indigo-600 text-white px-4 py-2 rounded">
-          Editar datos
-        </button>`:""}
-
-      ${editable && !isAdmin ? `
-        <button onclick="cancelUser('${id}')" class="mt-2 text-red-600 underline">
-          Cancelar compra
-        </button>`:""}
-    `);
-  });
+function showLoginForm(){
+  openModal(`
+    <input id="email" placeholder="Email" class="border w-full mb-2">
+    <input id="pass" type="password" placeholder="Password" class="border w-full mb-2">
+    <button onclick="login()">Entrar</button>
+    <button onclick="loginWithGoogle()">Google</button>
+  `);
 }
 
-// EDITAR SOLO SI ESTA EN REVISION
-function editOrder(id){
-  db.collection("orders").doc(id).get().then(doc=>{
-    const o=doc.data();
-    if(o.status!=="en_revision"){
-      alert("No se puede editar esta compra");
-      return;
-    }
-
-    let productInputs=o.products.map((p,i)=>`
-      <input id="p${i}" value="${p.name}" class="border p-1 w-full mb-1">
-    `).join("");
-
-    openModal(`
-      <h3 class="font-bold mb-2">Editar productos</h3>
-      ${productInputs}
-      <button onclick="saveEdit('${id}',${o.products.length})" class="bg-black text-white px-4 py-2 mt-3">
-        Guardar cambios
-      </button>
-    `);
-  });
+function login(){
+  auth.signInWithEmailAndPassword(
+    email.value, pass.value
+  ).then(r=>{
+    closeModal();
+  }).catch(e=>alert(e.message));
 }
 
-function saveEdit(id,count){
-  let products=[];
-  for(let i=0;i<count;i++){
-    products.push({name:document.getElementById("p"+i).value,price:0});
-  }
-  db.collection("orders").doc(id).update({products}).then(closeModal);
+function loginWithGoogle(){
+  auth.signInWithPopup(provider).then(()=>closeModal());
 }
 
-// ================= CANCELACIONES =================
-
-function cancelUser(id){
-  if(confirm("¿Cancelar esta compra?")){
-    db.collection("orders").doc(id).update({
-      status:"cancelada",
-      cancelReason:"Cancelada por el usuario"
-    }).then(closeModal);
-  }
+function logout(){
+  auth.signOut().then(()=>location.reload());
 }
 
-function cancelAdmin(id){
-  const r=prompt("Motivo de cancelación");
-  if(r){
-    db.collection("orders").doc(id).update({
-      status:"cancelada",
-      cancelReason:r
+/* ================= USER INIT ================= */
+async function initUser(user){
+  authButtons.style.display="none";
+  userInfo.classList.remove("hidden");
+  userEmail.textContent=user.email;
+  dashboard.classList.remove("hidden");
+
+  role = user.email==="admin@vendors.com" ? "admin" : "usuario";
+  if(role==="admin") adminBtn.classList.remove("hidden");
+
+  loadProducts();
+  loadCart();
+  loadUserOrders();
+  if(role==="admin") loadAdminOrders();
+}
+
+/* ================= PRODUCTS ================= */
+function loadProducts(){
+  db.collection("products").onSnapshot(snap=>{
+    products.innerHTML="";
+    snap.forEach(doc=>{
+      const p=doc.data();
+      products.innerHTML+=`
+      <div class="bg-white p-4 mb-2">
+        <b>${p.name}</b> - $${p.price}
+        <button onclick="addToCart('${doc.id}','${p.name}',${p.price})">+</button>
+      </div>`;
     });
-  }
+  });
 }
 
-// ================= ADMIN =================
+/* ================= CART ================= */
+function addToCart(id,name,price){
+  cart.push({id,name,price});
+  localStorage.setItem("cart",JSON.stringify(cart));
+  loadCart();
+}
 
+function loadCart(){
+  cartDiv="";
+  let total=0;
+  cart.forEach((i,idx)=>{
+    total+=i.price;
+    cartDiv+=`${i.name} - $${i.price}<br>`;
+  });
+  cart.innerHTML=cartDiv+`<b>Total: $${total}</b>
+  <button onclick="checkout()">Comprar</button>`;
+}
+
+function checkout(){
+  const user=auth.currentUser;
+  if(!user) return alert("Login requerido");
+
+  const total=cart.reduce((s,i)=>s+i.price,0);
+  db.collection("orders").add({
+    user:user.uid,
+    items:cart,
+    total,
+    status:"en_revision",
+    created:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(()=>{
+    cart=[];
+    localStorage.removeItem("cart");
+    alert("Orden enviada");
+    loadCart();
+  });
+}
+
+/* ================= USER ORDERS ================= */
+function loadUserOrders(){
+  const uid=auth.currentUser.uid;
+  db.collection("orders").where("user","==",uid)
+  .onSnapshot(snap=>{
+    orders.innerHTML="";
+    snap.forEach(d=>{
+      const o=d.data();
+      orders.innerHTML+=`
+      <div class="bg-white p-3 mb-2">
+        Estado: ${o.status} - Total $${o.total}
+      </div>`;
+    });
+  });
+}
+
+/* ================= ADMIN ================= */
 function loadAdminOrders(){
-  db.collection("orders").onSnapshot(s=>{
+  db.collection("orders").onSnapshot(snap=>{
     adminOrders.innerHTML="";
-    s.forEach(d=>{
+    snap.forEach(d=>{
       const o=d.data();
       adminOrders.innerHTML+=`
-        <div class="bg-white p-4 rounded shadow">
-          <b>${o.email}</b>
-          <span class="status ${o.status}">${o.status}</span>
-
-          <div class="mt-2 flex gap-2">
-            <button onclick="showOrderDetails('${d.id}',true)" class="underline">Ver detalles</button>
-
-            ${o.status!=="finalizado" && o.status!=="cancelada" ? `
-            <select onchange="db.collection('orders').doc('${d.id}').update({status:this.value})">
-              <option ${o.status=="en_revision"?"selected":""}>en_revision</option>
-              <option ${o.status=="pago_confirmado"?"selected":""}>pago_confirmado</option>
-              <option ${o.status=="en_camino"?"selected":""}>en_camino</option>
-              <option ${o.status=="finalizado"?"selected":""}>finalizado</option>
-            </select>
-            <button onclick="cancelAdmin('${d.id}')" class="text-red-600">Cancelar</button>
-            `:""}
-          </div>
-        </div>
-      `;
+      <div class="bg-white p-3 mb-2">
+        ${o.total} - ${o.status}
+        <select onchange="updateStatus('${d.id}',this.value)">
+          <option>en_revision</option>
+          <option>pago_confirmado</option>
+          <option>en_camino</option>
+          <option>finalizado</option>
+          <option>cancelada</option>
+        </select>
+      </div>`;
     });
   });
 }
-</script>
 
+function updateStatus(id,status){
+  db.collection("orders").doc(id).update({status});
+}
+</script>
 </body>
 </html>
