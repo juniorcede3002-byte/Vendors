@@ -267,7 +267,7 @@ async function loadOrdersHistory() {
         <strong>Compra #${doc.id}</strong> - Estado: <span class="status-${o.status.replace(/\s/g,'-')}">${o.status}</span>
         ${role==="admin"?`<select name="status" onchange="updateOrderStatus('${doc.id}',this.value)">
           <option value="pendiente" ${o.status==="pendiente"?'selected':''}>Pendiente</option>
-          <option value="revision de pago"<option value="revision de pago" ${o.status==="revision de pago"?'selected':''}>Revisión de pago</option>
+          <option value="revision de pago" ${o.status==="revision de pago"?'selected':''}>Revisión de pago</option>
           <option value="pago verificado" ${o.status==="pago verificado"?'selected':''}>Pago verificado</option>
           <option value="en camino" ${o.status==="en camino"?'selected':''}>En camino</option>
           <option value="entregado" ${o.status==="entregado"?'selected':''}>Entregado</option>
