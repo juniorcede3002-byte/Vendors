@@ -1,232 +1,99 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Vendor | Dashboard</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <title>VENDOR | Sistema de Ventas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
+  <!-- UI -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 </head>
-<body class="bg-slate-100">
 
-<header class="fixed top-0 w-full bg-black text-white z-50 p-4 flex justify-between">
-  <b>VENDOR</b>
-  <div id="authButtons">
-    <button onclick="showLoginForm()">Login</button>
+<body>
+
+<header id="mainHeader">
+  <div class="header-left">
+    <i class="fa-solid fa-store"></i>
+    <span>VENDOR</span>
   </div>
-  <div id="userInfo" class="hidden">
+
+  <div id="authButtons">
+    <button onclick="showLogin()">Iniciar sesión</button>
+    <button onclick="showRegister()">Crear cuenta</button>
+    <button onclick="loginGoogle()"><i class="fab fa-google"></i></button>
+  </div>
+
+  <div id="userMenu" class="hidden">
     <span id="userEmail"></span>
-    <button onclick="openConfig()">⚙</button>
+    <button onclick="openConfig()"><i class="fa fa-gear"></i></button>
     <button onclick="logout()">Salir</button>
   </div>
 </header>
 
-<main class="pt-24 max-w-6xl mx-auto px-4 hidden" id="dashboard">
+<main id="app" class="hidden">
 
-<div class="flex gap-2 mb-6">
-  <button onclick="showTab('products')">Productos</button>
-  <button onclick="showTab('cart')">Carrito</button>
-  <button onclick="showTab('orders')">Mis Compras</button>
-  <button onclick="showTab('admin')" id="adminBtn" class="hidden">Admin</button>
-</div>
+  <nav class="tabs">
+    <button data-tab="products">Productos</button>
+    <button data-tab="cart">Carrito</button>
+    <button data-tab="orders">Compras</button>
+    <button data-tab="admin" id="adminTab" class="hidden">Admin</button>
+  </nav>
 
-<!-- PRODUCTOS -->
-<section id="products" class="tab"></section>
+  <!-- PRODUCTOS -->
+  <section id="products" class="tab">
+    <div class="filters">
+      <input id="search" placeholder="Buscar producto">
+      <input id="maxPrice" type="number" placeholder="Precio máx">
+    </div>
+    <div id="productsList" class="grid"></div>
+  </section>
 
-<!-- CARRITO -->
-<section id="cart" class="tab hidden"></section>
+  <!-- CARRITO -->
+  <section id="cart" class="tab hidden">
+    <div id="cartList"></div>
+    <div id="cartTotal"></div>
+    <button onclick="openPurchaseForm()">Comprar</button>
+  </section>
 
-<!-- MIS COMPRAS -->
-<section id="orders" class="tab hidden"></section>
+  <!-- COMPRAS USUARIO -->
+  <section id="orders" class="tab hidden">
+    <div id="userOrders"></div>
+  </section>
 
-<!-- ADMIN -->
-<section id="admin" class="tab hidden">
-  <h2 class="text-xl font-bold mb-4">Solicitudes</h2>
-  <div id="adminOrders"></div>
-</section>
+  <!-- ADMIN -->
+  <section id="admin" class="tab hidden">
+    <div class="admin-grid">
+      <div>
+        <h3>Nuevo producto</h3>
+        <input id="pName" placeholder="Nombre">
+        <textarea id="pDesc" placeholder="Descripción"></textarea>
+        <input id="pPrice" type="number" placeholder="Precio">
+        <input id="pMedia" type="file" accept="image/*,video/*">
+        <button onclick="uploadProduct()">Subir producto</button>
+      </div>
+
+      <div>
+        <h3>Solicitudes</h3>
+        <div id="adminOrders"></div>
+      </div>
+    </div>
+  </section>
 
 </main>
 
 <!-- MODAL -->
-<div id="modal" class="fixed inset-0 hidden bg-black/60 flex items-center justify-center">
-  <div class="bg-white p-6 rounded w-full max-w-lg">
-    <div id="modalBody"></div>
-    <button onclick="closeModal()">Cerrar</button>
-  </div>
+<div id="modal" class="modal hidden">
+  <div class="modal-bg" onclick="closeModal()"></div>
+  <div class="modal-content" id="modalContent"></div>
 </div>
 
-<script>
-/* ================= FIREBASE ================= */
-firebase.initializeApp({
-  apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
-  authDomain: "proyectovendor.firebaseapp.com",
-  projectId: "proyectovendor"
-});
-const db = firebase.firestore();
-const auth = firebase.auth();
-const provider = new firebase.auth.GoogleAuthProvider();
-
-/* ================= GLOBAL ================= */
-let cart = JSON.parse(localStorage.getItem("cart")||"[]");
-let role = "usuario";
-
-/* ================= UI ================= */
-function showTab(id){
-  document.querySelectorAll(".tab").forEach(t=>t.classList.add("hidden"));
-  document.getElementById(id).classList.remove("hidden");
-}
-
-function openModal(html){
-  modal.classList.remove("hidden");
-  modalBody.innerHTML = html;
-}
-function closeModal(){ modal.classList.add("hidden"); }
-
-/* ================= AUTH ================= */
-auth.onAuthStateChanged(user=>{
-  if(user){
-    initUser(user);
-  }
-});
-
-function showLoginForm(){
-  openModal(`
-    <input id="email" placeholder="Email" class="border w-full mb-2">
-    <input id="pass" type="password" placeholder="Password" class="border w-full mb-2">
-    <button onclick="login()">Entrar</button>
-    <button onclick="loginWithGoogle()">Google</button>
-  `);
-}
-
-function login(){
-  auth.signInWithEmailAndPassword(
-    email.value, pass.value
-  ).then(r=>{
-    closeModal();
-  }).catch(e=>alert(e.message));
-}
-
-function loginWithGoogle(){
-  auth.signInWithPopup(provider).then(()=>closeModal());
-}
-
-function logout(){
-  auth.signOut().then(()=>location.reload());
-}
-
-/* ================= USER INIT ================= */
-async function initUser(user){
-  authButtons.style.display="none";
-  userInfo.classList.remove("hidden");
-  userEmail.textContent=user.email;
-  dashboard.classList.remove("hidden");
-
-  role = user.email==="admin@vendors.com" ? "admin" : "usuario";
-  if(role==="admin") adminBtn.classList.remove("hidden");
-
-  loadProducts();
-  loadCart();
-  loadUserOrders();
-  if(role==="admin") loadAdminOrders();
-}
-
-/* ================= PRODUCTS ================= */
-function loadProducts(){
-  db.collection("products").onSnapshot(snap=>{
-    products.innerHTML="";
-    snap.forEach(doc=>{
-      const p=doc.data();
-      products.innerHTML+=`
-      <div class="bg-white p-4 mb-2">
-        <b>${p.name}</b> - $${p.price}
-        <button onclick="addToCart('${doc.id}','${p.name}',${p.price})">+</button>
-      </div>`;
-    });
-  });
-}
-
-/* ================= CART ================= */
-function addToCart(id,name,price){
-  cart.push({id,name,price});
-  localStorage.setItem("cart",JSON.stringify(cart));
-  loadCart();
-}
-
-function loadCart(){
-  cartDiv="";
-  let total=0;
-  cart.forEach((i,idx)=>{
-    total+=i.price;
-    cartDiv+=`${i.name} - $${i.price}<br>`;
-  });
-  cart.innerHTML=cartDiv+`<b>Total: $${total}</b>
-  <button onclick="checkout()">Comprar</button>`;
-}
-
-function checkout(){
-  const user=auth.currentUser;
-  if(!user) return alert("Login requerido");
-
-  const total=cart.reduce((s,i)=>s+i.price,0);
-  db.collection("orders").add({
-    user:user.uid,
-    items:cart,
-    total,
-    status:"en_revision",
-    created:firebase.firestore.FieldValue.serverTimestamp()
-  }).then(()=>{
-    cart=[];
-    localStorage.removeItem("cart");
-    alert("Orden enviada");
-    loadCart();
-  });
-}
-
-/* ================= USER ORDERS ================= */
-function loadUserOrders(){
-  const uid=auth.currentUser.uid;
-  db.collection("orders").where("user","==",uid)
-  .onSnapshot(snap=>{
-    orders.innerHTML="";
-    snap.forEach(d=>{
-      const o=d.data();
-      orders.innerHTML+=`
-      <div class="bg-white p-3 mb-2">
-        Estado: ${o.status} - Total $${o.total}
-      </div>`;
-    });
-  });
-}
-
-/* ================= ADMIN ================= */
-function loadAdminOrders(){
-  db.collection("orders").onSnapshot(snap=>{
-    adminOrders.innerHTML="";
-    snap.forEach(d=>{
-      const o=d.data();
-      adminOrders.innerHTML+=`
-      <div class="bg-white p-3 mb-2">
-        ${o.total} - ${o.status}
-        <select onchange="updateStatus('${d.id}',this.value)">
-          <option>en_revision</option>
-          <option>pago_confirmado</option>
-          <option>en_camino</option>
-          <option>finalizado</option>
-          <option>cancelada</option>
-        </select>
-      </div>`;
-    });
-  });
-}
-
-function updateStatus(id,status){
-  db.collection("orders").doc(id).update({status});
-}
-</script>
+<script src="app.js"></script>
 </body>
 </html>
