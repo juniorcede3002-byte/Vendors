@@ -301,3 +301,70 @@ async function finalizePurchase(){
   await db.collection("orders").add(order);
   cart=[]; localStorage.setItem("cart", JSON.stringify(cart));
   renderCart();
+
+// --- Mostrar/ocultar detalles de un pedido ---
+function toggleDetails(id){
+  const el = document.getElementById("details-" + id);
+  el.style.display = (el.style.display === "none") ? "block" : "none";
+}
+
+// --- Subir comprobante ---
+async function uploadComprobante(orderId, file){
+  if(!file) return;
+  const data = new FormData();
+  data.append("file", file);
+  data.append("upload_preset", "vendors_preset");
+
+  const res = await fetch("https://api.cloudinary.com/v1_1/df79cjklp/upload", { method: "POST", body: data });
+  const json = await res.json();
+  await db.collection("orders").doc(orderId).update({ comprobante: json.secure_url });
+  showModalMessage("Comprobante subido correctamente");
+}
+
+// --- Inicializar canvas para firmas ---
+function initCanvasSignatures(){
+  document.querySelectorAll("canvas").forEach(canvas=>{
+    const ctx = canvas.getContext("2d");
+    let drawing = false;
+
+    canvas.onmousedown = () => drawing = true;
+    canvas.onmouseup = () => { drawing = false; ctx.beginPath(); };
+    canvas.onmouseleave = () => { drawing = false; ctx.beginPath(); };
+    canvas.onmousemove = e => {
+      if(!drawing) return;
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "#000";
+      ctx.lineTo(e.offsetX, e.offsetY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(e.offsetX, e.offsetY);
+    };
+  });
+}
+
+// --- Guardar firma ---
+async function saveSignature(orderId){
+  const canvas = document.getElementById(`sign-${orderId}`);
+  if(!canvas) return;
+  const dataURL = canvas.toDataURL("image/png");
+  await db.collection("orders").doc(orderId).update({ deliveryProof: dataURL });
+  showModalMessage("Firma guardada");
+}
+
+// --- Subir recibo de pago (opcional) ---
+async function uploadReceipt(orderId, file){
+  if(!file) return;
+  const data = new FormData();
+  data.append("file", file);
+  data.append("upload_preset", "vendors_preset");
+
+  const res = await fetch("https://api.cloudinary.com/v1_1/df79cjklp/upload", { method: "POST", body: data });
+  const json = await res.json();
+
+  await db.collection("orders").doc(orderId).update({
+    receipt: json.secure_url,
+    status: "revision de pago"
+  });
+  showModalMessage("Comprobante enviado");
+}
