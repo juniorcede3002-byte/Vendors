@@ -40,7 +40,7 @@ button:hover { opacity:0.9; }
 <div class="container">
   <div>
     Rol: 
-    <select id="role" onchange="setRole();">
+    <select id="role">
       <option value="usuario">Usuario</option>
       <option value="admin">Admin</option>
     </select>
@@ -56,8 +56,8 @@ button:hover { opacity:0.9; }
   <!-- TAB Productos -->
   <div id="productsTab" class="tab-content active">
     <h2>Productos</h2>
-    <input id="search" placeholder="Buscar por nombre" oninput="loadProducts()">
-    <input id="maxPrice" type="number" placeholder="Precio máximo" oninput="loadProducts()">
+    <input id="search" placeholder="Buscar por nombre">
+    <input id="maxPrice" type="number" placeholder="Precio máximo">
     <div id="productsList"></div>
   </div>
 
@@ -126,6 +126,7 @@ const priceInput = document.getElementById("price");
 const mediaInput = document.getElementById("media");
 
 // --- Roles ---
+document.getElementById("role").addEventListener("change", setRole);
 function setRole(){ 
     role=document.getElementById("role").value; 
     toggleAdmin(); 
@@ -211,19 +212,9 @@ function loadProducts(){
 }
 
 // --- Carrito ---
-function addToCart(id,name,price){
-  cart.push({id,name,price});
-  localStorage.setItem("cart",JSON.stringify(cart));
-  showModalMessage(`${name} añadido al carrito`);
-}
+function addToCart(id,name,price){ cart.push({id,name,price}); localStorage.setItem("cart",JSON.stringify(cart)); showModalMessage(`${name} añadido al carrito`); }
 function emptyCart(){ if(confirm("Vaciar carrito?")){ cart=[]; localStorage.setItem("cart",JSON.stringify(cart)); cartListDiv.innerHTML="<i>Carrito vacío</i>"; } }
-function viewCart(){
-  if(cart.length===0){ cartListDiv.innerHTML="<i>Carrito vacío</i>"; return; }
-  let html="<ul>"; let total=0;
-  cart.forEach(item=>{ html+=`<li>${item.name} - $${item.price}</li>`; total+=item.price; });
-  html+=`</ul><b>Total: $${total}</b>`;
-  cartListDiv.innerHTML=html;
-}
+function viewCart(){ if(cart.length===0){ cartListDiv.innerHTML="<i>Carrito vacío</i>"; return; } let html="<ul>"; let total=0; cart.forEach(item=>{ html+=`<li>${item.name} - $${item.price}</li>`; total+=item.price; }); html+=`</ul><b>Total: $${total}</b>`; cartListDiv.innerHTML=html; }
 
 // --- Contactar ---
 function showContact(name){ openModal(`Contacta al vendedor sobre: <b>${name}</b><br>Número: 63892022`); }
@@ -284,20 +275,8 @@ function loadOrders(){
       let proofBtn=o.proof?`<button onclick="viewProof('${o.proof}')">Ver comprobante</button>`:"";
       let addProofBtn=`<button onclick="uploadOrderProof('${doc.id}')">Agregar / Cambiar comprobante</button>`;
       let statusOptions=["pendiente","revision","verificado","en-camino","finalizado","cancelada"];
-      let statusSelect=`<select onchange="changeStatus('${doc.id}',this.value)">
-        ${statusOptions.map(s=>`<option value="${s}" ${o.status===s?'selected':''}>${s}</option>`).join('')}
-      </select>`;
-      ordersListDiv.innerHTML+=`
-        <div class="order">
-          <h4>${o.buyerName} - ${o.buyerPhone}</h4>
-          <p>${o.buyerAddress} - ${o.buyerEmail}</p>
-          <b>${o.products.map(p=>p.name+" $"+p.price).join(", ")}</b>
-          <p class="status-${o.status}">Estado: ${o.status}</p>
-          ${proofBtn} ${addProofBtn} <br>
-          Cambiar Estado: ${statusSelect}
-          <button onclick="cancelOrder('${doc.id}')">Cancelar Compra</button>
-        </div>
-      `;
+      let statusSelect=`<select onchange="changeStatus('${doc.id}',this.value)">${statusOptions.map(s=>`<option value="${s}" ${o.status===s?'selected':''}>${s}</option>`).join('')}</select>`;
+      ordersListDiv.innerHTML+=`<div class="order"><h4>${o.buyerName} - ${o.buyerPhone}</h4><p>${o.buyerAddress} - ${o.buyerEmail}</p><b>${o.products.map(p=>p.name+" $"+p.price).join(", ")}</b><p class="status-${o.status}">Estado: ${o.status}</p>${proofBtn} ${addProofBtn}<br>Cambiar Estado: ${statusSelect}<button onclick="cancelOrder('${doc.id}')">Cancelar Compra</button></div>`;
     });
   });
 }
@@ -309,13 +288,7 @@ function loadUserOrders(){
     snapshot.forEach(doc=>{
       const o=doc.data();
       let addProofBtn=o.status!=="finalizado"?`<button onclick="uploadOrderProof('${doc.id}')">Agregar / Cambiar comprobante</button>`:"";
-      purchaseHistoryDiv.innerHTML+=`
-        <div class="order">
-          <b>${o.products.map(p=>p.name+" $"+p.price).join(", ")}</b>
-          <p class="status-${o.status}">Estado: ${o.status}</p>
-          ${o.proof?`<button onclick="viewProof('${o.proof}')">Ver comprobante</button>`:""} ${addProofBtn}
-        </div>
-      `;
+      purchaseHistoryDiv.innerHTML+=`<div class="order"><b>${o.products.map(p=>p.name+" $"+p.price).join(", ")}</b><p class="status-${o.status}">Estado: ${o.status}</p>${o.proof?`<button onclick="viewProof('${o.proof}')">Ver comprobante</button>`:""} ${addProofBtn}</div>`;
     });
   });
 }
@@ -338,4 +311,16 @@ async function uploadOrderProof(orderId){
 function changeStatus(id,newStatus){ if(confirm(`Confirmar cambio a "${newStatus}"?`)) db.collection("orders").doc(id).update({status:newStatus}); }
 
 // --- Cancelar orden ---
-function cancelOrder(id){ const reason=prompt("Motivo de cancelación:"); if(reason) db.collection("orders").doc(id).update({status
+function cancelOrder(id){ const reason=prompt("Motivo de cancelación:"); if(reason) db.collection("orders").doc(id).update({status:"cancelada",cancelReason:reason}); }
+
+// --- Ver comprobante ---
+function viewProof(url){ openModal(`<img src="${url}" style="width:100%;">`); }
+
+// --- Inicializar ---
+setRole();
+loadProducts();
+loadOrders();
+loadUserOrders();
+</script>
+</body>
+</html>
