@@ -1,330 +1,267 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vendors | Professional Dashboard</title>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-<style>
-:root {
-    --primary: #2563eb;
-    --primary-dark: #1d4ed8;
-    --bg-body: #f1f5f9;
-    --bg-card: #ffffff;
-    --text-main: #0f172a;
-    --text-muted: #64748b;
-    --border: #e2e8f0;
-    --radius: 12px;
-    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-main); margin: 0; padding: 0; }
-
-header { 
-    background: #ffffff; padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; 
-    align-items: center; position: fixed; top: 0; width: 100%; z-index: 1000; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    box-sizing: border-box;
-}
-.logo { font-weight: 800; font-size: 1.2rem; color: var(--primary); display: flex; align-items: center; gap: 8px; }
-
-.container { max-width: 1000px; margin: 90px auto 40px; padding: 0 20px; display: none; }
-
-.tabs { display: flex; background: #fff; padding: 5px; border-radius: 14px; gap: 4px; margin-bottom: 25px; box-shadow: var(--shadow); overflow-x: auto; }
-.tab-btn { flex: 1; padding: 12px; cursor: pointer; border: none; border-radius: 10px; background: transparent; color: var(--text-muted); font-weight: 600; white-space: nowrap; transition: 0.2s; }
-.tab-btn.active { background: var(--primary); color: #fff; }
-
-.card { background: var(--bg-card); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; border: 1px solid var(--border); }
-.tab-content { display: none; }
-.tab-content.active { display: block; }
-
-.form-group { margin-bottom: 15px; text-align: left; }
-.form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
-input, textarea, select { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.95rem; box-sizing: border-box; outline: none; transition: border 0.2s; }
-
-.btn { padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
-.btn-primary { background: var(--primary); color: white; }
-.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
-.btn-danger { background: #fee2e2; color: #dc2626; }
-
-.order-item { border: 1px solid var(--border); border-radius: 10px; padding: 15px; margin-bottom: 15px; background: #f8fafc; }
-.status-badge { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
-.status-pendiente { background: #fef3c7; color: #92400e; }
-.status-entregado { background: #dcfce7; color: #166534; }
-.status-revision { background: #dbeafe; color: #1e40af; }
-
-.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
-.product-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
-.product-card img { width: 100%; height: 160px; object-fit: cover; }
-
-.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
-.modal-content { background: white; padding: 25px; border-radius: 16px; width: 100%; max-width: 500px; position: relative; max-height: 90vh; overflow-y: auto; }
-
-canvas { border: 1px solid var(--border); border-radius: 8px; background: #fff; width: 100%; height: 120px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendors | Dashboard Profesional</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+    <style>
+        :root { --primary: #2563eb; --bg: #f8fafc; --text: #1e293b; --border: #e2e8f0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+        header { background: #fff; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; width: 100%; z-index: 1000; box-shadow: 0 1px 3px rgba(0,0,0,0.1); box-sizing: border-box; }
+        .container { max-width: 1000px; margin: 80px auto 20px; padding: 0 15px; display: none; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
+        .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; background: #fff; cursor: pointer; font-weight: 600; color: #64748b; white-space: nowrap; }
+        .tab-btn.active { background: var(--primary); color: #fff; }
+        .card { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: #475569; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; }
+        .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: #fff; width: 100%; }
+        .btn-google { background: #fff; border: 1px solid var(--border); width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; }
+        .order-item { border-left: 4px solid var(--primary); padding: 15px; background: #f1f5f9; border-radius: 0 8px 8px 0; margin-bottom: 15px; }
+        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; float: right; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; padding: 10px; }
+        .modal-content { background: #fff; padding: 25px; border-radius: 16px; width: 100%; max-width: 450px; position: relative; max-height: 90vh; overflow-y: auto; }
+    </style>
 </head>
 <body>
 
 <header>
-  <div class="logo"><i class="fa-solid fa-bag-shopping"></i> VENDORS</div>
-  <div id="authButtons" style="display: flex; gap: 8px;">
-    <button class="btn btn-outline" onclick="showLoginForm()">Entrar</button>
-    <button class="btn btn-primary" onclick="showRegisterForm()">Crear Cuenta</button>
-  </div>
-  <div id="userInfo" style="display:none; gap: 10px;">
-    <button class="btn btn-outline" onclick="openConfig()"><i class="fa-solid fa-user-gear"></i></button>
-    <button class="btn btn-danger" onclick="logout()"><i class="fa-solid fa-power-off"></i></button>
-  </div>
+    <div style="font-weight: 800; color: var(--primary);">VENDORS</div>
+    <div id="authButtons" style="display: flex; gap: 8px;">
+        <button class="btn btn-primary" onclick="showLoginForm()">Iniciar Sesión</button>
+    </div>
+    <div id="userInfo" style="display:none; gap: 10px;">
+        <button class="btn" style="background: #f1f5f9;" onclick="openConfig()"><i class="fa-solid fa-gear"></i></button>
+        <button class="btn" style="background: #fee2e2; color: #ef4444;" onclick="logout()"><i class="fa-solid fa-power-off"></i></button>
+    </div>
 </header>
 
 <div class="container" id="dashboard">
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="productsTab">Tienda</button>
-    <button class="tab-btn" data-tab="cartTab">Carrito</button>
-    <button class="tab-btn" data-tab="ordersTab">Mis Compras</button>
-    <button class="tab-btn" id="adminTabBtn" data-tab="adminTab" style="display:none;">Panel Admin</button>
-  </div>
-
-  <div id="productsTab" class="tab-content active">
-    <div class="card" style="display: flex; gap: 10px;">
-        <input id="search" placeholder="Buscar producto..." oninput="filterProducts()">
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="productsTab">Tienda</button>
+        <button class="tab-btn" data-tab="cartTab">Carrito</button>
+        <button class="tab-btn" data-tab="ordersTab">Mis Compras</button>
+        <button class="tab-btn" id="adminTabBtn" data-tab="adminTab" style="display:none;">Admin</button>
     </div>
-    <div id="productsList" class="product-grid"></div>
-  </div>
 
-  <div id="cartTab" class="tab-content">
-    <div class="card">
-        <h3>Tu Carrito</h3>
-        <div id="cartList"></div>
-        <div style="margin-top: 20px; display: flex; gap: 10px;">
-            <button class="btn btn-primary" onclick="openCheckoutForm()">Finalizar Compra</button>
-            <button class="btn btn-outline" onclick="emptyCart()">Vaciar</button>
+    <div id="productsTab" class="tab-content active">
+        <div id="productsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px;"></div>
+    </div>
+
+    <div id="cartTab" class="tab-content">
+        <div class="card">
+            <h3>Mi Carrito</h3>
+            <div id="cartList"></div>
+            <button class="btn btn-primary" style="margin-top:20px" onclick="openCheckoutForm()">Finalizar Compra</button>
         </div>
     </div>
-  </div>
 
-  <div id="ordersTab" class="tab-content">
-    <div class="card">
-        <h3>Historial de Pedidos</h3>
-        <div id="purchaseHistory">Cargando...</div>
+    <div id="ordersTab" class="tab-content">
+        <div class="card">
+            <h3>Historial de Pedidos</h3>
+            <div id="purchaseHistory">Cargando...</div>
+        </div>
     </div>
-  </div>
 
-  <div id="adminTab" class="tab-content">
-    <div class="card">
-        <h3>Subir Nuevo Producto</h3>
-        <div class="form-group"><label>Nombre</label><input id="name"></div>
-        <div class="form-group"><label>Precio</label><input id="price" type="number"></div>
-        <div class="form-group"><label>Imagen</label><input id="media" type="file"></div>
-        <button class="btn btn-primary" onclick="uploadProduct()">Publicar</button>
+    <div id="adminTab" class="tab-content">
+        <div class="card">
+            <h3>Panel de Control</h3>
+            <div id="adminOrdersList"></div>
+        </div>
     </div>
-    <div class="card">
-        <h3>Gestión de Pedidos</h3>
-        <div id="adminOrdersList"></div>
-    </div>
-  </div>
 </div>
 
 <div id="modal" class="modal">
-  <div class="modal-content">
-    <button onclick="closeModal()" style="position:absolute; top:15px; right:15px; border:none; background:none; font-size:1.5rem; cursor:pointer;">&times;</button>
-    <div id="modalBody"></div>
-  </div>
+    <div class="modal-content">
+        <button onclick="closeModal()" style="position:absolute; top:15px; right:15px; border:none; background:none; font-size:1.2rem; cursor:pointer;">&times;</button>
+        <div id="modalBody"></div>
+    </div>
 </div>
 
 <script>
+// --- CONFIGURACIÓN ---
 firebase.initializeApp({
-  apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
-  authDomain: "proyectovendor.firebaseapp.com",
-  projectId: "proyectovendor"
+    apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
+    authDomain: "proyectovendor.firebaseapp.com",
+    projectId: "proyectovendor"
 });
 const db = firebase.firestore();
 const auth = firebase.auth();
+const provider = new firebase.auth.GoogleAuthProvider();
 
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 let role = "usuario";
 
-// --- AUTH ---
+// --- AUTH LÓGICA ---
 auth.onAuthStateChanged(user => {
-  if(user){ 
-    initUser(user); 
-  } else { 
-    document.getElementById("authButtons").style.display="flex"; 
-    document.getElementById("userInfo").style.display="none"; 
-    document.getElementById("dashboard").style.display="none"; 
-  }
+    if(user){ 
+        initUser(user); 
+    } else {
+        document.getElementById("authButtons").style.display="flex";
+        document.getElementById("userInfo").style.display="none";
+        document.getElementById("dashboard").style.display="none";
+    }
 });
 
 async function initUser(user){
-  document.getElementById("authButtons").style.display="none";
-  document.getElementById("userInfo").style.display="flex";
-  role = (user.email === "admin@vendors.com") ? "admin" : "usuario";
-  document.getElementById("dashboard").style.display="block";
-  if(role === "admin") document.getElementById("adminTabBtn").style.display="block";
-  setUpTabs();
-  loadProducts();
-  renderCart();
-  loadOrders();
+    document.getElementById("authButtons").style.display="none";
+    document.getElementById("userInfo").style.display="flex";
+    role = (user.email === "admin@vendors.com") ? "admin" : "usuario";
+    document.getElementById("dashboard").style.display="block";
+    if(role === "admin") document.getElementById("adminTabBtn").style.display="block";
+    setUpTabs();
+    loadProducts();
+    renderCart();
+    loadOrders();
 }
 
 function showLoginForm(){
-  openModal(`<h3>Iniciar Sesión</h3>
-    <input id="loginEmail" placeholder="Email" style="margin-bottom:10px">
-    <input id="loginPass" type="password" placeholder="Contraseña">
-    <button class="btn btn-primary" style="width:100%; margin-top:15px" onclick="login()">Entrar</button>`);
-}
-
-function showRegisterForm(){
-  openModal(`<h3>Crear Cuenta</h3>
-    <input id="regEmail" placeholder="Email" style="margin-bottom:10px">
-    <input id="regPass" type="password" placeholder="Contraseña">
-    <button class="btn btn-primary" style="width:100%; margin-top:15px" onclick="register()">Registrarme</button>`);
+    openModal(`
+        <h3>Bienvenido</h3>
+        <input id="loginEmail" placeholder="Correo electrónico" style="margin-bottom:10px">
+        <input id="loginPass" type="password" placeholder="Contraseña">
+        <button class="btn btn-primary" style="margin-top:15px" onclick="login()">Entrar</button>
+        <button class="btn-google" onclick="loginWithGoogle()"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18"> Google</button>
+        <p onclick="resetPass()" style="text-align:center; font-size:0.8rem; color:var(--primary); cursor:pointer; margin-top:15px">Olvidé mi contraseña</p>
+    `);
 }
 
 function login(){ auth.signInWithEmailAndPassword(document.getElementById("loginEmail").value, document.getElementById("loginPass").value).then(()=>closeModal());}
-function register(){ auth.createUserWithEmailAndPassword(document.getElementById("regEmail").value, document.getElementById("regPass").value).then(()=>closeModal());}
+function loginWithGoogle(){ auth.signInWithPopup(provider).then(()=>closeModal());}
+function resetPass(){ const email = prompt("Ingresa tu correo:"); if(email) auth.sendPasswordResetEmail(email).then(()=>alert("Correo enviado"));}
 function logout(){ auth.signOut().then(()=>location.reload()); }
 
-// --- COMPRA ---
+// --- CONFIGURACIÓN DETALLADA ---
+async function openConfig(){
+    const user = auth.currentUser;
+    const snap = await db.collection("users").doc(user.uid).get();
+    const data = snap.data() || {};
+    
+    openModal(`
+        <h3>Mi Perfil</h3>
+        <div class="form-group"><label>Nombre</label><input id="cfgName" value="${data.name || ''}"></div>
+        <div class="form-group"><label>Correo</label><input disabled value="${user.email}"></div>
+        <div class="form-group"><label>Ubicación</label><input id="cfgAddr" value="${data.ubicacion || ''}"></div>
+        <div class="form-group"><label>País</label><input id="cfgCountry" value="${data.pais || ''}"></div>
+        <button class="btn btn-primary" onclick="saveConfig()">Guardar Cambios</button>
+        <hr style="margin:20px 0">
+        <button class="btn" style="width:100%; border:1px solid #ddd" onclick="resetPass()">Cambiar Contraseña</button>
+    `);
+}
+
+async function saveConfig(){
+    const user = auth.currentUser;
+    await db.collection("users").doc(user.uid).set({
+        name: document.getElementById("cfgName").value,
+        ubicacion: document.getElementById("cfgAddr").value,
+        pais: document.getElementById("cfgCountry").value,
+        email: user.email
+    }, {merge:true});
+    alert("Datos actualizados");
+    closeModal();
+}
+
+// --- COMPRA Y FORMULARIO ---
 function openCheckoutForm(){
-  if(cart.length === 0) return alert("Carrito vacío");
-  openModal(`
-    <h3>Datos de Entrega</h3>
-    <div class="form-group"><label>Nombre Completo</label><input id="chkName"></div>
-    <div class="form-group"><label>Teléfono Movil</label><input id="chkPhone"></div>
-    <div class="form-group"><label>WhatsApp</label><input id="chkWap"></div>
-    <div class="form-group"><label>Correo Electrónico</label><input id="chkEmail" value="${auth.currentUser.email}"></div>
-    <div class="form-group"><label>Ubicación exacta de entrega</label><textarea id="chkAddr"></textarea></div>
-    <div class="form-group">
-        <label>Método de Pago</label>
-        <select id="chkPay">
-            <option value="yappy">Yappy (+507 63892022)</option>
-            <option value="ach">ACH (Banco General)</option>
-            <option value="efectivo">Efectivo al recibir</option>
-        </select>
-    </div>
-    <div class="form-group"><label>Adjuntar Pago (Opcional)</label><input type="file" id="chkFile"></div>
-    <button class="btn btn-primary" style="width:100%" onclick="confirmPurchase()">Enviar Pedido</button>
-  `);
+    if(cart.length === 0) return alert("Carrito vacío");
+    openModal(`
+        <h3>Finalizar Compra</h3>
+        <div class="form-group"><label>Nombre</label><input id="chkName"></div>
+        <div class="form-group"><label>Teléfono</label><input id="chkPhone"></div>
+        <div class="form-group"><label>WhatsApp</label><input id="chkWap"></div>
+        <div class="form-group"><label>Ubicación de Entrega</label><textarea id="chkAddr"></textarea></div>
+        <div class="form-group">
+            <label>Método de Pago</label>
+            <select id="chkPay">
+                <option value="yappy">Yappy</option>
+                <option value="ach">ACH / Transferencia</option>
+                <option value="efectivo">Efectivo al recibir</option>
+            </select>
+        </div>
+        <button class="btn btn-primary" onclick="confirmPurchase()">Enviar Pedido</button>
+    `);
 }
 
 async function confirmPurchase(){
-    const file = document.getElementById("chkFile").files[0];
-    let compUrl = "";
-    if(file){
-        const fd = new FormData(); fd.append("file", file); fd.append("upload_preset", "vendors_preset");
-        const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`, {method:"POST", body:fd});
-        const j = await res.json(); compUrl = j.secure_url;
-    }
-
     const order = {
         userId: auth.currentUser.uid,
         buyer: document.getElementById("chkName").value,
         phone: document.getElementById("chkPhone").value,
         whatsapp: document.getElementById("chkWap").value,
-        email: document.getElementById("chkEmail").value,
+        email: auth.currentUser.email,
         address: document.getElementById("chkAddr").value,
-        paymentMethod: document.getElementById("chkPay").value,
-        comprobante: compUrl,
+        payment: document.getElementById("chkPay").value,
         products: cart,
-        status: compUrl ? "revision" : "pendiente",
+        status: "pendiente",
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     await db.collection("orders").add(order);
-    emptyCart(); closeModal(); showModalMessage("¡Pedido Realizado!");
+    cart = []; localStorage.removeItem("cart");
+    renderCart(); closeModal();
+    alert("Pedido enviado con éxito");
 }
 
-// --- HISTORIAL ---
+// --- HISTORIAL (CORRECCIÓN DE CONEXIÓN) ---
 function loadOrders(){
-  // Nota: Si no ves datos, elimina .orderBy() para probar sin índices de Firebase
-  db.collection("orders").onSnapshot(snap => {
-    let userH = "", adminH = "";
-    snap.forEach(doc => {
-      const o = doc.data();
-      const card = `
-        <div class="order-item">
-          <div style="display:flex; justify-content:space-between">
-            <b>Pedido #${doc.id.substring(0,5)}</b>
-            <span class="status-badge status-${o.status}">${o.status}</span>
-          </div>
-          <div style="font-size:0.8rem; margin:10px 0">
-            ${o.buyer} | ${o.phone}<br>
-            Entregar en: ${o.address}
-          </div>
-          <button class="btn btn-outline" style="width:100%; font-size:0.7rem" onclick="viewOrder('${doc.id}')">Detalles / Subir Pago</button>
-        </div>`;
-      if(o.userId === auth.currentUser.uid) userH += card;
-      adminH += card;
+    // Escuchamos los cambios en tiempo real
+    db.collection("orders").onSnapshot(snap => {
+        let userH = "", adminH = "";
+        snap.forEach(doc => {
+            const o = doc.data();
+            const total = o.products.reduce((s,p)=> s+p.price, 0);
+            const card = `
+                <div class="order-item">
+                    <span class="status-badge" style="background:${o.status==='pendiente'?'#fef3c7':'#dcfce7'}">${o.status}</span>
+                    <b>Pedido #${doc.id.substring(0,5)}</b><br>
+                    <small>${o.buyer} | ${o.address}</small><br>
+                    <strong>Total: $${total}</strong><br>
+                    ${!o.comprobante ? `<button onclick="viewOrder('${doc.id}')" style="font-size:0.7rem; margin-top:5px">Adjuntar Pago</button>` : 'Pago adjunto'}
+                </div>
+            `;
+            // Filtro dinámico: Usuario solo ve lo suyo, Admin ve todo
+            if(o.userId === auth.currentUser.uid) userH += card;
+            adminH += card;
+        });
+        document.getElementById("purchaseHistory").innerHTML = userH || "No tienes pedidos aún.";
+        if(role === "admin") document.getElementById("adminOrdersList").innerHTML = adminH;
     });
-    document.getElementById("purchaseHistory").innerHTML = userH || "Sin pedidos.";
-    if(role === "admin") document.getElementById("adminOrdersList").innerHTML = adminH;
-  });
 }
 
 async function viewOrder(id){
-    const s = await db.collection("orders").doc(id).get();
-    const o = s.data();
-    let h = `<h3>Detalles de Pedido</h3>
-    <p><b>Estado:</b> ${o.status}</p>
-    <p><b>Pago:</b> ${o.paymentMethod}</p>
-    <p><b>Productos:</b> ${o.products.map(p=>p.name).join(", ")}</p>`;
-    
-    if(role === 'admin'){
-        h += `<select onchange="updateStatus('${id}', this.value)">
-            <option value="pendiente" ${o.status==='pendiente'?'selected':''}>Pendiente</option>
-            <option value="revision" ${o.status==='revision'?'selected':''}>Revisión</option>
-            <option value="entregado" ${o.status==='entregado'?'selected':''}>Entregado</option>
-        </select>`;
-    }
-
-    if(!o.comprobante) h += `<hr><label>Subir Comprobante:</label><input type="file" onchange="uploadComp('${id}', this.files[0])">`;
-    else h += `<p><b>Comprobante:</b><br><img src="${o.comprobante}" style="width:100%"></p>`;
-    
-    openModal(h);
+    openModal(`
+        <h3>Adjuntar Comprobante</h3>
+        <p>Sube una foto de tu pago para procesar el pedido.</p>
+        <input type="file" id="fileComp">
+        <button class="btn btn-primary" style="margin-top:15px" onclick="uploadComp('${id}')">Subir Foto</button>
+    `);
 }
 
-// --- OTROS ---
-function setUpTabs(){ document.querySelectorAll(".tab-btn").forEach(b => { b.onclick = () => { document.querySelectorAll(".tab-btn, .tab-content").forEach(e=>e.classList.remove("active")); b.classList.add("active"); document.getElementById(b.dataset.tab).classList.add("active"); }; });}
-function openModal(c){ modal.style.display="flex"; modalBody.innerHTML=c; }
-function closeModal(){ modal.style.display="none"; }
-function showModalMessage(m){ openModal(`<h4>${m}</h4>`); setTimeout(closeModal, 1500); }
-async function uploadComp(id, f){
-    const fd = new FormData(); fd.append("file", f); fd.append("upload_preset", "vendors_preset");
+async function uploadComp(id){
+    const file = document.getElementById("fileComp").files[0];
+    if(!file) return alert("Selecciona un archivo");
+    // Lógica Cloudinary simplificada
+    const fd = new FormData(); fd.append("file", file); fd.append("upload_preset", "vendors_preset");
     const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`, {method:"POST", body:fd});
     const j = await res.json();
     await db.collection("orders").doc(id).update({comprobante: j.secure_url, status: "revision"});
     closeModal();
 }
-function updateStatus(id, s){ db.collection("orders").doc(id).update({status: s}); }
-function renderCart(){
-    const l = document.getElementById("cartList");
-    if(cart.length===0){ l.innerHTML="Vacío"; return; }
-    l.innerHTML = cart.map(i => `<div>${i.name} - $${i.price}</div>`).join("");
-}
-function emptyCart(){ cart=[]; localStorage.removeItem("cart"); renderCart(); }
-function loadProducts(){
-    db.collection("products").onSnapshot(s => {
-        let h = "";
-        s.forEach(d => { const p = d.data(); h += `<div class="product-card"><img src="${p.media}"><div style="padding:10px"><b>${p.name}</b><br>$${p.price}<br><button class="btn btn-primary" onclick="addToCart('${d.id}','${p.name}',${p.price},'${p.media}')">Comprar</button></div></div>`; });
-        document.getElementById("productsList").innerHTML = h;
-    });
-}
-function addToCart(id, n, p, m){ cart.push({id,n,price:p,media:m}); localStorage.setItem("cart", JSON.stringify(cart)); renderCart(); showModalMessage("Añadido"); }
-async function uploadProduct(){
-    const f = document.getElementById("media").files[0];
-    const fd = new FormData(); fd.append("file", f); fd.append("upload_preset", "vendors_preset");
-    const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`, {method:"POST", body:fd});
-    const j = await res.json();
-    await db.collection("products").add({name:document.getElementById("name").value, price:parseFloat(document.getElementById("price").value), media:j.secure_url});
-    showModalMessage("Publicado");
-}
-function openConfig(){
-    openModal(`<h3>Configuración</h3>
-    <div class="form-group"><label>Nombre</label><input id="cfgN"></div>
-    <button class="btn btn-primary" onclick="closeModal()">Guardar</button>`);
-}
+
+// --- FUNCIONES AUX ---
+function setUpTabs(){ document.querySelectorAll(".tab-btn").forEach(b => { b.onclick = () => { document.querySelectorAll(".tab-btn, .tab-content").forEach(e=>e.classList.remove("active")); b.classList.add("active"); document.getElementById(b.dataset.tab).classList.add("active"); }; });}
+function openModal(c){ modal.style.display="flex"; modalBody.innerHTML=c; }
+function closeModal(){ modal.style.display="none"; }
+function renderCart(){ const l = document.getElementById("cartList"); l.innerHTML = cart.length ? cart.map(i=>`<div>${i.name} - $${i.price}</div>`).join("") : "Vacío"; }
+function loadProducts(){ db.collection("products").onSnapshot(s => { let h = ""; s.forEach(d => { const p = d.data(); h += `<div class="card" style="padding:10px; text-align:center"><img src="${p.media}" style="width:100%; height:100px; object-fit:cover; border-radius:8px"><b>${p.name}</b><br>$${p.price}<br><button class="btn btn-primary" style="font-size:0.7rem; padding:5px" onclick="addToCart('${d.id}','${p.name}',${p.price},'${p.media}')">Añadir</button></div>`; }); document.getElementById("productsList").innerHTML = h; });}
+function addToCart(id, n, p, m){ cart.push({id,name:n,price:p,media:m}); localStorage.setItem("cart", JSON.stringify(cart)); renderCart(); alert("Añadido"); }
 </script>
 </body>
 </html>
