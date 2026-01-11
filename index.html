@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Vendor | By Emanuel</title>
+<title>Vendor | Sistema de Ventas</title>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -104,7 +104,6 @@ const db = firebase.firestore();
 const CLOUD_NAME="df79cjklp";
 const UPLOAD_PRESET="vendors_preset";
 
-/* ELEMENTOS */
 const roleSelect = document.getElementById("role");
 const productsList = document.getElementById("productsList");
 const adminPanel = document.getElementById("adminPanel");
@@ -118,10 +117,8 @@ const modalBody = document.getElementById("modalBody");
 const ordersListDiv = document.getElementById("ordersList");
 const purchaseHistoryDiv = document.getElementById("purchaseHistory");
 
-/* CARRITO */
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-/* TOGGLE ADMIN */
 function toggleAdminFeatures(){
     adminPanel.style.display = roleSelect.value==="admin"?"block":"none";
 }
@@ -306,14 +303,19 @@ function loadOrders(){
       const o=doc.data();
       const statusClass=getStatusClass(o.status);
       let proofBtn=o.proof?`<button onclick="viewProof('${o.proof}')">Ver comprobante</button>`:"";
+      let addProofBtn=`<button onclick="uploadOrderProof('${doc.id}')">Agregar / Cambiar comprobante</button>`;
+      let statusOptions=["pendiente","revision","verificado","en-camino","finalizado","cancelada"];
+      let statusSelect=`<select onchange="changeStatus('${doc.id}',this.value)">
+        ${statusOptions.map(s=>`<option value="${s}" ${o.status===s?'selected':''}>${s}</option>`).join('')}
+      </select>`;
       ordersListDiv.innerHTML+=`
         <div class="product">
           <h4>${o.buyerName} - ${o.buyerPhone}</h4>
           <p>${o.buyerAddress} - ${o.buyerEmail}</p>
           <b>${o.products.map(p=>p.name+" $"+p.price).join(", ")}</b>
           <p class="${statusClass}">Estado: ${o.status}</p>
-          ${proofBtn}
-          <button onclick="updateStatus('${doc.id}')">Cambiar Estado</button>
+          ${proofBtn} ${addProofBtn} <br>
+          Cambiar Estado: ${statusSelect}
           <button onclick="cancelOrder('${doc.id}')">Cancelar Compra</button>
         </div>
       `;
@@ -328,22 +330,40 @@ function loadUserOrders(){
     snapshot.forEach(doc=>{
       const o=doc.data();
       const statusClass=getStatusClass(o.status);
+      let addProofBtn=o.status!=="finalizado"?`<button onclick="uploadOrderProof('${doc.id}')">Agregar / Cambiar comprobante</button>`:"";
       purchaseHistoryDiv.innerHTML+=`
         <div class="product">
           <b>${o.products.map(p=>p.name+" $"+p.price).join(", ")}</b>
           <p class="${statusClass}">Estado: ${o.status}</p>
-          ${o.proof?`<button onclick="viewProof('${o.proof}')">Ver comprobante</button>`:""}
+          ${o.proof?`<button onclick="viewProof('${o.proof}')">Ver comprobante</button>`:""} ${addProofBtn}
         </div>
       `;
     });
   });
 }
 
-/* CAMBIAR ESTADO */
-function updateStatus(id){
-  const next = prompt("Nuevo estado (revision, verificado, en-camino, finalizado):");
-  if(next && ["revision","verificado","en-camino","finalizado"].includes(next)){
-    db.collection("orders").doc(id).update({status:next});
+/* SUBIR COMPROBANTE DESPUES DE CREAR LA ORDEN */
+async function uploadOrderProof(orderId){
+  const input=document.createElement("input");
+  input.type="file"; input.accept="image/*";
+  input.onchange=async ()=>{
+    const file=input.files[0];
+    if(!file) return;
+    const form=new FormData();
+    form.append("file",file);
+    form.append("upload_preset",UPLOAD_PRESET);
+    const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,{method:"POST",body:form});
+    const data=await res.json();
+    await db.collection("orders").doc(orderId).update({proof:data.secure_url});
+    showModalMessage("Comprobante subido");
+  };
+  input.click();
+}
+
+/* CAMBIAR ESTADO CON CONFIRMACION */
+function changeStatus(id,newStatus){
+  if(confirm(`Confirmar cambio de estado a "${newStatus}"?`)){
+    db.collection("orders").doc(id).update({status:newStatus});
   }
 }
 
@@ -360,7 +380,6 @@ function viewProof(url){
   openModal(`<img src="${url}" style="width:100%"/>`);
 }
 
-/* STATUS CLASS */
 function getStatusClass(status){
   switch(status){
     case "pendiente": return "status-pendiente";
