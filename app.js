@@ -322,4 +322,30 @@ async function viewOrder(id,who){
     <p class="font-bold mt-3">Estado:</p>
     ${who==="admin"?`
     <select id="changeStatus" class="w-full p-2 rounded-lg mb-3">
-     
+      <option value="en_revision" ${o.status==="en_revision"?"selected":""}>En Revisión</option>
+      <option value="pago_confirmado" ${o.status==="pago_confirmado"?"selected":""}>Pago Confirmado</option>
+      <option value="en_camino" ${o.status==="en_camino"?"selected":""}>En Camino</option>
+      <option value="finalizado" ${o.status==="finalizado"?"selected":""}>Finalizado</option>
+      <option value="cancelada" ${o.status==="cancelada"?"selected":""}>Cancelada</option>
+    </select>
+    <button onclick="updateOrderStatus('${id}')" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition">Actualizar Estado</button>`:`<span class="status-badge ${statusClass(o.status)}">${o.status.replace("_"," ")}</span>`}`;
+  openModal(html);
+}
+
+// --- ACTUALIZAR ESTADO ---
+function updateOrderStatus(id){
+  const status = document.getElementById("changeStatus").value;
+  db.collection("orders").doc(id).update({status}).then(()=>{ closeModal(); showModalMessage("Estado actualizado"); });
+}
+
+// --- FUNCIONES UTILES ---
+function statusClass(status){
+  switch(status){
+    case "en_revision": return "status-revision";
+    case "pago_confirmado": return "status-verificado";
+    case "en_camino": return "status-en-camino";
+    case "finalizado": return "status-finalizado";
+    case "cancelada": return "status-cancelada";
+    default: return "status-pendiente";
+  }
+}
