@@ -1,87 +1,82 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>VENDOR | Sistema de Ventas</title>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Firebase -->
+  <title>Vendor | Sitio comercial </title>
+  <link href="styles.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-
-  <!-- UI -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 </head>
+<body class="bg-gray-100">
 
-<body>
-
-<header id="mainHeader">
-  <div class="header-left">
-    <i class="fa-solid fa-store"></i>
-    <span>VENDOR</span>
+<header class="flex justify-between items-center p-4 bg-gray-800 text-white fixed w-full z-50">
+  <div class="flex items-center gap-2">
+    <i class="fas fa-store text-2xl"></i>
+    <span class="font-bold text-xl">VENDOR</span>
   </div>
-
-  <div id="authButtons">
-    <button onclick="showLogin()">Iniciar sesión</button>
-    <button onclick="showRegister()">Crear cuenta</button>
-    <button onclick="loginGoogle()"><i class="fab fa-google"></i></button>
+  <div id="authButtons" class="flex gap-2">
+    <button onclick="showLogin()" class="hover:text-indigo-400">Iniciar Sesión</button>
+    <button onclick="showRegister()" class="bg-white text-black px-3 py-1 rounded hover:bg-indigo-500 hover:text-white">Registrarse</button>
+    <button onclick="loginGoogle()" class="bg-gray-700 p-2 rounded hover:bg-gray-600"><i class="fab fa-google"></i></button>
   </div>
-
-  <div id="userMenu" class="hidden">
-    <span id="userEmail"></span>
-    <button onclick="openConfig()"><i class="fa fa-gear"></i></button>
-    <button onclick="logout()">Salir</button>
+  <div id="userMenu" class="hidden flex items-center gap-4">
+    <span id="userEmail" class="text-sm"></span>
+    <button onclick="openConfig()" class="hover:text-indigo-400"><i class="fas fa-user-cog"></i></button>
+    <button onclick="logout()" class="bg-red-500/20 text-red-500 px-3 py-1 rounded hover:bg-red-500 hover:text-white">Salir</button>
   </div>
 </header>
 
-<main id="app" class="hidden">
+<main class="pt-20 max-w-7xl mx-auto px-4">
 
-  <nav class="tabs">
-    <button data-tab="products">Productos</button>
-    <button data-tab="cart">Carrito</button>
-    <button data-tab="orders">Compras</button>
-    <button data-tab="admin" id="adminTab" class="hidden">Admin</button>
+  <nav class="flex gap-2 mb-6 overflow-x-auto">
+    <button class="tab-btn active" data-tab="productsTab">Productos</button>
+    <button class="tab-btn" data-tab="cartTab">Carrito</button>
+    <button class="tab-btn" data-tab="ordersTab">Compras</button>
+    <button class="tab-btn hidden" data-tab="adminTab" id="adminTabBtn">Admin</button>
   </nav>
 
   <!-- PRODUCTOS -->
-  <section id="products" class="tab">
-    <div class="filters">
-      <input id="search" placeholder="Buscar producto">
-      <input id="maxPrice" type="number" placeholder="Precio máx">
+  <section id="productsTab" class="tab-content active">
+    <div class="flex justify-between mb-4">
+      <input id="search" placeholder="Buscar..." class="p-2 border rounded" oninput="filterProducts()">
+      <input id="maxPrice" placeholder="Precio máx." type="number" class="p-2 border rounded" oninput="filterProducts()">
     </div>
-    <div id="productsList" class="grid"></div>
+    <div id="productsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
   </section>
 
   <!-- CARRITO -->
-  <section id="cart" class="tab hidden">
-    <div id="cartList"></div>
-    <div id="cartTotal"></div>
-    <button onclick="openPurchaseForm()">Comprar</button>
+  <section id="cartTab" class="tab-content hidden">
+    <div id="cartList" class="space-y-2"></div>
+    <div class="mt-4 flex gap-2">
+      <button onclick="updateCart()" class="bg-gray-200 p-2 rounded hover:bg-gray-300">Actualizar</button>
+      <button onclick="emptyCart()" class="bg-red-200 text-red-700 p-2 rounded hover:bg-red-300">Vaciar</button>
+      <button onclick="openPurchaseForm()" class="bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700">Comprar</button>
+    </div>
   </section>
 
   <!-- COMPRAS USUARIO -->
-  <section id="orders" class="tab hidden">
-    <div id="userOrders"></div>
+  <section id="ordersTab" class="tab-content hidden">
+    <div id="userOrders" class="space-y-2"></div>
   </section>
 
   <!-- ADMIN -->
-  <section id="admin" class="tab hidden">
-    <div class="admin-grid">
-      <div>
-        <h3>Nuevo producto</h3>
-        <input id="pName" placeholder="Nombre">
-        <textarea id="pDesc" placeholder="Descripción"></textarea>
-        <input id="pPrice" type="number" placeholder="Precio">
-        <input id="pMedia" type="file" accept="image/*,video/*">
-        <button onclick="uploadProduct()">Subir producto</button>
+  <section id="adminTab" class="tab-content hidden">
+    <div class="grid lg:grid-cols-2 gap-4">
+      <div class="bg-white p-4 rounded shadow">
+        <h3 class="font-bold mb-2">Agregar producto</h3>
+        <input id="pName" placeholder="Nombre" class="w-full p-2 mb-2 border rounded">
+        <textarea id="pDesc" placeholder="Descripción" class="w-full p-2 mb-2 border rounded"></textarea>
+        <input id="pPrice" type="number" placeholder="Precio" class="w-full p-2 mb-2 border rounded">
+        <input id="pMedia" type="file" accept="image/*,video/*" class="mb-2">
+        <button onclick="uploadProduct()" class="bg-black text-white w-full p-2 rounded hover:bg-indigo-600">Subir Producto</button>
       </div>
-
-      <div>
-        <h3>Solicitudes</h3>
-        <div id="adminOrders"></div>
+      <div class="bg-white p-4 rounded shadow">
+        <h3 class="font-bold mb-2">Solicitudes</h3>
+        <div id="adminOrders" class="space-y-2"></div>
       </div>
     </div>
   </section>
@@ -89,9 +84,9 @@
 </main>
 
 <!-- MODAL -->
-<div id="modal" class="modal hidden">
-  <div class="modal-bg" onclick="closeModal()"></div>
-  <div class="modal-content" id="modalContent"></div>
+<div id="modal" class="hidden fixed inset-0 items-center justify-center z-50">
+  <div class="absolute inset-0 bg-black/60" onclick="closeModal()"></div>
+  <div class="relative bg-white rounded p-4 max-w-md mx-auto z-10" id="modalContent"></div>
 </div>
 
 <script src="app.js"></script>
