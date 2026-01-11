@@ -9,70 +9,23 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f2f2f2;
-  padding: 20px;
-}
-
-.container {
-  max-width: 600px;
-  margin: auto;
-  background: #fff;
-  padding: 20px;
-  border-radius: 10px;
-}
-
-input, textarea, select, button {
-  width: 100%;
-  padding: 10px;
-  margin-top: 10px;
-}
-
-button {
-  background: #111;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.role {
-  background: #eee;
-}
-
-.product {
-  border: 1px solid #ddd;
-  padding: 10px;
-  margin-top: 15px;
-  border-radius: 8px;
-}
-
-.product img, .product video {
-  width: 100%;
-  border-radius: 6px;
-}
-
-.product h3 {
-  margin: 10px 0 5px;
-}
-
-.product p {
-  margin: 5px 0;
-}
-
-.price {
-  font-weight: bold;
-}
-
-.actions button {
-  margin-top: 5px;
-}
+body { font-family: Arial,sans-serif; background:#f2f2f2; padding:20px; }
+.container { max-width:600px; margin:auto; background:#fff; padding:20px; border-radius:10px; }
+input, textarea, select, button { width:100%; padding:10px; margin-top:10px; }
+button { background:#111; color:#fff; border:none; border-radius:6px; cursor:pointer; }
+button:hover { opacity:0.9; }
+.role { background:#eee; }
+.product { border:1px solid #ddd; padding:10px; margin-top:15px; border-radius:8px; }
+.product img, .product video { width:100%; border-radius:6px; }
+.product h3 { margin:10px 0 5px; }
+.product p { margin:5px 0; }
+.price { font-weight:bold; }
+.actions button { margin-top:5px; margin-right:5px; }
+#cartList { background:#fafafa; padding:10px; border-radius:8px; margin-top:15px; }
 </style>
 </head>
 
 <body>
-
 <div class="container">
 
 <h2>Rol</h2>
@@ -103,6 +56,12 @@ button {
 <h2>Productos</h2>
 <div id="productsList"></div>
 
+<hr>
+<h2>Carrito</h2>
+<div id="cartList"></div>
+<button onclick="viewCart()">Ver Carrito</button>
+<button onclick="emptyCart()">Vaciar Carrito</button>
+
 </div>
 
 <script>
@@ -113,10 +72,8 @@ firebase.initializeApp({
   projectId: "proyectovendor"
 });
 const db = firebase.firestore();
-
-/* CLOUDINARY */
-const CLOUD_NAME = "df79cjklp";
-const UPLOAD_PRESET = "vendors_preset";
+const CLOUD_NAME="df79cjklp";
+const UPLOAD_PRESET="vendors_preset";
 
 /* ELEMENTOS */
 const roleSelect = document.getElementById("role");
@@ -126,107 +83,109 @@ const nameInput = document.getElementById("name");
 const descriptionInput = document.getElementById("description");
 const priceInput = document.getElementById("price");
 const mediaInput = document.getElementById("media");
+const cartListDiv = document.getElementById("cartList");
 
-/* MOSTRAR / OCULTAR PANEL ADMIN */
-function toggleAdminFeatures() {
-  if(roleSelect.value === "admin") {
-    adminPanel.style.display = "block";
-  } else {
-    adminPanel.style.display = "none";
-  }
+/* CARRITO EN MEMORIA */
+let cart = [];
+
+/* PANEL ADMIN */
+function toggleAdminFeatures(){
+  adminPanel.style.display = roleSelect.value==="admin"?"block":"none";
 }
-toggleAdminFeatures(); // al cargar
+toggleAdminFeatures();
 
-/* SUBIR PRODUCTO (solo admin) */
-async function uploadProduct() {
+/* SUBIR PRODUCTO */
+async function uploadProduct(){
   const file = mediaInput.files[0];
-  if (!file) return alert("Archivo requerido");
+  if(!file) return alert("Archivo requerido");
+  if(!nameInput.value.trim() || !priceInput.value) return alert("Nombre y precio obligatorios");
 
-  if (!nameInput.value.trim() || !priceInput.value) {
-    return alert("Nombre y precio son obligatorios");
-  }
+  const form=new FormData();
+  form.append("file",file);
+  form.append("upload_preset",UPLOAD_PRESET);
 
-  const form = new FormData();
-  form.append("file", file);
-  form.append("upload_preset", UPLOAD_PRESET);
+  const isVideo=file.type.startsWith("video");
+  const endpoint=isVideo?"video":"image";
 
-  const isVideo = file.type.startsWith("video");
-  const endpoint = isVideo ? "video" : "image";
-
-  const res = await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${endpoint}/upload`,
-    { method: "POST", body: form }
-  );
-
-  const data = await res.json();
-
-  if (!data.secure_url) return alert("Error al subir archivo");
+  const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${endpoint}/upload`,{method:"POST",body:form});
+  const data=await res.json();
+  if(!data.secure_url) return alert("Error subir archivo");
 
   await db.collection("products").add({
-    name: nameInput.value.trim(),
-    description: descriptionInput.value.trim(),
-    price: Number(priceInput.value),
-    mediaUrl: data.secure_url,
-    mediaType: isVideo ? "video" : "image",
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    name:nameInput.value.trim(),
+    description:descriptionInput.value.trim(),
+    price:Number(priceInput.value),
+    mediaUrl:data.secure_url,
+    mediaType:isVideo?"video":"image",
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
   });
 
   alert("Producto subido");
-
-  nameInput.value = "";
-  descriptionInput.value = "";
-  priceInput.value = "";
-  mediaInput.value = "";
+  nameInput.value=""; descriptionInput.value=""; priceInput.value=""; mediaInput.value="";
 }
 
 /* LISTAR PRODUCTOS */
-function loadProducts() {
+function loadProducts(){
   const role = roleSelect.value;
   const search = document.getElementById("search").value.toLowerCase();
   const maxPrice = document.getElementById("maxPrice").value;
 
-  db.collection("products")
-    .orderBy("createdAt", "desc")
-    .onSnapshot(snapshot => {
-      productsList.innerHTML = "";
+  db.collection("products").orderBy("createdAt","desc").onSnapshot(snapshot=>{
+    productsList.innerHTML="";
+    snapshot.forEach(doc=>{
+      const p = doc.data();
+      if((search && !p.name.toLowerCase().includes(search)) || (maxPrice && p.price>maxPrice)) return;
 
-      snapshot.forEach(doc => {
-        const p = doc.data();
-        if ((search && !p.name.toLowerCase().includes(search)) ||
-            (maxPrice && p.price > maxPrice)) return;
-
-        productsList.innerHTML += `
-          <div class="product">
-            ${
-              p.mediaType === "video"
-                ? `<video src="${p.mediaUrl}" controls></video>`
-                : `<img src="${p.mediaUrl}">`
-            }
-            <h3>${p.name}</h3>
-            <p>${p.description}</p>
-            <b>$${p.price}</b>
-
-            <div class="actions">
-              <button onclick="buy('${p.name}', ${p.price})">Comprar</button>
-              ${role === "admin" ? `<button onclick="deleteProduct('${doc.id}')">Eliminar</button>` : ""}
-            </div>
+      productsList.innerHTML+=`
+        <div class="product">
+          ${p.mediaType==="video"?`<video src="${p.mediaUrl}" controls></video>`:`<img src="${p.mediaUrl}">`}
+          <h3>${p.name}</h3>
+          <p>${p.description}</p>
+          <b>$${p.price}</b>
+          <div class="actions">
+            <button onclick="contactSeller('${p.name}')">Contactar</button>
+            <button onclick="addToCart('${doc.id}','${p.name}',${p.price})">Añadir al carrito</button>
+            ${role==="admin"?`<button onclick="deleteProduct('${doc.id}')">Eliminar</button>`:""}
           </div>
-        `;
-      });
+        </div>
+      `;
     });
+  });
 }
 
 /* ELIMINAR PRODUCTO */
-function deleteProduct(id) {
-  if (confirm("¿Eliminar producto?")) {
-    db.collection("products").doc(id).delete();
-  }
+function deleteProduct(id){
+  if(confirm("¿Eliminar producto?")) db.collection("products").doc(id).delete();
 }
 
-/* COMPRAR POR WHATSAPP */
-function buy(name, price) {
-  const msg = `Hola, quiero comprar: ${name} por $${price}`;
-  window.open(`https://wa.me/50763892022?text=${encodeURIComponent(msg)}`);
+/* CONTACTAR (alert) */
+function contactSeller(name){
+  alert(`Contacta al vendedor sobre: ${name}\nNúmero: 63892022`);
+}
+
+/* CARRITO */
+function addToCart(id,name,price){
+  cart.push({id,name,price});
+  alert(`${name} añadido al carrito`);
+}
+
+function viewCart(){
+  if(cart.length===0){ cartListDiv.innerHTML="<i>Carrito vacío</i>"; return; }
+  let html="<ul>";
+  let total=0;
+  cart.forEach((item,i)=>{
+    html+=`<li>${item.name} - $${item.price}</li>`;
+    total+=item.price;
+  });
+  html+=`</ul><b>Total: $${total}</b>`;
+  cartListDiv.innerHTML=html;
+}
+
+function emptyCart(){
+  if(confirm("Vaciar carrito?")){
+    cart=[];
+    cartListDiv.innerHTML="<i>Carrito vacío</i>";
+  }
 }
 
 loadProducts();
