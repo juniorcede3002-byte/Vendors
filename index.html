@@ -3,270 +3,165 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vendor | Plataforma Comercial</title>
+<title>Vendor</title>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
-<!-- UI -->
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
 <style>
-body { font-family: Inter, system-ui, sans-serif; background:#f8fafc }
-.tab-content { display:none }
-.tab-content.active { display:block }
-.status { font-size:12px; padding:4px 10px; border-radius:999px; font-weight:700 }
-.en_revision{background:#fef3c7;color:#92400e}
-.pago_confirmado{background:#dcfce7;color:#166534}
-.en_camino{background:#e0e7ff;color:#3730a3}
-.finalizado{background:#f1f5f9;color:#475569}
-.cancelada{background:#fee2e2;color:#991b1b}
+.status{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.en_revision{background:#fde68a}
+.pago_confirmado{background:#bbf7d0}
+.en_camino{background:#c7d2fe}
+.finalizado{background:#e5e7eb}
+.cancelada{background:#fecaca}
 </style>
 </head>
 
-<body class="pb-24">
+<body class="bg-slate-100">
 
-<!-- HEADER -->
-<header class="fixed top-0 w-full z-50 bg-black/90 backdrop-blur text-white">
-<div class="max-w-6xl mx-auto p-4 flex justify-between items-center">
-  <b class="text-xl">VENDOR</b>
-
-  <div id="authButtons" class="flex gap-2">
-    <button onclick="showLogin()">Iniciar sesión</button>
-    <button onclick="showRegister()" class="bg-white text-black px-3 py-1 rounded">Registrar</button>
-    <button onclick="loginGoogle()"><i class="fab fa-google"></i></button>
-  </div>
-
-  <div id="userInfo" class="hidden gap-3 items-center">
-    <span id="userEmail" class="text-sm text-zinc-400"></span>
-    <button onclick="openConfig()"><i class="fa fa-user-cog"></i></button>
-    <button onclick="logout()" class="text-red-400">Salir</button>
-  </div>
-</div>
-</header>
-
-<!-- MAIN -->
-<div class="max-w-6xl mx-auto mt-28 px-4 hidden" id="dashboard">
-
-<!-- TABS -->
-<div class="flex gap-2 mb-8">
-<button class="tab bg-black text-white px-4 py-2 rounded" data-tab="products">Productos</button>
-<button class="tab bg-zinc-200 px-4 py-2 rounded" data-tab="cart">Carrito</button>
-<button class="tab bg-zinc-200 px-4 py-2 rounded" data-tab="orders">Mis compras</button>
-<button class="tab bg-zinc-200 px-4 py-2 rounded hidden" data-tab="admin">Admin</button>
-</div>
-
-<!-- PRODUCTOS -->
-<div id="products" class="tab-content active grid grid-cols-1 md:grid-cols-3 gap-6"></div>
-
-<!-- CARRITO -->
-<div id="cart" class="tab-content">
-<div id="cartList"></div>
-<p class="font-bold mt-4">Total: $<span id="cartTotal">0</span></p>
-<button onclick="openPurchase()" class="bg-indigo-600 text-white px-4 py-2 mt-4 rounded">Comprar</button>
-</div>
-
-<!-- COMPRAS -->
-<div id="orders" class="tab-content space-y-4"></div>
-
-<!-- ADMIN -->
-<div id="admin" class="tab-content space-y-6">
-<h2 class="text-xl font-bold">Subir producto</h2>
-<input id="pName" placeholder="Nombre" class="border p-2 w-full">
-<textarea id="pDesc" placeholder="Descripción" class="border p-2 w-full"></textarea>
-<input id="pPrice" type="number" placeholder="Precio" class="border p-2 w-full">
-<input id="pMedia" type="file">
-<button onclick="uploadProduct()" class="bg-black text-white px-4 py-2 rounded">Subir</button>
-
-<h2 class="text-xl font-bold mt-8">Solicitudes</h2>
-<div id="adminOrders"></div>
-</div>
-
-</div>
-
-<!-- MODAL -->
 <div id="modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
-<div class="bg-white p-6 rounded max-w-lg w-full relative">
-<button onclick="closeModal()" class="absolute top-2 right-3 text-xl">&times;</button>
-<div id="modalBody"></div>
-</div>
+  <div class="bg-white p-6 rounded max-w-lg w-full relative">
+    <button onclick="closeModal()" class="absolute right-3 top-2 text-xl">&times;</button>
+    <div id="modalBody"></div>
+  </div>
 </div>
 
 <script>
-// ---------------- FIREBASE ----------------
+// FIREBASE
 firebase.initializeApp({
   apiKey:"AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
   authDomain:"proyectovendor.firebaseapp.com",
   projectId:"proyectovendor"
 });
-const db=firebase.firestore();
+
 const auth=firebase.auth();
-const provider=new firebase.auth.GoogleAuthProvider();
+const db=firebase.firestore();
 
-// ---------------- GLOBAL ----------------
-let cart=JSON.parse(localStorage.getItem("cart"))||[];
-let role="usuario";
-
-// ---------------- AUTH ----------------
-auth.onAuthStateChanged(async user=>{
- if(user){
-  document.getElementById("authButtons").style.display="none";
-  document.getElementById("userInfo").style.display="flex";
-  document.getElementById("dashboard").style.display="block";
-  document.getElementById("userEmail").innerText=user.email;
-  role=(user.email==="admin@vendors.com")?"admin":"usuario";
-  if(role==="admin")document.querySelector("[data-tab='admin']").classList.remove("hidden");
-  loadProducts(); loadOrders(); if(role==="admin")loadAdminOrders();
- }
-});
-
-// ---------------- MODAL ----------------
+// MODAL
 function openModal(c){modal.style.display="flex";modalBody.innerHTML=c}
 function closeModal(){modal.style.display="none"}
 
-// ---------------- LOGIN ----------------
-function showLogin(){
-openModal(`
-<h3 class="font-bold text-xl mb-3">Iniciar sesión</h3>
-<input id="lEmail" placeholder="Email" class="border p-2 w-full mb-2">
-<input id="lPass" type="password" placeholder="Contraseña" class="border p-2 w-full mb-4">
-<button onclick="login()" class="bg-black text-white w-full py-2">Entrar</button>
-<button onclick="resetPass()" class="text-sm mt-2 underline">Olvidé mi contraseña</button>
-`)
-}
-function showRegister(){
-openModal(`
-<h3 class="font-bold text-xl mb-3">Crear cuenta</h3>
-<input id="rEmail" placeholder="Email" class="border p-2 w-full mb-2">
-<input id="rPass" type="password" placeholder="Contraseña" class="border p-2 w-full mb-4">
-<button onclick="register()" class="bg-black text-white w-full py-2">Registrar</button>
-`)
-}
-function login(){auth.signInWithEmailAndPassword(lEmail.value,lPass.value).then(closeModal)}
-function register(){auth.createUserWithEmailAndPassword(rEmail.value,rPass.value).then(closeModal)}
-function loginGoogle(){auth.signInWithPopup(provider).then(closeModal)}
-function logout(){auth.signOut().then(()=>location.reload())}
-function resetPass(){auth.sendPasswordResetEmail(lEmail.value).then(()=>alert("Correo enviado"))}
+// ================= ORDENES =================
 
-// ---------------- TABS ----------------
-document.querySelectorAll(".tab").forEach(b=>{
- b.onclick=()=>{document.querySelectorAll(".tab-content").forEach(t=>t.classList.remove("active"));
- document.getElementById(b.dataset.tab).classList.add("active")}
-});
+function showOrderDetails(id, isAdmin=false){
+  db.collection("orders").doc(id).get().then(doc=>{
+    const o=doc.data();
+    const editable=o.status==="en_revision";
 
-// ---------------- PRODUCTS ----------------
-function loadProducts(){
- db.collection("products").onSnapshot(s=>{
-  products.innerHTML="";
-  s.forEach(d=>{
-   const p=d.data();
-   products.innerHTML+=`
-   <div class="bg-white p-4 rounded shadow">
-   ${p.media?`<img src="${p.media}" class="h-40 w-full object-cover mb-2">`:''}
-   <b>${p.name}</b>
-   <p>${p.description}</p>
-   <p class="font-bold">$${p.price}</p>
-   <button onclick="addToCart('${d.id}','${p.name}',${p.price})" class="bg-indigo-600 text-white w-full mt-2">Añadir</button>
-   </div>`;
-  })
- })
-}
-function uploadProduct(){
- const f=new FormData();
- f.append("file",pMedia.files[0]);
- f.append("upload_preset","vendors_preset");
- fetch("https://api.cloudinary.com/v1_1/df79cjklp/upload",{method:"POST",body:f})
- .then(r=>r.json()).then(j=>{
-  db.collection("products").add({name:pName.value,description:pDesc.value,price:+pPrice.value,media:j.secure_url})
- })
+    let products=o.products.map(p=>`<li>${p.name} - $${p.price}</li>`).join("");
+
+    openModal(`
+      <h3 class="text-xl font-bold mb-3">Detalle de compra</h3>
+
+      <p><b>Email:</b> ${o.email}</p>
+      <p><b>Estado:</b> <span class="status ${o.status}">${o.status}</span></p>
+      <p><b>Total:</b> $${o.total}</p>
+
+      <h4 class="font-bold mt-4">Productos</h4>
+      <ul class="list-disc ml-5">${products}</ul>
+
+      ${o.cancelReason?`<p class="text-red-600 mt-3"><b>Motivo:</b> ${o.cancelReason}</p>`:""}
+
+      ${editable ? `
+        <button onclick="editOrder('${id}')" class="mt-4 bg-indigo-600 text-white px-4 py-2 rounded">
+          Editar datos
+        </button>`:""}
+
+      ${editable && !isAdmin ? `
+        <button onclick="cancelUser('${id}')" class="mt-2 text-red-600 underline">
+          Cancelar compra
+        </button>`:""}
+    `);
+  });
 }
 
-// ---------------- CART ----------------
-function addToCart(id,name,price){
- cart.push({id,name,price});
- localStorage.setItem("cart",JSON.stringify(cart));
- renderCart();
-}
-function renderCart(){
- cartList.innerHTML="";
- let total=0;
- cart.forEach(p=>{total+=p.price; cartList.innerHTML+=`<div>${p.name} - $${p.price}</div>`})
- cartTotal.innerText=total;
-}
-renderCart();
+// EDITAR SOLO SI ESTA EN REVISION
+function editOrder(id){
+  db.collection("orders").doc(id).get().then(doc=>{
+    const o=doc.data();
+    if(o.status!=="en_revision"){
+      alert("No se puede editar esta compra");
+      return;
+    }
 
-// ---------------- PURCHASE ----------------
-function openPurchase(){
- let total=cart.reduce((s,p)=>s+p.price,0);
- openModal(`
- <h3 class="font-bold mb-2">Pago</h3>
- <p>Total: <b>$${total}</b></p>
- <p class="mt-2">Yappy: <b>+507 6389-2022</b></p>
- <p>ACH Banco General<br>0454966165208<br>Emanuel Cedeño</p>
- <button onclick="confirmPurchase(${total})" class="bg-black text-white w-full mt-4">Confirmar</button>
- `)
-}
-function confirmPurchase(total){
- db.collection("orders").add({
-  user:auth.currentUser.uid,
-  email:auth.currentUser.email,
-  products:cart,
-  total,
-  status:"en_revision",
-  created:firebase.firestore.FieldValue.serverTimestamp()
- }).then(()=>{
-  cart=[];localStorage.removeItem("cart");renderCart();closeModal();
- })
+    let productInputs=o.products.map((p,i)=>`
+      <input id="p${i}" value="${p.name}" class="border p-1 w-full mb-1">
+    `).join("");
+
+    openModal(`
+      <h3 class="font-bold mb-2">Editar productos</h3>
+      ${productInputs}
+      <button onclick="saveEdit('${id}',${o.products.length})" class="bg-black text-white px-4 py-2 mt-3">
+        Guardar cambios
+      </button>
+    `);
+  });
 }
 
-// ---------------- USER ORDERS ----------------
-function loadOrders(){
- db.collection("orders").where("user","==",auth.currentUser.uid).onSnapshot(s=>{
-  orders.innerHTML="";
-  s.forEach(d=>{
-   const o=d.data();
-   orders.innerHTML+=`
-   <div class="bg-white p-4 rounded shadow">
-   <span class="status ${o.status}">${o.status}</span>
-   <p>Total: $${o.total}</p>
-   ${o.status!=="finalizado"?`<button onclick="cancelUser('${d.id}')">Cancelar</button>`:''}
-   </div>`;
-  })
- })
+function saveEdit(id,count){
+  let products=[];
+  for(let i=0;i<count;i++){
+    products.push({name:document.getElementById("p"+i).value,price:0});
+  }
+  db.collection("orders").doc(id).update({products}).then(closeModal);
 }
+
+// ================= CANCELACIONES =================
+
 function cancelUser(id){
- if(confirm("Cancelar compra?"))
- db.collection("orders").doc(id).update({status:"cancelada",cancelReason:"Cancelada por el usuario"})
+  if(confirm("¿Cancelar esta compra?")){
+    db.collection("orders").doc(id).update({
+      status:"cancelada",
+      cancelReason:"Cancelada por el usuario"
+    }).then(closeModal);
+  }
 }
 
-// ---------------- ADMIN ----------------
-function loadAdminOrders(){
- db.collection("orders").onSnapshot(s=>{
-  adminOrders.innerHTML="";
-  s.forEach(d=>{
-   const o=d.data();
-   adminOrders.innerHTML+=`
-   <div class="bg-white p-4 rounded shadow">
-   <b>${o.email}</b> - $${o.total}
-   <select onchange="changeStatus('${d.id}',this.value)">
-    <option>en_revision</option>
-    <option>pago_confirmado</option>
-    <option>en_camino</option>
-    <option>finalizado</option>
-   </select>
-   <button onclick="cancelAdmin('${d.id}')">Cancelar</button>
-   </div>`;
-  })
- })
-}
-function changeStatus(id,v){db.collection("orders").doc(id).update({status:v})}
 function cancelAdmin(id){
- const r=prompt("Motivo");
- if(r)db.collection("orders").doc(id).update({status:"cancelada",cancelReason:r})
+  const r=prompt("Motivo de cancelación");
+  if(r){
+    db.collection("orders").doc(id).update({
+      status:"cancelada",
+      cancelReason:r
+    });
+  }
+}
+
+// ================= ADMIN =================
+
+function loadAdminOrders(){
+  db.collection("orders").onSnapshot(s=>{
+    adminOrders.innerHTML="";
+    s.forEach(d=>{
+      const o=d.data();
+      adminOrders.innerHTML+=`
+        <div class="bg-white p-4 rounded shadow">
+          <b>${o.email}</b>
+          <span class="status ${o.status}">${o.status}</span>
+
+          <div class="mt-2 flex gap-2">
+            <button onclick="showOrderDetails('${d.id}',true)" class="underline">Ver detalles</button>
+
+            ${o.status!=="finalizado" && o.status!=="cancelada" ? `
+            <select onchange="db.collection('orders').doc('${d.id}').update({status:this.value})">
+              <option ${o.status=="en_revision"?"selected":""}>en_revision</option>
+              <option ${o.status=="pago_confirmado"?"selected":""}>pago_confirmado</option>
+              <option ${o.status=="en_camino"?"selected":""}>en_camino</option>
+              <option ${o.status=="finalizado"?"selected":""}>finalizado</option>
+            </select>
+            <button onclick="cancelAdmin('${d.id}')" class="text-red-600">Cancelar</button>
+            `:""}
+          </div>
+        </div>
+      `;
+    });
+  });
 }
 </script>
+
 </body>
 </html>
