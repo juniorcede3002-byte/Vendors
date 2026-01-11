@@ -3,265 +3,522 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendors | Sitio de compras online</title>
+    <title>Vendors Pro | Sistema de Gestión</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
     <style>
-        :root { --primary: #2563eb; --bg: #f8fafc; --text: #1e293b; --border: #e2e8f0; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
-        header { background: #fff; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; width: 100%; z-index: 1000; box-shadow: 0 1px 3px rgba(0,0,0,0.1); box-sizing: border-box; }
-        .container { max-width: 1000px; margin: 80px auto 20px; padding: 0 15px; display: none; }
-        .tabs { display: flex; gap: 5px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
-        .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; background: #fff; cursor: pointer; font-weight: 600; color: #64748b; white-space: nowrap; }
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary: #64748b;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --border: #e2e8f0;
+            --error: #ef4444;
+            --success: #22c55e;
+            --warning: #f59e0b;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding-bottom: 50px;
+        }
+
+        /* --- Header --- */
+        header { 
+            background: var(--card-bg); 
+            padding: 12px 24px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            position: fixed; 
+            top: 0; width: 100%; 
+            z-index: 1000; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+        .logo { font-weight: 800; font-size: 1.4rem; color: var(--primary); letter-spacing: -0.5px; }
+
+        /* --- Layout --- */
+        .main-container { max-width: 1100px; margin: 90px auto 20px; padding: 0 16px; display: none; }
+        
+        .tabs { 
+            display: flex; 
+            background: #fff; 
+            padding: 4px; 
+            border-radius: 12px; 
+            gap: 4px; 
+            margin-bottom: 24px; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            overflow-x: auto;
+        }
+        .tab-btn { 
+            flex: 1; 
+            padding: 12px 16px; 
+            border: none; 
+            border-radius: 8px; 
+            background: transparent; 
+            cursor: pointer; 
+            font-weight: 600; 
+            color: var(--secondary);
+            white-space: nowrap;
+            transition: 0.2s;
+        }
         .tab-btn.active { background: var(--primary); color: #fff; }
-        .card { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px; }
+
+        /* --- Cards & UI Elements --- */
+        .card { 
+            background: var(--card-bg); 
+            padding: 24px; 
+            border-radius: 16px; 
+            border: 1px solid var(--border); 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            margin-bottom: 24px;
+        }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: #475569; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; }
-        .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; transition: 0.2s; }
+
+        /* --- Forms --- */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group.full { grid-column: 1 / -1; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--secondary); }
+        input, select, textarea { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1px solid var(--border); 
+            border-radius: 10px; 
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            background: #fcfcfc;
+            transition: border 0.3s;
+        }
+        input:focus { border-color: var(--primary); outline: none; background: #fff; }
+
+        .btn { 
+            padding: 12px 20px; 
+            border-radius: 10px; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: 600; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center;
+            gap: 8px;
+            transition: 0.3s;
+        }
         .btn-primary { background: var(--primary); color: #fff; width: 100%; }
-        .btn-google { background: #fff; border: 1px solid var(--border); width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; }
-        .order-item { border-left: 4px solid var(--primary); padding: 15px; background: #f1f5f9; border-radius: 0 8px 8px 0; margin-bottom: 15px; }
-        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; float: right; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; padding: 10px; }
-        .modal-content { background: #fff; padding: 25px; border-radius: 16px; width: 100%; max-width: 450px; position: relative; max-height: 90vh; overflow-y: auto; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-ghost { background: #f1f5f9; color: var(--text); }
+        .btn-google { background: #fff; border: 1px solid var(--border); width: 100%; margin-top: 12px; }
+
+        /* --- Orders & Store --- */
+        .order-card { 
+            border: 1px solid var(--border); 
+            border-radius: 12px; 
+            padding: 16px; 
+            margin-bottom: 12px;
+            position: relative;
+        }
+        .badge { 
+            padding: 4px 10px; 
+            border-radius: 6px; 
+            font-size: 0.75rem; 
+            font-weight: 700; 
+            text-transform: uppercase;
+        }
+        .status-pendiente { background: #fef3c7; color: #92400e; }
+        .status-revision { background: #dbeafe; color: #1e40af; }
+        .status-entregado { background: #dcfce7; color: #15803d; }
+
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        .product-item { background: #fff; border-radius: 16px; border: 1px solid var(--border); overflow: hidden; }
+        .product-img { width: 100%; height: 180px; object-fit: cover; }
+        .product-info { padding: 15px; }
+
+        /* --- Modal --- */
+        .modal { 
+            display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); 
+            backdrop-filter: blur(4px); z-index: 2000; justify-content: center; align-items: center; padding: 16px; 
+        }
+        .modal-content { 
+            background: #fff; padding: 32px; border-radius: 20px; width: 100%; max-width: 500px; 
+            position: relative; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
 <header>
-    <div style="font-weight: 800; color: var(--primary);">VENDORS</div>
-    <div id="authButtons" style="display: flex; gap: 8px;">
-        <button class="btn btn-primary" onclick="showLoginForm()">Iniciar Sesión</button>
+    <div class="logo"><i class="fa-solid fa-shield-halved"></i> VENDORS</div>
+    <div id="authHeader">
+        <button class="btn btn-ghost" onclick="showAuthModal('login')">Entrar</button>
     </div>
-    <div id="userInfo" style="display:none; gap: 10px;">
-        <button class="btn" style="background: #f1f5f9;" onclick="openConfig()"><i class="fa-solid fa-gear"></i></button>
-        <button class="btn" style="background: #fee2e2; color: #ef4444;" onclick="logout()"><i class="fa-solid fa-power-off"></i></button>
+    <div id="userHeader" style="display:none; gap: 8px;">
+        <button class="btn btn-ghost" onclick="openProfile()"><i class="fa-solid fa-circle-user"></i></button>
+        <button class="btn btn-ghost" style="color:var(--error)" onclick="handleLogout()"><i class="fa-solid fa-power-off"></i></button>
     </div>
 </header>
 
-<div class="container" id="dashboard">
+<div class="main-container" id="app">
     <div class="tabs">
-        <button class="tab-btn active" data-tab="productsTab">Tienda</button>
-        <button class="tab-btn" data-tab="cartTab">Carrito</button>
-        <button class="tab-btn" data-tab="ordersTab">Mis Compras</button>
-        <button class="tab-btn" id="adminTabBtn" data-tab="adminTab" style="display:none;">Admin</button>
+        <button class="tab-btn active" data-tab="tab-store">Tienda</button>
+        <button class="tab-btn" data-tab="tab-cart">Carrito (<span id="cartCount">0</span>)</button>
+        <button class="tab-btn" data-tab="tab-orders">Historial</button>
+        <button class="tab-btn" id="btnAdmin" data-tab="tab-admin" style="display:none;">Admin</button>
     </div>
 
-    <div id="productsTab" class="tab-content active">
-        <div id="productsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px;"></div>
-    </div>
+    <section id="tab-store" class="tab-content active">
+        <div class="product-grid" id="storeContainer"></div>
+    </section>
 
-    <div id="cartTab" class="tab-content">
+    <section id="tab-cart" class="tab-content">
         <div class="card">
-            <h3>Mi Carrito</h3>
-            <div id="cartList"></div>
-            <button class="btn btn-primary" style="margin-top:20px" onclick="openCheckoutForm()">Finalizar Compra</button>
+            <h3>Tu Carrito</h3>
+            <div id="cartItems"></div>
+            <div id="cartTotal" style="margin: 20px 0; font-weight: 800; font-size: 1.2rem; text-align: right;"></div>
+            <button class="btn btn-primary" onclick="openCheckout()">Continuar al Pago</button>
         </div>
-    </div>
+    </section>
 
-    <div id="ordersTab" class="tab-content">
+    <section id="tab-orders" class="tab-content">
         <div class="card">
-            <h3>Historial de Pedidos</h3>
-            <div id="purchaseHistory">Cargando...</div>
+            <h3>Mis Compras</h3>
+            <div id="userOrdersList"></div>
         </div>
-    </div>
+    </section>
 
-    <div id="adminTab" class="tab-content">
+    <section id="tab-admin" class="tab-content">
         <div class="card">
-            <h3>Panel de Control</h3>
+            <h3><i class="fa-solid fa-plus"></i> Agregar Producto</h3>
+            <div class="form-grid">
+                <div class="form-group"><label>Nombre</label><input id="pName"></div>
+                <div class="form-group"><label>Precio ($)</label><input id="pPrice" type="number"></div>
+                <div class="form-group full"><label>Imagen</label><input type="file" id="pFile"></div>
+                <button class="btn btn-primary full" onclick="handleUploadProduct()">Publicar Producto</button>
+            </div>
+        </div>
+        <div class="card">
+            <h3><i class="fa-solid fa-gears"></i> Gestión Global de Pedidos</h3>
             <div id="adminOrdersList"></div>
         </div>
-    </div>
+    </section>
 </div>
 
 <div id="modal" class="modal">
     <div class="modal-content">
-        <button onclick="closeModal()" style="position:absolute; top:15px; right:15px; border:none; background:none; font-size:1.2rem; cursor:pointer;">&times;</button>
+        <button onclick="closeModal()" style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:1.5rem; cursor:pointer; color:var(--secondary)">&times;</button>
         <div id="modalBody"></div>
     </div>
 </div>
 
 <script>
-// --- CONFIGURACIÓN ---
-firebase.initializeApp({
+// --- CORE CONFIG ---
+const firebaseConfig = {
     apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
     authDomain: "proyectovendor.firebaseapp.com",
     projectId: "proyectovendor"
-});
+};
+firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
-const provider = new firebase.auth.GoogleAuthProvider();
+const googleProvider = new firebase.auth.GoogleAuthProvider();
 
-let cart = JSON.parse(localStorage.getItem("cart")) || [];
-let role = "usuario";
+let currentCart = JSON.parse(localStorage.getItem('vendors_cart')) || [];
+let userRole = 'user';
 
-// --- AUTH LÓGICA ---
-auth.onAuthStateChanged(user => {
-    if(user){ 
-        initUser(user); 
+// --- AUTH HANDLER ---
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        userRole = (user.email === 'admin@vendors.com') ? 'admin' : 'user';
+        document.getElementById('authHeader').style.display = 'none';
+        document.getElementById('userHeader').style.display = 'flex';
+        document.getElementById('app').style.display = 'block';
+        if(userRole === 'admin') document.getElementById('btnAdmin').style.display = 'block';
+        
+        initApp();
     } else {
-        document.getElementById("authButtons").style.display="flex";
-        document.getElementById("userInfo").style.display="none";
-        document.getElementById("dashboard").style.display="none";
+        document.getElementById('authHeader').style.display = 'block';
+        document.getElementById('userHeader').style.display = 'none';
+        document.getElementById('app').style.display = 'none';
     }
 });
 
-async function initUser(user){
-    document.getElementById("authButtons").style.display="none";
-    document.getElementById("userInfo").style.display="flex";
-    role = (user.email === "admin@vendors.com") ? "admin" : "usuario";
-    document.getElementById("dashboard").style.display="block";
-    if(role === "admin") document.getElementById("adminTabBtn").style.display="block";
-    setUpTabs();
-    loadProducts();
-    renderCart();
+function initApp() {
+    loadStore();
     loadOrders();
+    updateCartUI();
+    setupTabs();
 }
 
-function showLoginForm(){
-    openModal(`
-        <h3>Bienvenido</h3>
-        <input id="loginEmail" placeholder="Correo electrónico" style="margin-bottom:10px">
-        <input id="loginPass" type="password" placeholder="Contraseña">
-        <button class="btn btn-primary" style="margin-top:15px" onclick="login()">Entrar</button>
-        <button class="btn-google" onclick="loginWithGoogle()"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18"> Google</button>
-        <p onclick="resetPass()" style="text-align:center; font-size:0.8rem; color:var(--primary); cursor:pointer; margin-top:15px">Olvidé mi contraseña</p>
-    `);
+// --- MODALES (LOGIN / REGISTER / PERFIL) ---
+function showAuthModal(type) {
+    let content = '';
+    if (type === 'login') {
+        content = `
+            <h3>Iniciar Sesión</h3>
+            <div class="form-group"><label>Email</label><input id="authEmail"></div>
+            <div class="form-group"><label>Contraseña</label><input type="password" id="authPass"></div>
+            <button class="btn btn-primary" onclick="handleEmailAuth('login')">Entrar</button>
+            <button class="btn btn-google" onclick="handleGoogleAuth()"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18"> Continuar con Google</button>
+            <p style="text-align:center; margin-top:15px; font-size:0.85rem">
+                <span style="color:var(--primary); cursor:pointer" onclick="handleResetPass()">¿Olvidaste tu contraseña?</span><br><br>
+                ¿No tienes cuenta? <span style="color:var(--primary); cursor:pointer; font-weight:600" onclick="showAuthModal('reg')">Regístrate aquí</span>
+            </p>`;
+    } else {
+        content = `
+            <h3>Crear Cuenta</h3>
+            <div class="form-group"><label>Email</label><input id="authEmail"></div>
+            <div class="form-group"><label>Contraseña</label><input type="password" id="authPass"></div>
+            <button class="btn btn-primary" onclick="handleEmailAuth('reg')">Registrarme</button>
+            <p style="text-align:center; margin-top:15px; font-size:0.85rem" onclick="showAuthModal('login')">¿Ya tienes cuenta? Inicia sesión</p>`;
+    }
+    openModal(content);
 }
 
-function login(){ auth.signInWithEmailAndPassword(document.getElementById("loginEmail").value, document.getElementById("loginPass").value).then(()=>closeModal());}
-function loginWithGoogle(){ auth.signInWithPopup(provider).then(()=>closeModal());}
-function resetPass(){ const email = prompt("Ingresa tu correo:"); if(email) auth.sendPasswordResetEmail(email).then(()=>alert("Correo enviado"));}
-function logout(){ auth.signOut().then(()=>location.reload()); }
-
-// --- CONFIGURACIÓN DETALLADA ---
-async function openConfig(){
+async function openProfile() {
     const user = auth.currentUser;
-    const snap = await db.collection("users").doc(user.uid).get();
-    const data = snap.data() || {};
-    
-    openModal(`
-        <h3>Mi Perfil</h3>
-        <div class="form-group"><label>Nombre</label><input id="cfgName" value="${data.name || ''}"></div>
-        <div class="form-group"><label>Correo</label><input disabled value="${user.email}"></div>
-        <div class="form-group"><label>Ubicación</label><input id="cfgAddr" value="${data.ubicacion || ''}"></div>
-        <div class="form-group"><label>País</label><input id="cfgCountry" value="${data.pais || ''}"></div>
-        <button class="btn btn-primary" onclick="saveConfig()">Guardar Cambios</button>
-        <hr style="margin:20px 0">
-        <button class="btn" style="width:100%; border:1px solid #ddd" onclick="resetPass()">Cambiar Contraseña</button>
-    `);
-}
+    const doc = await db.collection('users').doc(user.uid).get();
+    const data = doc.data() || {};
 
-async function saveConfig(){
-    const user = auth.currentUser;
-    await db.collection("users").doc(user.uid).set({
-        name: document.getElementById("cfgName").value,
-        ubicacion: document.getElementById("cfgAddr").value,
-        pais: document.getElementById("cfgCountry").value,
-        email: user.email
-    }, {merge:true});
-    alert("Datos actualizados");
-    closeModal();
-}
-
-// --- COMPRA Y FORMULARIO ---
-function openCheckoutForm(){
-    if(cart.length === 0) return alert("Carrito vacío");
     openModal(`
-        <h3>Finalizar Compra</h3>
-        <div class="form-group"><label>Nombre</label><input id="chkName"></div>
-        <div class="form-group"><label>Teléfono</label><input id="chkPhone"></div>
-        <div class="form-group"><label>WhatsApp</label><input id="chkWap"></div>
-        <div class="form-group"><label>Ubicación de Entrega</label><textarea id="chkAddr"></textarea></div>
-        <div class="form-group">
-            <label>Método de Pago</label>
-            <select id="chkPay">
-                <option value="yappy">Yappy</option>
-                <option value="ach">ACH / Transferencia</option>
-                <option value="efectivo">Efectivo al recibir</option>
-            </select>
+        <h3>Configuración de Perfil</h3>
+        <div class="form-grid">
+            <div class="form-group full"><label>Nombre Completo</label><input id="pName" value="${data.name || ''}"></div>
+            <div class="form-group"><label>País</label><input id="pCountry" value="${data.country || ''}"></div>
+            <div class="form-group"><label>Ubicación / Ciudad</label><input id="pLoc" value="${data.location || ''}"></div>
+            <div class="form-group full"><label>Correo (No editable)</label><input disabled value="${user.email}"></div>
         </div>
-        <button class="btn btn-primary" onclick="confirmPurchase()">Enviar Pedido</button>
+        <button class="btn btn-primary" onclick="handleUpdateProfile()">Guardar Cambios</button>
+        <button class="btn btn-ghost" style="width:100%; margin-top:10px" onclick="handleResetPass()">Cambiar Contraseña</button>
     `);
 }
 
-async function confirmPurchase(){
-    const order = {
-        userId: auth.currentUser.uid,
-        buyer: document.getElementById("chkName").value,
-        phone: document.getElementById("chkPhone").value,
-        whatsapp: document.getElementById("chkWap").value,
-        email: auth.currentUser.email,
-        address: document.getElementById("chkAddr").value,
-        payment: document.getElementById("chkPay").value,
-        products: cart,
-        status: "pendiente",
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
-    await db.collection("orders").add(order);
-    cart = []; localStorage.removeItem("cart");
-    renderCart(); closeModal();
-    alert("Pedido enviado con éxito");
-}
-
-// --- HISTORIAL (CORRECCIÓN DE CONEXIÓN) ---
-function loadOrders(){
-    // Escuchamos los cambios en tiempo real
-    db.collection("orders").onSnapshot(snap => {
-        let userH = "", adminH = "";
+// --- TIENDA Y CARRITO ---
+async function loadStore() {
+    db.collection('products').onSnapshot(snap => {
+        let html = '';
         snap.forEach(doc => {
-            const o = doc.data();
-            const total = o.products.reduce((s,p)=> s+p.price, 0);
-            const card = `
-                <div class="order-item">
-                    <span class="status-badge" style="background:${o.status==='pendiente'?'#fef3c7':'#dcfce7'}">${o.status}</span>
-                    <b>Pedido #${doc.id.substring(0,5)}</b><br>
-                    <small>${o.buyer} | ${o.address}</small><br>
-                    <strong>Total: $${total}</strong><br>
-                    ${!o.comprobante ? `<button onclick="viewOrder('${doc.id}')" style="font-size:0.7rem; margin-top:5px">Adjuntar Pago</button>` : 'Pago adjunto'}
+            const p = doc.data();
+            html += `
+            <div class="product-item">
+                <img src="${p.image}" class="product-img">
+                <div class="product-info">
+                    <div style="font-weight:600">${p.name}</div>
+                    <div style="color:var(--primary); font-weight:800; margin:5px 0">$${p.price}</div>
+                    <button class="btn btn-primary" style="padding:8px" onclick="addToCart('${doc.id}', '${p.name}', ${p.price})">Añadir</button>
                 </div>
-            `;
-            // Filtro dinámico: Usuario solo ve lo suyo, Admin ve todo
-            if(o.userId === auth.currentUser.uid) userH += card;
-            adminH += card;
+            </div>`;
         });
-        document.getElementById("purchaseHistory").innerHTML = userH || "No tienes pedidos aún.";
-        if(role === "admin") document.getElementById("adminOrdersList").innerHTML = adminH;
+        document.getElementById('storeContainer').innerHTML = html;
     });
 }
 
-async function viewOrder(id){
+function addToCart(id, name, price) {
+    currentCart.push({id, name, price});
+    localStorage.setItem('vendors_cart', JSON.stringify(currentCart));
+    updateCartUI();
+    alert("Producto añadido");
+}
+
+function updateCartUI() {
+    const container = document.getElementById('cartItems');
+    document.getElementById('cartCount').innerText = currentCart.length;
+    if(currentCart.length === 0) {
+        container.innerHTML = '<p>Tu carrito está vacío</p>';
+        document.getElementById('cartTotal').innerText = '';
+        return;
+    }
+    let total = 0;
+    container.innerHTML = currentCart.map((item, idx) => {
+        total += item.price;
+        return `<div style="display:flex; justify-content:space-between; margin-bottom:10px">
+            <span>${item.name}</span>
+            <div><b>$${item.price}</b> <i class="fa-solid fa-trash" style="color:var(--error); margin-left:10px; cursor:pointer" onclick="removeFromCart(${idx})"></i></div>
+        </div>`;
+    }).join('');
+    document.getElementById('cartTotal').innerText = `Total: $${total.toFixed(2)}`;
+}
+
+function removeFromCart(index) {
+    currentCart.splice(index, 1);
+    localStorage.setItem('vendors_cart', JSON.stringify(currentCart));
+    updateCartUI();
+}
+
+// --- PEDIDOS (COMPRA) ---
+function openCheckout() {
+    if(currentCart.length === 0) return alert("El carrito está vacío");
     openModal(`
-        <h3>Adjuntar Comprobante</h3>
-        <p>Sube una foto de tu pago para procesar el pedido.</p>
-        <input type="file" id="fileComp">
-        <button class="btn btn-primary" style="margin-top:15px" onclick="uploadComp('${id}')">Subir Foto</button>
+        <h3>Formulario de Pedido</h3>
+        <div class="form-grid">
+            <div class="form-group full"><label>Nombre Completo</label><input id="oName"></div>
+            <div class="form-group"><label>Teléfono</label><input id="oPhone"></div>
+            <div class="form-group"><label>WhatsApp</label><input id="oWap"></div>
+            <div class="form-group full"><label>Dirección Exacta de Entrega</label><textarea id="oAddr"></textarea></div>
+            <div class="form-group full">
+                <label>Método de Pago</label>
+                <select id="oPay">
+                    <option value="yappy">Yappy (6389-2022)</option>
+                    <option value="ach">ACH - Banco General</option>
+                    <option value="efectivo">Efectivo al Recibir</option>
+                </select>
+            </div>
+            <div class="form-group full"><label>Adjuntar Comprobante (Opcional)</label><input type="file" id="oFile"></div>
+        </div>
+        <button class="btn btn-primary" onclick="handlePlaceOrder()">Confirmar y Enviar Pedido</button>
     `);
 }
 
-async function uploadComp(id){
-    const file = document.getElementById("fileComp").files[0];
-    if(!file) return alert("Selecciona un archivo");
-    // Lógica Cloudinary simplificada
-    const fd = new FormData(); fd.append("file", file); fd.append("upload_preset", "vendors_preset");
-    const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`, {method:"POST", body:fd});
-    const j = await res.json();
-    await db.collection("orders").doc(id).update({comprobante: j.secure_url, status: "revision"});
-    closeModal();
+async function handlePlaceOrder() {
+    const user = auth.currentUser;
+    const file = document.getElementById('oFile').files[0];
+    let fileUrl = '';
+
+    if(file) {
+        const fd = new FormData(); fd.append("file", file); fd.append("upload_preset", "vendors_preset");
+        const res = await fetch("https://api.cloudinary.com/v1_1/df79cjklp/upload", { method: "POST", body: fd });
+        const json = await res.json();
+        fileUrl = json.secure_url;
+    }
+
+    const order = {
+        userId: user.uid,
+        userEmail: user.email,
+        customerName: document.getElementById('oName').value,
+        phone: document.getElementById('oPhone').value,
+        whatsapp: document.getElementById('oWap').value,
+        address: document.getElementById('oAddr').value,
+        paymentMethod: document.getElementById('oPay').value,
+        items: currentCart,
+        status: fileUrl ? 'revision' : 'pendiente',
+        comprobante: fileUrl,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    await db.collection('orders').add(order);
+    currentCart = []; localStorage.removeItem('vendors_cart');
+    updateCartUI(); closeModal();
+    alert("¡Pedido enviado correctamente!");
 }
 
-// --- FUNCIONES AUX ---
-function setUpTabs(){ document.querySelectorAll(".tab-btn").forEach(b => { b.onclick = () => { document.querySelectorAll(".tab-btn, .tab-content").forEach(e=>e.classList.remove("active")); b.classList.add("active"); document.getElementById(b.dataset.tab).classList.add("active"); }; });}
-function openModal(c){ modal.style.display="flex"; modalBody.innerHTML=c; }
-function closeModal(){ modal.style.display="none"; }
-function renderCart(){ const l = document.getElementById("cartList"); l.innerHTML = cart.length ? cart.map(i=>`<div>${i.name} - $${i.price}</div>`).join("") : "Vacío"; }
-function loadProducts(){ db.collection("products").onSnapshot(s => { let h = ""; s.forEach(d => { const p = d.data(); h += `<div class="card" style="padding:10px; text-align:center"><img src="${p.media}" style="width:100%; height:100px; object-fit:cover; border-radius:8px"><b>${p.name}</b><br>$${p.price}<br><button class="btn btn-primary" style="font-size:0.7rem; padding:5px" onclick="addToCart('${d.id}','${p.name}',${p.price},'${p.media}')">Añadir</button></div>`; }); document.getElementById("productsList").innerHTML = h; });}
-function addToCart(id, n, p, m){ cart.push({id,name:n,price:p,media:m}); localStorage.setItem("cart", JSON.stringify(cart)); renderCart(); alert("Añadido"); }
+// --- HISTORIAL ---
+function loadOrders() {
+    db.collection('orders').orderBy('createdAt', 'desc').onSnapshot(snap => {
+        let userHtml = '', adminHtml = '';
+        snap.forEach(doc => {
+            const o = doc.data();
+            const total = o.items.reduce((acc, i) => acc + i.price, 0);
+            const statusClass = `status-${o.status.split(' ')[0]}`;
+            const card = `
+                <div class="order-card">
+                    <div style="display:flex; justify-content:space-between">
+                        <strong>Pedido #${doc.id.substring(0,5)}</strong>
+                        <span class="badge ${statusClass}">${o.status}</span>
+                    </div>
+                    <div style="font-size:0.85rem; margin-top:8px">
+                        ${o.customerName} | $${total.toFixed(2)}<br>
+                        ${o.items.map(i => i.name).join(', ')}
+                    </div>
+                    <button class="btn btn-ghost" style="width:100%; margin-top:10px; font-size:0.75rem" onclick="viewOrderDetails('${doc.id}')">Ver Detalles</button>
+                </div>`;
+            
+            if(o.userId === auth.currentUser.uid) userHtml += card;
+            adminHtml += card;
+        });
+        document.getElementById('userOrdersList').innerHTML = userHtml || '<p>No tienes pedidos.</p>';
+        if(userRole === 'admin') document.getElementById('adminOrdersList').innerHTML = adminHtml;
+    });
+}
+
+async function viewOrderDetails(id) {
+    const doc = await db.collection('orders').doc(id).get();
+    const o = doc.data();
+    let adminOptions = '';
+    
+    if(userRole === 'admin') {
+        adminOptions = `
+        <hr>
+        <label>Cambiar Estado</label>
+        <select onchange="updateOrderStatus('${id}', this.value)">
+            <option value="pendiente" ${o.status==='pendiente'?'selected':''}>Pendiente</option>
+            <option value="revision" ${o.status==='revision'?'selected':''}>En Revisión</option>
+            <option value="entregado" ${o.status==='entregado'?'selected':''}>Entregado</option>
+        </select>`;
+    }
+
+    openModal(`
+        <h3>Detalles del Pedido</h3>
+        <p><b>Dirección:</b> ${o.address}</p>
+        <p><b>Contacto:</b> ${o.phone} (WhatsApp: ${o.whatsapp})</p>
+        <p><b>Pago:</b> ${o.paymentMethod.toUpperCase()}</p>
+        ${o.comprobante ? `<p><b>Comprobante:</b><br><img src="${o.comprobante}" style="width:100%; border-radius:10px"></p>` : `<p>Sin comprobante adjunto.</p>`}
+        ${adminOptions}
+    `);
+}
+
+// --- UTILS & HANDLERS ---
+function openModal(html) { document.getElementById('modal').style.display='flex'; document.getElementById('modalBody').innerHTML=html; }
+function closeModal() { document.getElementById('modal').style.display='none'; }
+function setupTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll('.tab-btn, .tab-content').forEach(el => el.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.tab).classList.add('active');
+        }
+    });
+}
+
+async function handleEmailAuth(mode) {
+    const e = document.getElementById('authEmail').value;
+    const p = document.getElementById('authPass').value;
+    try {
+        if(mode === 'login') await auth.signInWithEmailAndPassword(e, p);
+        else await auth.createUserWithEmailAndPassword(e, p);
+        closeModal();
+    } catch(err) { alert(err.message); }
+}
+
+function handleGoogleAuth() { auth.signInWithPopup(googleProvider).then(()=>closeModal()); }
+function handleLogout() { auth.signOut().then(()=>location.reload()); }
+function handleResetPass() { const e = prompt("Email para restaurar:"); if(e) auth.sendPasswordResetEmail(e).then(()=>alert("Correo enviado")); }
+
+async function handleUpdateProfile() {
+    const u = auth.currentUser;
+    await db.collection('users').doc(u.uid).set({
+        name: document.getElementById('pName').value,
+        country: document.getElementById('pCountry').value,
+        location: document.getElementById('pLoc').value
+    }, {merge:true});
+    alert("Perfil guardado"); closeModal();
+}
+
+async function handleUploadProduct() {
+    const file = document.getElementById('pFile').files[0];
+    const name = document.getElementById('pName').value;
+    const price = document.getElementById('pPrice').value;
+    if(!file || !name || !price) return alert("Faltan datos");
+
+    const fd = new FormData(); fd.append("file", file); fd.append("upload_preset", "vendors_preset");
+    const res = await fetch("https://api.cloudinary.com/v1_1/df79cjklp/upload", { method: "POST", body: fd });
+    const json = await res.json();
+
+    await db.collection('products').add({ name, price: parseFloat(price), image: json.secure_url });
+    alert("Producto publicado");
+}
+
+function updateOrderStatus(id, status) { db.collection('orders').doc(id).update({status}); }
 </script>
 </body>
 </html>
