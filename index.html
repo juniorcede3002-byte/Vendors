@@ -304,10 +304,16 @@ async function loadOrdersHistory() {
 
   db.collection("orders").orderBy("createdAt","desc").onSnapshot(snapshot=>{
     let html="";
+    let count = 0; // Contador de pedidos mostrados
+
     snapshot.forEach(doc=>{
       const o = doc.data();
       const total = o.products.reduce((sum,p)=>sum+p.price,0);
-      if(role!=="admin" && o.user!==userId) return;
+
+      // Filtrar pedidos según rol
+      if(role !== "admin" && o.user !== userId) return; 
+
+      count++;
       html+=`<div class="order">
         <strong>Compra #${doc.id}</strong> - Estado: <span class="status-${o.status.replace(/\s/g,'-')}">${o.status}</span>
         ${role==="admin"?`<select onchange="updateOrderStatus('${doc.id}',this.value)">
@@ -335,10 +341,17 @@ async function loadOrdersHistory() {
         </div>
       </div>`;
     });
-    history.innerHTML = html || "<i>No hay compras</i>";
-    setTimeout(initCanvasSignatures,300);
+
+    // Mostrar mensaje si no hay pedidos
+    if(count === 0){
+      html = "<i>No hay compras registradas</i>";
+    }
+
+    history.innerHTML = html;
+    setTimeout(initCanvasSignatures,300); // Inicializa canvas de firmas
   });
 }
+
 
 // --- Toggle Detalles ---
 function toggleDetails(id){
