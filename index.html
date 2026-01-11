@@ -23,7 +23,6 @@
 
 body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-main); margin: 0; padding: 0; }
 
-/* --- Header --- */
 header { 
     background: #ffffff; padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; 
     align-items: center; position: fixed; top: 0; width: 100%; z-index: 1000; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
@@ -31,33 +30,25 @@ header {
 }
 .logo { font-weight: 800; font-size: 1.2rem; color: var(--primary); display: flex; align-items: center; gap: 8px; }
 
-/* --- Layout --- */
 .container { max-width: 1000px; margin: 90px auto 40px; padding: 0 20px; display: none; }
 
-/* --- Tabs --- */
 .tabs { display: flex; background: #fff; padding: 5px; border-radius: 14px; gap: 4px; margin-bottom: 25px; box-shadow: var(--shadow); overflow-x: auto; }
 .tab-btn { flex: 1; padding: 12px; cursor: pointer; border: none; border-radius: 10px; background: transparent; color: var(--text-muted); font-weight: 600; white-space: nowrap; transition: 0.2s; }
 .tab-btn.active { background: var(--primary); color: #fff; }
 
-/* --- Dashboard Cards --- */
 .card { background: var(--bg-card); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; border: 1px solid var(--border); }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
-/* --- Forms --- */
 .form-group { margin-bottom: 15px; text-align: left; }
 .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
 input, textarea, select { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.95rem; box-sizing: border-box; outline: none; transition: border 0.2s; }
-input:focus { border-color: var(--primary); }
 
-/* --- Buttons --- */
 .btn { padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
 .btn-primary { background: var(--primary); color: white; }
-.btn-primary:hover { background: var(--primary-dark); }
 .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
 .btn-danger { background: #fee2e2; color: #dc2626; }
 
-/* --- Orders & Products --- */
 .order-item { border: 1px solid var(--border); border-radius: 10px; padding: 15px; margin-bottom: 15px; background: #f8fafc; }
 .status-badge { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
 .status-pendiente { background: #fef3c7; color: #92400e; }
@@ -67,21 +58,20 @@ input:focus { border-color: var(--primary); }
 .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
 .product-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
 .product-card img { width: 100%; height: 160px; object-fit: cover; }
-.product-body { padding: 15px; }
 
-/* --- Modal --- */
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
 .modal-content { background: white; padding: 25px; border-radius: 16px; width: 100%; max-width: 500px; position: relative; max-height: 90vh; overflow-y: auto; }
 
-canvas { border: 1px solid var(--border); border-radius: 8px; background: #fff; width: 100%; height: 120px; cursor: crosshair; }
+canvas { border: 1px solid var(--border); border-radius: 8px; background: #fff; width: 100%; height: 120px; }
 </style>
 </head>
 <body>
 
 <header>
   <div class="logo"><i class="fa-solid fa-bag-shopping"></i> VENDORS</div>
-  <div id="authButtons">
-    <button class="btn btn-outline" onclick="showLoginForm()">Iniciar Sesión</button>
+  <div id="authButtons" style="display: flex; gap: 8px;">
+    <button class="btn btn-outline" onclick="showLoginForm()">Entrar</button>
+    <button class="btn btn-primary" onclick="showRegisterForm()">Crear Cuenta</button>
   </div>
   <div id="userInfo" style="display:none; gap: 10px;">
     <button class="btn btn-outline" onclick="openConfig()"><i class="fa-solid fa-user-gear"></i></button>
@@ -100,17 +90,16 @@ canvas { border: 1px solid var(--border); border-radius: 8px; background: #fff; 
   <div id="productsTab" class="tab-content active">
     <div class="card" style="display: flex; gap: 10px;">
         <input id="search" placeholder="Buscar producto..." oninput="filterProducts()">
-        <input id="maxPrice" type="number" style="width: 150px" placeholder="Precio Máx" oninput="filterProducts()">
     </div>
     <div id="productsList" class="product-grid"></div>
   </div>
 
   <div id="cartTab" class="tab-content">
     <div class="card">
-        <h3><i class="fa-solid fa-cart-shopping"></i> Tu Pedido</h3>
-        <div id="cartList"><i>El carrito está vacío</i></div>
+        <h3>Tu Carrito</h3>
+        <div id="cartList"></div>
         <div style="margin-top: 20px; display: flex; gap: 10px;">
-            <button class="btn btn-primary" onclick="openCheckoutForm()">Proceder al Pago</button>
+            <button class="btn btn-primary" onclick="openCheckoutForm()">Finalizar Compra</button>
             <button class="btn btn-outline" onclick="emptyCart()">Vaciar</button>
         </div>
     </div>
@@ -118,35 +107,21 @@ canvas { border: 1px solid var(--border); border-radius: 8px; background: #fff; 
 
   <div id="ordersTab" class="tab-content">
     <div class="card">
-        <h3><i class="fa-solid fa-clock-rotate-left"></i> Historial</h3>
-        <div id="purchaseHistory">Cargando tus órdenes...</div>
+        <h3>Historial de Pedidos</h3>
+        <div id="purchaseHistory">Cargando...</div>
     </div>
   </div>
 
   <div id="adminTab" class="tab-content">
     <div class="card">
-        <h3><i class="fa-solid fa-upload"></i> Subir Producto</h3>
-        <div class="form-group">
-            <label>Nombre del Producto</label>
-            <input id="name" placeholder="Ej: Camiseta Original">
-        </div>
-        <div class="form-group">
-            <label>Descripción</label>
-            <textarea id="description" placeholder="Detalles del producto..."></textarea>
-        </div>
-        <div class="form-group">
-            <label>Precio ($)</label>
-            <input id="price" type="number" placeholder="0.00">
-        </div>
-        <div class="form-group">
-            <label>Imagen</label>
-            <input id="media" type="file">
-        </div>
-        <button class="btn btn-primary" onclick="uploadProduct()">Publicar Producto</button>
+        <h3>Subir Nuevo Producto</h3>
+        <div class="form-group"><label>Nombre</label><input id="name"></div>
+        <div class="form-group"><label>Precio</label><input id="price" type="number"></div>
+        <div class="form-group"><label>Imagen</label><input id="media" type="file"></div>
+        <button class="btn btn-primary" onclick="uploadProduct()">Publicar</button>
     </div>
-
     <div class="card">
-        <h3><i class="fa-solid fa-list-check"></i> Todas las Órdenes (Admin)</h3>
+        <h3>Gestión de Pedidos</h3>
         <div id="adminOrdersList"></div>
     </div>
   </div>
@@ -160,7 +135,6 @@ canvas { border: 1px solid var(--border); border-radius: 8px; background: #fff; 
 </div>
 
 <script>
-// --- CONFIGURACIÓN FIREBASE ---
 firebase.initializeApp({
   apiKey: "AIzaSyBXYrQwpfcuAili1HvrmDGEWKjj_2j_lzY",
   authDomain: "proyectovendor.firebaseapp.com",
@@ -168,15 +142,15 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 const auth = firebase.auth();
-const provider = new firebase.auth.GoogleAuthProvider();
 
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 let role = "usuario";
 
-// --- AUTHENTICATION ---
+// --- AUTH ---
 auth.onAuthStateChanged(user => {
-  if(user){ initUser(user); }
-  else { 
+  if(user){ 
+    initUser(user); 
+  } else { 
     document.getElementById("authButtons").style.display="flex"; 
     document.getElementById("userInfo").style.display="none"; 
     document.getElementById("dashboard").style.display="none"; 
@@ -188,286 +162,169 @@ async function initUser(user){
   document.getElementById("userInfo").style.display="flex";
   role = (user.email === "admin@vendors.com") ? "admin" : "usuario";
   document.getElementById("dashboard").style.display="block";
-  
   if(role === "admin") document.getElementById("adminTabBtn").style.display="block";
-  
   setUpTabs();
   loadProducts();
   renderCart();
-  loadOrders(); // Carga unificada de órdenes
+  loadOrders();
 }
 
 function showLoginForm(){
-  openModal(`
-    <h3>Iniciar Sesión</h3>
-    <div class="form-group"><label>Email</label><input id="loginEmail" type="email"></div>
-    <div class="form-group"><label>Contraseña</label><input id="loginPass" type="password"></div>
-    <button class="btn btn-primary" style="width:100%" onclick="login()">Entrar</button>
-    <button class="btn btn-outline" style="width:100%; margin-top:10px;" onclick="loginWithGoogle()"><i class="fa-brands fa-google"></i> Google</button>
-  `);
+  openModal(`<h3>Iniciar Sesión</h3>
+    <input id="loginEmail" placeholder="Email" style="margin-bottom:10px">
+    <input id="loginPass" type="password" placeholder="Contraseña">
+    <button class="btn btn-primary" style="width:100%; margin-top:15px" onclick="login()">Entrar</button>`);
 }
 
-function login(){
-  const email = document.getElementById("loginEmail").value;
-  const pass = document.getElementById("loginPass").value;
-  auth.signInWithEmailAndPassword(email, pass).then(() => closeModal()).catch(e => alert(e.message));
+function showRegisterForm(){
+  openModal(`<h3>Crear Cuenta</h3>
+    <input id="regEmail" placeholder="Email" style="margin-bottom:10px">
+    <input id="regPass" type="password" placeholder="Contraseña">
+    <button class="btn btn-primary" style="width:100%; margin-top:15px" onclick="register()">Registrarme</button>`);
 }
-function loginWithGoogle(){ auth.signInWithPopup(provider).then(()=>closeModal()); }
+
+function login(){ auth.signInWithEmailAndPassword(document.getElementById("loginEmail").value, document.getElementById("loginPass").value).then(()=>closeModal());}
+function register(){ auth.createUserWithEmailAndPassword(document.getElementById("regEmail").value, document.getElementById("regPass").value).then(()=>closeModal());}
 function logout(){ auth.signOut().then(()=>location.reload()); }
 
-// --- CONFIGURACIÓN PERFIL ---
-async function openConfig(){
-  const user = auth.currentUser;
-  const snap = await db.collection("users").doc(user.uid).get();
-  const data = snap.data() || {};
-  
-  openModal(`
-    <h3>Mi Perfil</h3>
-    <div class="form-group"><label>Nombre Completo</label><input id="cfgName" value="${data.name || ''}"></div>
-    <div class="form-group"><label>País</label><input id="cfgCountry" value="${data.pais || ''}"></div>
-    <div class="form-group"><label>Residencia</label><input id="cfgRes" value="${data.residencia || ''}"></div>
-    <button class="btn btn-primary" style="width:100%" onclick="saveConfig()">Actualizar Datos</button>
-  `);
-}
-
-async function saveConfig(){
-  const user = auth.currentUser;
-  const data = {
-    name: document.getElementById("cfgName").value,
-    pais: document.getElementById("cfgCountry").value,
-    residencia: document.getElementById("cfgRes").value
-  };
-  await db.collection("users").doc(user.uid).set(data, {merge:true});
-  showModalMessage("Perfil actualizado correctamente");
-}
-
-// --- GESTIÓN DE PRODUCTOS ---
-async function loadProducts(){
-  db.collection("products").onSnapshot(snap => {
-    let html = "";
-    snap.forEach(doc => {
-      const p = doc.data();
-      html += `
-        <div class="product-card">
-          <img src="${p.media || 'https://via.placeholder.com/150'}">
-          <div class="product-body">
-            <div style="font-weight:700;">${p.name}</div>
-            <div style="color:var(--primary); font-weight:800; margin: 5px 0;">$${p.price}</div>
-            <button class="btn btn-primary" style="width:100%; font-size:0.8rem" onclick="addToCart('${doc.id}','${p.name}',${p.price},'${p.media}')">Añadir al Carrito</button>
-            ${role==='admin' ? `<button class="btn btn-danger" style="width:100%; margin-top:5px; font-size:0.8rem" onclick="deleteProduct('${doc.id}')">Eliminar</button>` : ''}
-          </div>
-        </div>`;
-    });
-    document.getElementById("productsList").innerHTML = html;
-  });
-}
-
-async function uploadProduct(){
-  const name = document.getElementById("name").value;
-  const price = parseFloat(document.getElementById("price").value);
-  const file = document.getElementById("media").files[0];
-  if(!name || !price) return alert("Llena los campos");
-
-  let url = "";
-  if(file){
-    const fd = new FormData(); fd.append("file", file); fd.append("upload_preset", "vendors_preset");
-    const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`, {method:"POST", body:fd});
-    const json = await res.json(); url = json.secure_url;
-  }
-  await db.collection("products").add({name, price, media:url, description: document.getElementById("description").value});
-  showModalMessage("Producto subido");
-}
-
-// --- CARRITO ---
-function addToCart(id, name, price, media){
-  cart.push({id, name, price, media});
-  localStorage.setItem("cart", JSON.stringify(cart));
-  renderCart();
-  showModalMessage("Añadido!");
-}
-
-function renderCart(){
-  const list = document.getElementById("cartList");
-  if(cart.length === 0){ list.innerHTML = "<i>Carrito vacío</i>"; return; }
-  let html = "", total = 0;
-  cart.forEach((item, i) => {
-    html += `<div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span>${item.name}</span> <b>$${item.price}</b></div>`;
-    total += item.price;
-  });
-  html += `<hr><div style="text-align:right; font-weight:800;">Total: $${total.toFixed(2)}</div>`;
-  list.innerHTML = html;
-}
-
-function emptyCart(){ cart = []; localStorage.removeItem("cart"); renderCart(); }
-
+// --- COMPRA ---
 function openCheckoutForm(){
-  if(cart.length === 0) return;
+  if(cart.length === 0) return alert("Carrito vacío");
   openModal(`
-    <h3>Finalizar Pedido</h3>
-    <div class="form-group"><label>Nombre de quien recibe</label><input id="chkName"></div>
-    <div class="form-group"><label>Dirección Exacta</label><textarea id="chkAddr"></textarea></div>
+    <h3>Datos de Entrega</h3>
+    <div class="form-group"><label>Nombre Completo</label><input id="chkName"></div>
+    <div class="form-group"><label>Teléfono Movil</label><input id="chkPhone"></div>
+    <div class="form-group"><label>WhatsApp</label><input id="chkWap"></div>
+    <div class="form-group"><label>Correo Electrónico</label><input id="chkEmail" value="${auth.currentUser.email}"></div>
+    <div class="form-group"><label>Ubicación exacta de entrega</label><textarea id="chkAddr"></textarea></div>
     <div class="form-group">
-        <label>Forma de Pago</label>
-        <select id="chkPay" onchange="document.getElementById('payI').innerText = this.value === 'yappy' ? 'Yappy al 63892022' : 'ACH Banco General'">
-            <option value="yappy">Yappy</option>
-            <option value="ach">Transferencia ACH</option>
+        <label>Método de Pago</label>
+        <select id="chkPay">
+            <option value="yappy">Yappy (+507 63892022)</option>
+            <option value="ach">ACH (Banco General)</option>
+            <option value="efectivo">Efectivo al recibir</option>
         </select>
     </div>
-    <p id="payI" style="font-size:0.8rem; color:var(--primary);">Yappy al 63892022</p>
-    <button class="btn btn-primary" style="width:100%" onclick="confirmPurchase()">Confirmar Compra</button>
+    <div class="form-group"><label>Adjuntar Pago (Opcional)</label><input type="file" id="chkFile"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="confirmPurchase()">Enviar Pedido</button>
   `);
 }
 
 async function confirmPurchase(){
-  const order = {
-    userId: auth.currentUser.uid,
-    userEmail: auth.currentUser.email,
-    buyer: document.getElementById("chkName").value,
-    address: document.getElementById("chkAddr").value,
-    paymentMethod: document.getElementById("chkPay").value,
-    products: cart,
-    status: "pendiente",
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
-  await db.collection("orders").add(order);
-  emptyCart();
-  closeModal();
-  showModalMessage("Orden enviada");
+    const file = document.getElementById("chkFile").files[0];
+    let compUrl = "";
+    if(file){
+        const fd = new FormData(); fd.append("file", file); fd.append("upload_preset", "vendors_preset");
+        const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`, {method:"POST", body:fd});
+        const j = await res.json(); compUrl = j.secure_url;
+    }
+
+    const order = {
+        userId: auth.currentUser.uid,
+        buyer: document.getElementById("chkName").value,
+        phone: document.getElementById("chkPhone").value,
+        whatsapp: document.getElementById("chkWap").value,
+        email: document.getElementById("chkEmail").value,
+        address: document.getElementById("chkAddr").value,
+        paymentMethod: document.getElementById("chkPay").value,
+        comprobante: compUrl,
+        products: cart,
+        status: compUrl ? "revision" : "pendiente",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    await db.collection("orders").add(order);
+    emptyCart(); closeModal(); showModalMessage("¡Pedido Realizado!");
 }
 
-// --- ÓRDENES (HISTORIAL Y ADMIN) ---
+// --- HISTORIAL ---
 function loadOrders(){
-  db.collection("orders").orderBy("createdAt", "desc").onSnapshot(snap => {
-    let userHtml = "", adminHtml = "";
+  // Nota: Si no ves datos, elimina .orderBy() para probar sin índices de Firebase
+  db.collection("orders").onSnapshot(snap => {
+    let userH = "", adminH = "";
     snap.forEach(doc => {
       const o = doc.data();
-      const total = o.products.reduce((s, p) => s + p.price, 0);
       const card = `
         <div class="order-item">
-          <div style="display:flex; justify-content:space-between; align-items:start;">
-            <div>
-                <strong>Orden #${doc.id.substring(0,5)}</strong><br>
-                <small>${o.buyer}</small>
-            </div>
-            <span class="status-badge status-${o.status.split(' ')[0]}">${o.status}</span>
+          <div style="display:flex; justify-content:space-between">
+            <b>Pedido #${doc.id.substring(0,5)}</b>
+            <span class="status-badge status-${o.status}">${o.status}</span>
           </div>
-          <div style="margin: 10px 0; font-size:0.85rem;">
-            ${o.products.map(p => p.name).join(", ")} <br>
-            <strong>Total: $${total.toFixed(2)}</strong>
+          <div style="font-size:0.8rem; margin:10px 0">
+            ${o.buyer} | ${o.phone}<br>
+            Entregar en: ${o.address}
           </div>
-          <button class="btn btn-outline" style="font-size:0.7rem; padding:5px 10px;" onclick="viewOrderDetails('${doc.id}')">Ver Detalles / Subir Pago</button>
+          <button class="btn btn-outline" style="width:100%; font-size:0.7rem" onclick="viewOrder('${doc.id}')">Detalles / Subir Pago</button>
         </div>`;
-      
-      if(o.userId === auth.currentUser.uid) userHtml += card;
-      adminHtml += card;
+      if(o.userId === auth.currentUser.uid) userH += card;
+      adminH += card;
     });
-    document.getElementById("purchaseHistory").innerHTML = userHtml || "No tienes compras aún.";
-    if(role === "admin") document.getElementById("adminOrdersList").innerHTML = adminHtml;
+    document.getElementById("purchaseHistory").innerHTML = userH || "Sin pedidos.";
+    if(role === "admin") document.getElementById("adminOrdersList").innerHTML = adminH;
   });
 }
 
-async function viewOrderDetails(id){
-  const snap = await db.collection("orders").doc(id).get();
-  const o = snap.data();
-  const total = o.products.reduce((s, p) => s + p.price, 0);
-
-  let html = `
-    <h3>Detalles de Orden</h3>
-    <p><b>Estado:</b> ${o.status.toUpperCase()}</p>
-    <p><b>Dirección:</b> ${o.address}</p>
-    <p><b>Productos:</b> ${o.products.map(p => p.name).join(", ")}</p>
-    <p><b>Total a pagar:</b> $${total.toFixed(2)}</p>
-    <hr>
-  `;
-
-  if(role === "admin"){
-    html += `
-      <div class="form-group">
-        <label>Cambiar Estado (Admin)</label>
-        <select onchange="updateStatus('${id}', this.value)">
+async function viewOrder(id){
+    const s = await db.collection("orders").doc(id).get();
+    const o = s.data();
+    let h = `<h3>Detalles de Pedido</h3>
+    <p><b>Estado:</b> ${o.status}</p>
+    <p><b>Pago:</b> ${o.paymentMethod}</p>
+    <p><b>Productos:</b> ${o.products.map(p=>p.name).join(", ")}</p>`;
+    
+    if(role === 'admin'){
+        h += `<select onchange="updateStatus('${id}', this.value)">
             <option value="pendiente" ${o.status==='pendiente'?'selected':''}>Pendiente</option>
-            <option value="revision" ${o.status==='revision'?'selected':''}>En Revisión de Pago</option>
-            <option value="en camino" ${o.status==='en camino'?'selected':''}>En Camino</option>
+            <option value="revision" ${o.status==='revision'?'selected':''}>Revisión</option>
             <option value="entregado" ${o.status==='entregado'?'selected':''}>Entregado</option>
-        </select>
-      </div>`;
-  }
+        </select>`;
+    }
 
-  if(o.comprobante){
-    html += `<p><b>Comprobante:</b><br><img src="${o.comprobante}" style="width:100%; border-radius:8px; margin-top:5px;"></p>`;
-  } else {
-    html += `
-      <div class="form-group">
-        <label>Subir Comprobante de Pago</label>
-        <input type="file" onchange="uploadComprobante('${id}', this.files[0])">
-      </div>`;
-  }
-
-  if(o.signature){
-    html += `<p><b>Firma de Recibido:</b><br><img src="${o.signature}" style="width:100%; background:#eee;"></p>`;
-  } else if(o.status === 'entregado' || role === 'admin') {
-    html += `
-      <div class="form-group">
-        <label>Firma de Recepción</label>
-        <canvas id="canvas-${id}"></canvas>
-        <button class="btn btn-primary" style="width:100%; margin-top:5px;" onclick="saveSign('${id}')">Guardar Firma</button>
-      </div>`;
-  }
-
-  openModal(html);
-  if(document.getElementById(`canvas-${id}`)) initCanvas(`canvas-${id}`);
+    if(!o.comprobante) h += `<hr><label>Subir Comprobante:</label><input type="file" onchange="uploadComp('${id}', this.files[0])">`;
+    else h += `<p><b>Comprobante:</b><br><img src="${o.comprobante}" style="width:100%"></p>`;
+    
+    openModal(h);
 }
 
-async function uploadComprobante(id, file){
-  const fd = new FormData(); fd.append("file", file); fd.append("upload_preset", "vendors_preset");
-  const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`, {method:"POST", body:fd});
-  const json = await res.json();
-  await db.collection("orders").doc(id).update({comprobante: json.secure_url, status: "revision"});
-  closeModal(); showModalMessage("Comprobante subido");
-}
-
-function updateStatus(id, status){ db.collection("orders").doc(id).update({status}); }
-
-// --- UTILS ---
-function setUpTabs(){
-  document.querySelectorAll(".tab-btn").forEach(btn => {
-    btn.onclick = () => {
-      document.querySelectorAll(".tab-btn, .tab-content").forEach(el => el.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById(btn.dataset.tab).classList.add("active");
-    };
-  });
-}
-
-function openModal(content){ modal.style.display="flex"; modalBody.innerHTML=content; }
+// --- OTROS ---
+function setUpTabs(){ document.querySelectorAll(".tab-btn").forEach(b => { b.onclick = () => { document.querySelectorAll(".tab-btn, .tab-content").forEach(e=>e.classList.remove("active")); b.classList.add("active"); document.getElementById(b.dataset.tab).classList.add("active"); }; });}
+function openModal(c){ modal.style.display="flex"; modalBody.innerHTML=c; }
 function closeModal(){ modal.style.display="none"; }
-function showModalMessage(msg){ openModal(`<div style="text-align:center"><h4>${msg}</h4></div>`); setTimeout(closeModal, 1500); }
-
-function initCanvas(canvasId){
-    const c = document.getElementById(canvasId);
-    const ctx = c.getContext("2d");
-    let drawing = false;
-    c.onmousedown = (e) => { drawing = true; ctx.moveTo(e.offsetX, e.offsetY); };
-    c.onmousemove = (e) => { if(drawing) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); } };
-    c.onmouseup = () => drawing = false;
+function showModalMessage(m){ openModal(`<h4>${m}</h4>`); setTimeout(closeModal, 1500); }
+async function uploadComp(id, f){
+    const fd = new FormData(); fd.append("file", f); fd.append("upload_preset", "vendors_preset");
+    const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`, {method:"POST", body:fd});
+    const j = await res.json();
+    await db.collection("orders").doc(id).update({comprobante: j.secure_url, status: "revision"});
+    closeModal();
 }
-
-async function saveSign(id){
-    const url = document.getElementById(`canvas-${id}`).toDataURL();
-    await db.collection("orders").doc(id).update({signature: url});
-    closeModal(); showModalMessage("Firma guardada");
+function updateStatus(id, s){ db.collection("orders").doc(id).update({status: s}); }
+function renderCart(){
+    const l = document.getElementById("cartList");
+    if(cart.length===0){ l.innerHTML="Vacío"; return; }
+    l.innerHTML = cart.map(i => `<div>${i.name} - $${i.price}</div>`).join("");
 }
-
-function filterProducts(){
-    const t = document.getElementById("search").value.toLowerCase();
-    const m = parseFloat(document.getElementById("maxPrice").value) || Infinity;
-    document.querySelectorAll(".product-card").forEach(el => {
-        const name = el.querySelector("div").innerText.toLowerCase();
-        const price = parseFloat(el.querySelector("div:nth-child(2)").innerText.replace("$",""));
-        el.style.display = (name.includes(t) && price <= m) ? "block" : "none";
+function emptyCart(){ cart=[]; localStorage.removeItem("cart"); renderCart(); }
+function loadProducts(){
+    db.collection("products").onSnapshot(s => {
+        let h = "";
+        s.forEach(d => { const p = d.data(); h += `<div class="product-card"><img src="${p.media}"><div style="padding:10px"><b>${p.name}</b><br>$${p.price}<br><button class="btn btn-primary" onclick="addToCart('${d.id}','${p.name}',${p.price},'${p.media}')">Comprar</button></div></div>`; });
+        document.getElementById("productsList").innerHTML = h;
     });
 }
-function deleteProduct(id){ if(confirm("¿Eliminar?")) db.collection("products").doc(id).delete(); }
+function addToCart(id, n, p, m){ cart.push({id,n,price:p,media:m}); localStorage.setItem("cart", JSON.stringify(cart)); renderCart(); showModalMessage("Añadido"); }
+async function uploadProduct(){
+    const f = document.getElementById("media").files[0];
+    const fd = new FormData(); fd.append("file", f); fd.append("upload_preset", "vendors_preset");
+    const res = await fetch(`https://api.cloudinary.com/v1_1/df79cjklp/upload`, {method:"POST", body:fd});
+    const j = await res.json();
+    await db.collection("products").add({name:document.getElementById("name").value, price:parseFloat(document.getElementById("price").value), media:j.secure_url});
+    showModalMessage("Publicado");
+}
+function openConfig(){
+    openModal(`<h3>Configuración</h3>
+    <div class="form-group"><label>Nombre</label><input id="cfgN"></div>
+    <button class="btn btn-primary" onclick="closeModal()">Guardar</button>`);
+}
 </script>
 </body>
 </html>
